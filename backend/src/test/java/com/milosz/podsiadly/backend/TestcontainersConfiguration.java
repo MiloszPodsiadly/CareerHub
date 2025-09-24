@@ -7,8 +7,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.time.Duration;
+
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
     @Bean(name = "tcPostgres")
     @ServiceConnection
@@ -22,7 +24,12 @@ class TestcontainersConfiguration {
     @Bean(name = "tcRabbit")
     @ServiceConnection
     RabbitMQContainer rabbitContainer() {
-        return new RabbitMQContainer("rabbitmq:3.13-management-alpine")
-                .waitingFor(Wait.forLogMessage(".*Server startup complete.*", 1));
+        return new RabbitMQContainer("rabbitmq:3.13-management")
+                .withEnv("RABBITMQ_DEFAULT_USER", "app")
+                .withEnv("RABBITMQ_DEFAULT_PASS", "app")
+                .waitingFor(
+                        Wait.forListeningPorts(5672, 15672)
+                                .withStartupTimeout(Duration.ofSeconds(120))
+                );
     }
 }
