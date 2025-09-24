@@ -1,1 +1,4 @@
 rootProject.name = 'CareerHub'
+include 'discovery-server'
+include 'gateway'
+include 'backend'
