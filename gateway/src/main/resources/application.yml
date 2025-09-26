@@ -1,13 +1,36 @@
-server.port: 8080
-spring.application.name: gateway
-eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka
+server:
+  port: 8080
 
-spring.cloud.gateway:
-  discovery.locator.enabled: true
-  routes:
-    - id: backend
-      uri: lb://backend
-      predicates: [ Path=/api/** ]
-      filters: [ StripPrefix=1 ]
+spring:
+  application:
+    name: gateway
+  main:
+    web-application-type: servlet
+  cloud:
+    gateway:
+      mvc:
+        discovery:
+          locator:
+            enabled: true
+            lower-case-service-id: true
+        routes:
+          - id: backend
+            uri: lb://backend
+            predicates:
+              - Path=/api/**
+            filters:
+              - StripPrefix=1
 
-management.endpoints.web.exposure.include: "*"
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-server:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true
