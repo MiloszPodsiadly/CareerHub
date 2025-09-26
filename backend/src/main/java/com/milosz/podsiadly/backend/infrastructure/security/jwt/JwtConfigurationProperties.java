@@ -1,4 +1,10 @@
 package com.milosz.podsiadly.backend.infrastructure.security.jwt;
 
-public class JwtConfigurationProperties {
-}
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "auth.jwt")
+public record JwtConfigurationProperties(
+        String secret,
+        long expirationDays,
+        String issuer
+) {}

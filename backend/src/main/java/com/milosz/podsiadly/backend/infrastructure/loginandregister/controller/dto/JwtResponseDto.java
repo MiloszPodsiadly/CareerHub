@@ -1,4 +1,6 @@
 package com.milosz.podsiadly.backend.infrastructure.loginandregister.controller.dto;
 
-public class JwtResponseDto {
-}
+import lombok.Builder;
+
+@Builder
+public record JwtResponseDto(String username, String token) {}
