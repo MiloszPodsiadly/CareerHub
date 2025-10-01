@@ -1,13 +1,21 @@
 <!doctype html>
-<html lang="en">
-  <head>
+<html lang="pl">
+<head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <title>Discovery</title>
+
+    <!-- globalny CSS nagłówka -->
+    <link rel="stylesheet" href="/src/shared/header/header.css" />
+</head>
+<body>
+<div id="shared-header"></div>
+
+<div id="root"></div>
+
+<script type="module" src="/src/shared/header/loader.header.js"></script>
+
+<script type="module" src="/src/main.jsx"></script>
+</body>
 </html>
