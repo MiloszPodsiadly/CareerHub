@@ -1,0 +1,116 @@
+<section class="toolbar" aria-label="Podstawowe filtry">
+    <div class="toolbar__row">
+        <input id="q" class="inp" placeholder="Szukaj: stanowisko, firma, tech…" autocomplete="off" />
+        <input id="city" class="inp" placeholder="Miasto (np. Warszawa)" autocomplete="off" />
+        <select id="seniority" class="inp" aria-label="Poziom seniority">
+            <option value="">Poziom</option>
+            <option>intern</option><option>junior</option><option>mid</option><option>senior</option><option>lead</option>
+        </select>
+        <select id="contract" class="inp" aria-label="Typ kontraktu">
+            <option value="">Kontrakt</option>
+            <option value="b2b">B2B</option><option value="perm">UoP</option><option value="mandate">Zlecenie</option><option value="internship">Staż</option>
+        </select>
+        <input id="minSalary" type="number" min="0" inputmode="numeric" class="inp" placeholder="Min. PLN/mies." />
+        <select id="sort" class="inp" aria-label="Sortowanie">
+            <option value="relevance">Sortuj: Trafność</option>
+            <option value="date">Najnowsze</option>
+            <option value="salary">Najwyższe płace</option>
+        </select>
+        <button id="group" type="button" class="btn" aria-pressed="false" title="Przełącz grupowanie">Grupuj: miasto</button>
+    </div>
+
+    <div class="toolbar__meta">
+        <span id="count" aria-live="polite">—</span>
+        <span class="muted" aria-hidden="true">•</span>
+        <button id="withSalary" type="button" class="chip" aria-pressed="false">Tylko z widełkami</button>
+        <button id="remote" type="button" class="chip" aria-pressed="false">Tylko zdalne</button>
+        <button id="reset" type="button" class="chip danger">Reset filtrów</button>
+    </div>
+</section>
+
+<section class="filters" aria-labelledby="filters-title">
+    <header class="filters__header">
+        <h2 id="filters-title">Szybkie filtry</h2>
+        <p class="filters__hint">Zaznacz interesujące Cię specjalizacje i technologie, a potem doprecyzuj u góry.</p>
+    </header>
+
+    <div class="filters__grid">
+        <fieldset class="fg" aria-labelledby="fg-spec">
+            <legend id="fg-spec" class="fg__title">Specjalizacje</legend>
+            <div class="chips">
+                <input id="spec-frontend" class="chipcheck" type="checkbox" name="spec[]" value="Frontend">
+                <label for="spec-frontend" class="chip">Frontend</label>
+
+                <input id="spec-backend" class="chipcheck" type="checkbox" name="spec[]" value="Backend">
+                <label for="spec-backend" class="chip">Backend</label>
+
+                <input id="spec-fullstack" class="chipcheck" type="checkbox" name="spec[]" value="Fullstack">
+                <label for="spec-fullstack" class="chip">Fullstack</label>
+
+                <input id="spec-mobile" class="chipcheck" type="checkbox" name="spec[]" value="Mobile">
+                <label for="spec-mobile" class="chip">Mobile</label>
+
+                <input id="spec-devops" class="chipcheck" type="checkbox" name="spec[]" value="DevOps">
+                <label for="spec-devops" class="chip">DevOps</label>
+
+                <input id="spec-qa" class="chipcheck" type="checkbox" name="spec[]" value="QA">
+                <label for="spec-qa" class="chip">QA / Test</label>
+
+                <input id="spec-data" class="chipcheck" type="checkbox" name="spec[]" value="Data">
+                <label for="spec-data" class="chip">Data / BI</label>
+
+                <input id="spec-security" class="chipcheck" type="checkbox" name="spec[]" value="Security">
+                <label for="spec-security" class="chip">Security</label>
+
+                <input id="spec-embedded" class="chipcheck" type="checkbox" name="spec[]" value="Embedded">
+                <label for="spec-embedded" class="chip">Embedded</label>
+            </div>
+        </fieldset>
+
+        <fieldset class="fg" aria-labelledby="fg-tech">
+            <legend id="fg-tech" class="fg__title">Technologie</legend>
+            <div class="chips">
+                <input id="tech-js" class="chipcheck" type="checkbox" name="tech[]" value="JavaScript">
+                <label for="tech-js" class="chip chip--icon"><span class="i">JS</span>JavaScript</label>
+
+                <input id="tech-ts" class="chipcheck" type="checkbox" name="tech[]" value="TypeScript">
+                <label for="tech-ts" class="chip chip--icon"><span class="i">TS</span>TypeScript</label>
+
+                <input id="tech-react" class="chipcheck" type="checkbox" name="tech[]" value="React">
+                <label for="tech-react" class="chip chip--icon"><span class="i">⚛</span>React</label>
+
+                <input id="tech-java" class="chipcheck" type="checkbox" name="tech[]" value="Java">
+                <label for="tech-java" class="chip chip--icon"><span class="i">☕</span>Java</label>
+
+                <input id="tech-python" class="chipcheck" type="checkbox" name="tech[]" value="Python">
+                <label for="tech-python" class="chip chip--icon"><span class="i">🐍</span>Python</label>
+
+                <input id="tech-csharp" class="chipcheck" type="checkbox" name="tech[]" value="C#">
+                <label for="tech-csharp" class="chip chip--icon"><span class="i">#</span>C#</label>
+
+                <input id="tech-sql" class="chipcheck" type="checkbox" name="tech[]" value="SQL">
+                <label for="tech-sql" class="chip">SQL</label>
+
+                <input id="tech-aws" class="chipcheck" type="checkbox" name="tech[]" value="AWS">
+                <label for="tech-aws" class="chip">AWS</label>
+
+                <input id="tech-k8s" class="chipcheck" type="checkbox" name="tech[]" value="Kubernetes">
+                <label for="tech-k8s" class="chip">Kubernetes</label>
+            </div>
+        </fieldset>
+    </div>
+</section>
+
+<section class="results" aria-live="polite">
+    <div id="list" class="list" role="list"></div>
+    <div id="sentinel" class="sentinel" aria-hidden="true"></div>
+    <div id="loading" class="loading hidden">Ładowanie…</div>
+    <div id="empty" class="empty hidden">Brak wyników dla tych filtrów.</div>
+</section>
+
+<dialog id="modal" class="modal">
+    <form method="dialog" class="modal__x">
+        <button class="icon-btn" type="submit" aria-label="Zamknij">✕</button>
+    </form>
+    <article id="modalBody" class="modal__body"></article>
+</dialog>
