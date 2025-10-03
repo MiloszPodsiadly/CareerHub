@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Fullstack">
+    <defs>
+        <style>
+            .mon { fill:#F4F2FF; stroke:#6C5CE7; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+            .in  { fill:#fff; stroke:#6C5CE7; stroke-width:3; }
+            .fg  { stroke:#6C5CE7; stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+        </style>
+    </defs>
+
+    <!-- monitor -->
+    <rect x="16" y="20" width="96" height="64" rx="6" class="mon"/>
+    <rect x="16" y="20" width="96" height="12" rx="3" class="mon"/>
+    <circle cx="24" cy="26" r="2" fill="#6C5CE7"/>
+    <circle cx="32" cy="26" r="2" fill="#6C5CE7"/>
+    <rect x="40" y="24" width="12" height="4" fill="#6C5CE7"/>
+
+    <!-- podział pionowy -->
+    <line x1="64" y1="40" x2="64" y2="78" class="mon"/>
+
+    <!-- FRONTEND: </> przesunięte w lewo -->
+    <path d="M34 48 L26 58 L34 68" class="fg"/>   <!-- znak < -->
+    <path d="M42 48 L50 58 L42 68" class="fg"/>   <!-- znak > -->
+
+    <!-- BACKEND: serwery -->
+    <rect x="70" y="44" width="34" height="8" rx="2" class="in"/>
+    <rect x="70" y="56" width="34" height="8" rx="2" class="in"/>
+    <rect x="70" y="68" width="34" height="8" rx="2" class="in"/>
+
+    <!-- podstawa -->
+    <line x1="48" y1="84" x2="80" y2="84" class="mon"/>
+    <rect x="56" y="84" width="16" height="8" class="mon"/>
+    <rect x="48" y="92" width="32" height="8" class="mon"/>
+</svg>

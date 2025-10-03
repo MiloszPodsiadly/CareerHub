@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="QA Test">
+    <defs>
+        <style>
+            .loop { fill:none; stroke:#6C5CE7; stroke-width:8; stroke-linecap:round; stroke-linejoin:round; }
+            .check { fill:none; stroke:#3498DB; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; }
+            .box   { fill:none; stroke:#6C5CE7; stroke-width:4; rx:6; ry:6; }
+        </style>
+    </defs>
+
+    <!-- lupa -->
+    <circle cx="56" cy="56" r="40" class="loop"/>
+    <line x1="84" y1="84" x2="116" y2="116" class="loop"/>
+
+    <!-- checkbox wewnątrz lupy (wycentrowany) -->
+    <g transform="translate(36,36)">
+        <rect x="0" y="0" width="40" height="40" class="box"/>
+        <path d="M10 22l8 8 14-18" class="check"/>
+    </g>
+</svg>

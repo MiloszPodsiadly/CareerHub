@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 256" role="img" aria-label="Mobile (iPhone)">
+    <defs>
+        <style>
+            .frame { fill:none; stroke:#6C5CE7; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; }
+            .screen { fill:#F4F2FF; }
+        </style>
+    </defs>
+
+    <!-- obudowa -->
+    <rect x="12" y="8" width="104" height="240" rx="18" class="frame"/>
+
+    <!-- ekran -->
+    <rect x="20" y="24" width="88" height="208" rx="12" class="screen"/>
+
+    <!-- notch -->
+    <rect x="42" y="32" width="44" height="10" rx="5" fill="#6C5CE7"/>
+
+    <!-- ikony (grid 3x4) -->
+    <!-- kolumny: 30, 56, 82 | wiersze: 64, 90, 116, 142 -->
+    <rect x="30" y="64"  width="16" height="16" rx="4" fill="#FF7A00"/>
+    <rect x="56" y="64"  width="16" height="16" rx="4" fill="#9B59B6"/>
+    <rect x="82" y="64"  width="16" height="16" rx="4" fill="#27AE60"/>
+
+    <rect x="30" y="90"  width="16" height="16" rx="4" fill="#3498DB"/>
+    <rect x="56" y="90"  width="16" height="16" rx="4" fill="#E74C3C"/>
+    <rect x="82" y="90"  width="16" height="16" rx="4" fill="#7F8C8D"/>
+
+    <rect x="30" y="116" width="16" height="16" rx="4" fill="#2ECC71"/>
+    <rect x="56" y="116" width="16" height="16" rx="4" fill="#1ABC9C"/>
+    <rect x="82" y="116" width="16" height="16" rx="4" fill="#8E44AD"/>
+
+    <rect x="30" y="142" width="16" height="16" rx="4" fill="#F39C12"/>
+    <rect x="56" y="142" width="16" height="16" rx="4" fill="#E67E22"/>
+    <rect x="82" y="142" width="16" height="16" rx="4" fill="#FF6B6B"/>
+
+    <!-- dock wycentrowany -->
+    <g transform="translate(24,184)">
+        <rect width="80" height="24" rx="10" fill="#ffffff" opacity=".65"/>
+        <!-- 4 równe ikony wewnątrz -->
+        <rect x="6"  y="4" width="16" height="16" rx="4" fill="#27AE60"/>
+        <rect x="26" y="4" width="16" height="16" rx="4" fill="#3498DB"/>
+        <rect x="46" y="4" width="16" height="16" rx="4" fill="#FF7A00"/>
+        <rect x="66" y="4" width="16" height="16" rx="4" fill="#9B59B6"/>
+    </g>
+</svg>

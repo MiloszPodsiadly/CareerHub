@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" role="img" aria-label="DevOps">
+    <defs>
+        <!-- gradient dla zębatek -->
+        <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1"/>
+        </linearGradient>
+        <style>
+            .gear { fill:url(#gradBlue); stroke:#0077c8; stroke-width:2; }
+            .text { font-family:Arial, Helvetica, sans-serif; font-weight:bold; fill:#003366; font-size:20px; text-anchor:middle; dominant-baseline:middle; }
+            .arrow { fill:none; stroke:#0077c8; stroke-width:3; marker-end:url(#arrowhead);}
+        </style>
+        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="2.5" orient="auto">
+            <polygon points="0 0, 5 2.5, 0 5" fill="#0077c8"/>
+        </marker>
+    </defs>
+
+    <!-- lewa zębatka -->
+    <circle cx="60" cy="60" r="36" class="gear"/>
+    <text x="60" y="60" class="text">DEV</text>
+
+    <!-- prawa zębatka -->
+    <circle cx="140" cy="60" r="36" class="gear"/>
+    <text x="140" y="60" class="text">OPS</text>
+
+    <!-- strzałki -->
+    <path d="M96 24 C120 0, 160 0, 160 40" class="arrow"/>
+    <path d="M104 96 C80 120, 40 120, 40 80" class="arrow"/>
+</svg>
