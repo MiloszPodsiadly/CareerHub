@@ -1,14 +1,27 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Oferty pracy – filtry</title>
+    <link rel="stylesheet" href="jobs.css" />
+</head>
+<body class="jobs">
+
+<!-- KROK 1: Toolbar -->
 <section class="toolbar" aria-label="Podstawowe filtry">
     <div class="toolbar__row">
         <input id="q" class="inp" placeholder="Szukaj: stanowisko, firma, tech…" autocomplete="off" />
         <input id="city" class="inp" placeholder="Miasto (np. Warszawa)" autocomplete="off" />
         <select id="seniority" class="inp" aria-label="Poziom seniority">
             <option value="">Poziom</option>
-            <option>intern</option><option>junior</option><option>mid</option><option>senior</option><option>lead</option>
+            <option>intern</option><option>junior</option><option>mid</option>
+            <option>senior</option><option>lead</option>
         </select>
         <select id="contract" class="inp" aria-label="Typ kontraktu">
             <option value="">Kontrakt</option>
-            <option value="b2b">B2B</option><option value="perm">UoP</option><option value="mandate">Zlecenie</option><option value="internship">Staż</option>
+            <option value="b2b">B2B</option><option value="perm">UoP</option>
+            <option value="mandate">Zlecenie</option><option value="internship">Staż</option>
         </select>
         <input id="minSalary" type="number" min="0" inputmode="numeric" class="inp" placeholder="Min. PLN/mies." />
         <select id="sort" class="inp" aria-label="Sortowanie">
@@ -28,6 +41,7 @@
     </div>
 </section>
 
+<!-- KROK 2: Szybkie filtry (z ikonami SVG) -->
 <section class="filters" aria-labelledby="filters-title">
     <header class="filters__header">
         <h2 id="filters-title">Szybkie filtry</h2>
@@ -35,72 +49,165 @@
     </header>
 
     <div class="filters__grid">
+
+        <!-- Specjalizacje -->
         <fieldset class="fg" aria-labelledby="fg-spec">
             <legend id="fg-spec" class="fg__title">Specjalizacje</legend>
             <div class="chips">
+
                 <input id="spec-frontend" class="chipcheck" type="checkbox" name="spec[]" value="Frontend">
-                <label for="spec-frontend" class="chip">Frontend</label>
+                <label for="spec-frontend" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Frontend.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Frontend
+                </label>
 
                 <input id="spec-backend" class="chipcheck" type="checkbox" name="spec[]" value="Backend">
-                <label for="spec-backend" class="chip">Backend</label>
+                <label for="spec-backend" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Backend.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Backend
+                </label>
 
                 <input id="spec-fullstack" class="chipcheck" type="checkbox" name="spec[]" value="Fullstack">
-                <label for="spec-fullstack" class="chip">Fullstack</label>
+                <label for="spec-fullstack" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Full-stack.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Fullstack
+                </label>
 
                 <input id="spec-mobile" class="chipcheck" type="checkbox" name="spec[]" value="Mobile">
-                <label for="spec-mobile" class="chip">Mobile</label>
+                <label for="spec-mobile" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Mobile.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Mobile
+                </label>
 
                 <input id="spec-devops" class="chipcheck" type="checkbox" name="spec[]" value="DevOps">
-                <label for="spec-devops" class="chip">DevOps</label>
+                <label for="spec-devops" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/DevOps.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    DevOps
+                </label>
 
                 <input id="spec-qa" class="chipcheck" type="checkbox" name="spec[]" value="QA">
-                <label for="spec-qa" class="chip">QA / Test</label>
+                <label for="spec-qa" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/QA-Test.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    QA / Test
+                </label>
 
                 <input id="spec-data" class="chipcheck" type="checkbox" name="spec[]" value="Data">
-                <label for="spec-data" class="chip">Data / BI</label>
+                <label for="spec-data" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Data-Bi.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Data / BI
+                </label>
 
                 <input id="spec-security" class="chipcheck" type="checkbox" name="spec[]" value="Security">
-                <label for="spec-security" class="chip">Security</label>
+                <label for="spec-security" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Security.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Security
+                </label>
 
                 <input id="spec-embedded" class="chipcheck" type="checkbox" name="spec[]" value="Embedded">
-                <label for="spec-embedded" class="chip">Embedded</label>
+                <label for="spec-embedded" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Embedded.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Embedded
+                </label>
+
+                <!-- NOWE -->
+                <input id="spec-aiml" class="chipcheck" type="checkbox" name="spec[]" value="AI/ML">
+                <label for="spec-aiml" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/AI-ML.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    AI / ML
+                </label>
+
+                <input id="spec-others" class="chipcheck" type="checkbox" name="spec[]" value="Others">
+                <label for="spec-others" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/specialization/Others.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Others
+                </label>
+
             </div>
         </fieldset>
 
+        <!-- Technologie -->
         <fieldset class="fg" aria-labelledby="fg-tech">
             <legend id="fg-tech" class="fg__title">Technologie</legend>
             <div class="chips">
+
+                <input id="tech-angular" class="chipcheck" type="checkbox" name="tech[]" value="Angular">
+                <label for="tech-angular" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Angular.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Angular
+                </label>
+
                 <input id="tech-js" class="chipcheck" type="checkbox" name="tech[]" value="JavaScript">
-                <label for="tech-js" class="chip chip--icon"><span class="i">JS</span>JavaScript</label>
+                <label for="tech-js" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/JavaScript.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    JavaScript
+                </label>
 
                 <input id="tech-ts" class="chipcheck" type="checkbox" name="tech[]" value="TypeScript">
-                <label for="tech-ts" class="chip chip--icon"><span class="i">TS</span>TypeScript</label>
+                <label for="tech-ts" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/TypeScript.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    TypeScript
+                </label>
 
                 <input id="tech-react" class="chipcheck" type="checkbox" name="tech[]" value="React">
-                <label for="tech-react" class="chip chip--icon"><span class="i">⚛</span>React</label>
+                <label for="tech-react" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/React.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    React
+                </label>
+
+                <input id="tech-flutter" class="chipcheck" type="checkbox" name="tech[]" value="Flutter">
+                <label for="tech-flutter" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Flutter.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Flutter
+                </label>
 
                 <input id="tech-java" class="chipcheck" type="checkbox" name="tech[]" value="Java">
-                <label for="tech-java" class="chip chip--icon"><span class="i">☕</span>Java</label>
+                <label for="tech-java" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Java.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Java
+                </label>
 
                 <input id="tech-python" class="chipcheck" type="checkbox" name="tech[]" value="Python">
-                <label for="tech-python" class="chip chip--icon"><span class="i">🐍</span>Python</label>
+                <label for="tech-python" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Python.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Python
+                </label>
 
                 <input id="tech-csharp" class="chipcheck" type="checkbox" name="tech[]" value="C#">
-                <label for="tech-csharp" class="chip chip--icon"><span class="i">#</span>C#</label>
+                <label for="tech-csharp" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/C_Sharp.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    C#
+                </label>
+
+                <input id="tech-php" class="chipcheck" type="checkbox" name="tech[]" value="PHP">
+                <label for="tech-php" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Php.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    PHP
+                </label>
 
                 <input id="tech-sql" class="chipcheck" type="checkbox" name="tech[]" value="SQL">
-                <label for="tech-sql" class="chip">SQL</label>
+                <label for="tech-sql" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Sql.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    SQL
+                </label>
 
                 <input id="tech-aws" class="chipcheck" type="checkbox" name="tech[]" value="AWS">
-                <label for="tech-aws" class="chip">AWS</label>
+                <label for="tech-aws" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/AWS.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    AWS
+                </label>
 
                 <input id="tech-k8s" class="chipcheck" type="checkbox" name="tech[]" value="Kubernetes">
-                <label for="tech-k8s" class="chip">Kubernetes</label>
+                <label for="tech-k8s" class="chip chip--svg">
+                    <span class="i"><img src="/assets/component/jobsoffers/technology/Kubernetes.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
+                    Kubernetes
+                </label>
             </div>
         </fieldset>
+
     </div>
 </section>
 
+<!-- KROK 3: Wyniki -->
 <section class="results" aria-live="polite">
     <div id="list" class="list" role="list"></div>
     <div id="sentinel" class="sentinel" aria-hidden="true"></div>
@@ -108,9 +215,13 @@
     <div id="empty" class="empty hidden">Brak wyników dla tych filtrów.</div>
 </section>
 
+<!-- KROK 4: Modal -->
 <dialog id="modal" class="modal">
     <form method="dialog" class="modal__x">
         <button class="icon-btn" type="submit" aria-label="Zamknij">✕</button>
     </form>
     <article id="modalBody" class="modal__body"></article>
 </dialog>
+
+</body>
+</html>

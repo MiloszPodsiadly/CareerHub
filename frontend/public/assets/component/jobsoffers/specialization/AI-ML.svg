@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AI / ML">
+    <g fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- węzły -->
+        <circle cx="12" cy="20" r="3" fill="#111"/>
+        <circle cx="12" cy="44" r="3" fill="#111"/>
+        <circle cx="32" cy="12" r="3" fill="#111"/>
+        <circle cx="32" cy="32" r="3" fill="#111"/>
+        <circle cx="32" cy="52" r="3" fill="#111"/>
+        <circle cx="52" cy="20" r="3" fill="#111"/>
+        <circle cx="52" cy="44" r="3" fill="#111"/>
+        <!-- połączenia -->
+        <path d="M15 20 L29 14 M15 20 L29 30 M15 44 L29 34 M15 44 L29 50
+             M35 12 L49 18 M35 32 L49 22 M35 32 L49 42 M35 52 L49 46"/>
+    </g>
+</svg>
