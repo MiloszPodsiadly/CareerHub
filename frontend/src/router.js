@@ -3,6 +3,8 @@ const routes = {
         .then(m => m.mountLanding()),
     '/jobs': () => import('./component/jobsoffers/loader.jobs.js')
         .then(m => m.mountJobs()),
+    '/events': () => import('./component/events/loader.events.js')
+        .then(m => m.mountEvents()),
 };
 
 export async function render() {
