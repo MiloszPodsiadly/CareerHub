@@ -1,3 +1,5 @@
 package com.milosz.podsiadly.backend.domain.loginandregister.dto;
 
-public record UserDto(String id, String password, String username) {}
+import java.util.Set;
+
+public record UserDto(String id, String username, Set<String> roles) { }

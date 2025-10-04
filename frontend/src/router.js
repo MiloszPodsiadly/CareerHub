@@ -7,6 +7,10 @@ const routes = {
         .then(m => m.mountEvents()),
     '/salary-calculator': () => import('./component/salary-calculator/loader.salary-calculator.js')
         .then(m => m.mountSalaryCalculator()),
+    '/auth/login':    () => import('./component/loginandregister/loader.loginandregister.js')
+        .then(m => m.mountLogin()),
+    '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js')
+        .then(m => m.mountRegister()),
 };
 
 export async function render() {

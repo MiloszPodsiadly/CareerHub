@@ -1,0 +1,23 @@
+<div class="auth" data-mode="login">
+    <div class="tabs">
+        <a href="/auth/login" class="tab js-tab-login active">Logowanie</a>
+        <a href="/auth/register" class="tab js-tab-register">Rejestracja</a>
+    </div>
+
+    <h2 class="js-title">Zaloguj się</h2>
+    <p class="muted js-subtitle">Wprowadź dane, aby kontynuować.</p>
+
+    <div class="js-alert" style="display:none"></div>
+
+    <form class="js-form">
+        <label>
+            Nazwa użytkownika
+            <input name="username" autocomplete="username" required />
+        </label>
+        <label>
+            Hasło
+            <input name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button class="btn js-submit" type="submit">Zaloguj</button>
+    </form>
+</div>

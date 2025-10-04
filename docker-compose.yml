@@ -63,25 +63,23 @@ services:
       dockerfile: gateway/Dockerfile
     image: gateway:local
     container_name: gateway
-    ports: ["8080:8080"]
+    ports: [ "8080:8080" ]
     environment:
       SERVER_PORT: 8080
       SPRING_APPLICATION_NAME: gateway
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD_GATEWAY: DEBUG
     depends_on:
-      discovery-server:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
+      - discovery-server
+      - backend
     restart: unless-stopped
-    networks: [devnet]
+    networks: [ devnet ]
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || curl -fsS http://localhost:8080/actuator/health" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness | grep -q '\"status\":\"UP\"'" ]
       interval: 10s
       timeout: 5s
       retries: 15
+
 
   backend:
     build:
