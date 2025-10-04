@@ -5,6 +5,8 @@ const routes = {
         .then(m => m.mountJobs()),
     '/events': () => import('./component/events/loader.events.js')
         .then(m => m.mountEvents()),
+    '/salary-calculator': () => import('./component/salary-calculator/loader.salary-calculator.js')
+        .then(m => m.mountSalaryCalculator()),
 };
 
 export async function render() {

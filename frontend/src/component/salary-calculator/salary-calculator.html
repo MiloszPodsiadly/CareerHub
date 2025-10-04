@@ -1,0 +1,108 @@
+<section class="salary sc">
+    <header class="sc-hero">
+        <h1>Kalkulator <span class="grad">wynagrodzeń</span></h1>
+        <p>Podaj kwotę i formę współpracy – zobacz estymację netto i strukturę potrąceń.</p>
+    </header>
+
+    <section class="sc-panel">
+        <div class="sc-grid">
+            <label class="sc-field">
+                <span>Kwota miesięczna</span>
+                <div class="sc-amount">
+                    <input id="sc-amount" type="number" min="0" step="50" value="5000" />
+                    <span class="sc-currency">PLN</span>
+                </div>
+            </label>
+
+            <label class="sc-field">
+                <span>Tryb kwoty</span>
+                <div class="sc-seg">
+                    <input type="radio" name="sc-mode" id="sc-mode-brutto" value="brutto" checked>
+                    <label for="sc-mode-brutto">Brutto</label>
+                    <input type="radio" name="sc-mode" id="sc-mode-netto" value="netto">
+                    <label for="sc-mode-netto">Netto (na rękę)</label>
+                </div>
+            </label>
+
+            <label class="sc-field sc-full">
+                <span>Forma</span>
+                <div class="sc-seg sc-seg--wide">
+                    <input type="radio" name="sc-type" id="sc-type-uop" value="uop" checked>
+                    <label for="sc-type-uop">Umowa o pracę</label>
+                    <input type="radio" name="sc-type" id="sc-type-uz" value="uz">
+                    <label for="sc-type-uz">Umowa zlecenie</label>
+                    <input type="radio" name="sc-type" id="sc-type-uod" value="uod">
+                    <label for="sc-type-uod">Umowa o dzieło</label>
+                    <input type="radio" name="sc-type" id="sc-type-b2b" value="b2b" disabled>
+                    <label for="sc-type-b2b" title="Wkrótce">B2B (wkrótce)</label>
+                </div>
+            </label>
+
+            <details class="sc-details sc-full">
+                <summary>Szczegóły (opcjonalnie)</summary>
+                <div class="sc-details__grid">
+                    <label class="sc-inline">
+                        <input id="sc-student" type="checkbox">
+                        <span>PIT-0 &lt; 26 lat (demo)</span>
+                    </label>
+
+                    <label class="sc-inline">
+                        <input id="sc-authors" type="checkbox">
+                        <span>KUP 50% (autorskie) – demo</span>
+                    </label>
+
+                    <label class="sc-inline">
+                        <input id="sc-uz-zus" type="checkbox" checked>
+                        <span>ZUS przy zleceniu (demo)</span>
+                    </label>
+                </div>
+            </details>
+        </div>
+    </section>
+
+    <section class="sc-summary">
+        <div class="sc-card sc-total">
+            <div class="sc-total__label">Szacowane <b>netto</b> / miesiąc</div>
+            <div class="sc-total__value" id="sc-netto">3 438,46 zł</div>
+            <div class="sc-total__sub" id="sc-annual">Rocznie: 41 261,46 zł netto</div>
+        </div>
+
+        <div class="sc-card sc-breakdown">
+            <div class="sc-breakdown__chart">
+                <svg id="sc-donut" viewBox="0 0 120 120" aria-label="Struktura potrąceń"></svg>
+            </div>
+            <div class="sc-breakdown__list" id="sc-list">
+            </div>
+        </div>
+    </section>
+
+    <section class="sc-card sc-compare">
+        <h3>Porównanie form (proporcje netto/podatki - szczegolowo)</h3>
+        <div class="sc-bars" id="sc-bars">
+        </div>
+    </section>
+
+    <section class="sc-card sc-table">
+        <h3>Rozbicie miesięczne (demo)</h3>
+        <div class="sc-table__wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Miesiąc</th>
+                    <th>Brutto</th>
+                    <th>Ubezp. społ.</th>
+                    <th>Zdrowotne</th>
+                    <th>Zaliczka na PIT</th>
+                    <th>Netto</th>
+                </tr>
+                </thead>
+                <tbody id="sc-months">
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <p class="sc-note">
+        ⚠️ To jest <b>prototyp</b> z uproszczonymi zasadami – wyłącznie poglądowo. Rzeczywiste wyliczenia zależą od pełnych przepisów i indywidualnej sytuacji.
+    </p>
+</section>
