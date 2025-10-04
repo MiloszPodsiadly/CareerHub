@@ -43,6 +43,12 @@ management:
 
 auth:
   jwt:
-    secret: "256-bit-secret-256-bit-secret"
-    expiration-days: 7
+    secret: "Yy8k2QJb4V7tRkZ1mP9hS3fX6cD0nW2aL8eT4uI9rC5oB7pM1xG6zH0vN3qJ5d"
     issuer: "careerhub-backend"
+    access-minutes: 60
+    refresh-days: 7
+
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
