@@ -1,0 +1,39 @@
+@layer auth {
+    .auth {
+        --tx:#0f172a; --muted:#64748b; --bg:#fff; --card:#f7f8ff; --border:#e5e7eb;
+        max-width: 520px; margin: 80px auto; padding: 32px; border-radius: 20px;
+        background: var(--bg); color: var(--tx); box-shadow: 0 6px 28px #0b10201a;
+        border: 1px solid var(--border);
+    }
+    @media (prefers-color-scheme: dark){
+        .auth{ --tx:#e6e7ee; --muted:#a1a1aa; --bg:#0b0b0f; --card:#12131a; --border:#1f2430; }
+    }
+
+    .auth h2{ margin:0 0 8px; font-size: 28px; }
+    .auth p.muted{ margin:0 0 24px; color: var(--muted); }
+
+    .auth .tabs{ display:flex; gap:8px; margin-bottom: 18px; }
+    .auth .tab{
+        flex:1; text-align:center; padding:10px 12px; border-radius: 12px;
+        border:1px solid var(--border); background: var(--card); cursor:pointer;
+        text-decoration:none; color:inherit; font-weight:600;
+    }
+    .auth .tab.active{ background:linear-gradient(135deg,#5b7fff,#9cc0ff); color:#fff; border:none; }
+
+    .auth form{ display:grid; gap:14px; }
+    .auth label{ display:grid; gap:6px; font-weight:600; }
+    .auth input{
+        height: 44px; padding:0 12px; border-radius:12px; border:1px solid var(--border); background: var(--card);
+        color: inherit; outline: none;
+    }
+    .auth .btn{
+        height: 44px; border-radius:12px; border: none; cursor:pointer; font-weight:700;
+        background: linear-gradient(135deg,#5b7fff,#9cc0ff); color:#fff; box-shadow: 0 6px 24px #5b7fff33;
+    }
+    .auth .error{
+        padding:10px 12px; border-radius:12px; background:#ff3b3020; border:1px solid #ff6b6b55; color:#ffb3b3;
+    }
+    .auth .success{
+        padding:10px 12px; border-radius:12px; background:#2ecc7120; border:1px solid #2ecc7155; color:#bdf5c9;
+    }
+}
