@@ -8,23 +8,22 @@ spring:
     web-application-type: servlet
   cloud:
     gateway:
-      mvc:
-        discovery:
-          locator:
-            enabled: true
-            lower-case-service-id: true
-        routes:
-          - id: backend
-            uri: lb://backend
-            predicates:
-              - Path=/api/**
-            filters:
-              - StripPrefix=1
+      server:
+        webmvc:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: backend
+              uri: lb://backend
+              predicates:
+                - Path=/api/**
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://discovery-server:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-server:8761/eureka}
 
 management:
   endpoints:
@@ -32,5 +31,15 @@ management:
       exposure:
         include: "*"
   endpoint:
-    gateway:
-      enabled: true
+    health:
+      probes:
+        enabled: true
+
+auth:
+  jwt:
+    secret: "Yy8k2QJb4V7tRkZ1mP9hS3fX6cD0nW2aL8eT4uI9rC5oB7pM1xG6zH0vN3qJ5d"
+    issuer: "careerhub-backend"
+  public-paths:
+    - /api/auth/**
+    - /api/public/**
+    - /actuator/**
