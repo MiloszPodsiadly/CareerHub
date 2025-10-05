@@ -1,14 +1,11 @@
 import landingHtml from './landing.html?raw';
 import './landing.css';
-import { navigate } from '../../router.js';
+import { setView } from '../../shared/mount.js';
 
 export function mountLanding() {
-    const root = document.getElementById('root');
-    if (!root) return;
+    setView(landingHtml);
 
-    root.innerHTML = `<div id="landing-root"></div>`;
-    const mount = document.getElementById('landing-root');
-    mount.innerHTML = landingHtml;
+    const mount = document.getElementById('view-root');
 
     const reveals = mount.querySelectorAll('.reveal');
     const io = new IntersectionObserver((entries) => {
@@ -28,7 +25,4 @@ export function mountLanding() {
         }, 30);
     });
 
-    mount.querySelectorAll('a[href="/jobs"]').forEach(a => {
-        a.addEventListener('click', (e) => { e.preventDefault(); navigate('/jobs'); });
-    });
 }

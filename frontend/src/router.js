@@ -1,22 +1,23 @@
+import { bootstrapAuth } from './shared/api.js';
+import { clearView } from './shared/mount.js';
+
 const routes = {
-    '/':     () => import('./component/landing-page/loader.landing.js')
-        .then(m => m.mountLanding()),
-    '/jobs': () => import('./component/jobsoffers/loader.jobs.js')
-        .then(m => m.mountJobs()),
-    '/events': () => import('./component/events/loader.events.js')
-        .then(m => m.mountEvents()),
-    '/salary-calculator': () => import('./component/salary-calculator/loader.salary-calculator.js')
-        .then(m => m.mountSalaryCalculator()),
-    '/auth/login':    () => import('./component/loginandregister/loader.loginandregister.js')
-        .then(m => m.mountLogin()),
-    '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js')
-        .then(m => m.mountRegister()),
+    '/':     () => import('./component/landing-page/loader.landing.js').then(m => m.mountLanding()),
+    '/jobs': () => import('./component/jobsoffers/loader.jobs.js').then(m => m.mountJobs()),
+    '/events': () => import('./component/events/loader.events.js').then(m => m.mountEvents()),
+    '/salary-calculator': () => import('./component/salary-calculator/loader.salary-calculator.js').then(m => m.mountSalaryCalculator()),
+    '/auth/login':    () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountLogin()),
+    '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountRegister()),
+    '/profile': () => import('./component/profile/loader.profile.js').then(m => m.mountProfile()),
 };
 
+const FALLBACK = '/';
+
 export async function render() {
+    clearView();
     const path = Object.prototype.hasOwnProperty.call(routes, location.pathname)
         ? location.pathname
-        : '/';
+        : FALLBACK;
     await routes[path]();
 }
 
@@ -40,4 +41,5 @@ document.addEventListener('click', async (e) => {
 
 window.addEventListener('popstate', () => { render(); });
 
+await bootstrapAuth();
 render();

@@ -1,10 +1,9 @@
 import eventsHtml from './events.html?raw';
 import './events.css';
 import { initEvents } from './events.js';
+import { setView } from '../../shared/mount.js';
 
-export function mountEvents(){
-    const root = document.getElementById('root');
-    if (!root) return;
-    root.innerHTML = `<main class="events">${eventsHtml}</main>`;
+export function mountEvents() {
+    setView(`<section class="events">${eventsHtml}</section>`);
     initEvents();
 }

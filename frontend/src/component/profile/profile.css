@@ -1,0 +1,272 @@
+/* ========================== */
+/*  Profile (scoped styles)   */
+/* ========================== */
+
+.profile {
+    /* tokeny tylko dla tej sekcji */
+    --brand: #5b7fff;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+
+    position: relative;
+    margin-top: calc(var(--hdr-h, 64px) + 16px);   /* nigdy pod headerem */
+    isolation: isolate;                            /* własny stacking-context */
+    z-index: 0;
+    color: var(--text);
+}
+
+/* ------------------ */
+/* Header sekcji      */
+/* ------------------ */
+
+.profile__hdr {
+    position: relative;
+    padding: 24px 8px 18px;
+    text-align: center;     /* wyśrodkowanie h1 i podtytułu */
+}
+
+.profile__hdr .muted {
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.profile__hdr h1{
+    margin: 0 auto;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, var(--brand) 0%, #9cc0ff 60%, #7b8cff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.profile__hdr h1::after{
+    content:"";
+    display:block;
+    width: 160px;
+    height: 8px;
+    margin: 10px auto 0;    /* pastylka na środku */
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(91,127,255,.25), rgba(156,192,255,.15));
+}
+
+/* friendly pattern – TYLKO pod nagłówkiem profilu (nie dotyka globalnego headera) */
+.profile__hdr::before{
+    content:"";
+    position: absolute;
+    left: 8px; right: 8px;
+    top: -6px; height: 132px;
+    border-radius: 20px;
+    z-index: -1;
+    pointer-events: none;
+    background:
+            linear-gradient(135deg, rgba(91,127,255,.10), rgba(156,192,255,.06)),
+                /* pionowe linie */
+            repeating-linear-gradient(90deg, rgba(91,127,255,.08) 0 1px, transparent 1px 28px),
+                /* poziome linie */
+            repeating-linear-gradient(0deg, rgba(91,127,255,.06) 0 1px, transparent 1px 28px);
+    filter: saturate(115%);
+}
+
+/* czyścimy stare pseudo-tła z poprzednich wersji */
+.profile::before{ content:none !important; }
+.profile__hdr::after{ content:none !important; }
+
+/* ------------------ */
+/* Layout formularza  */
+/* ------------------ */
+
+.profile__grid{
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    padding: 8px 0 24px;
+}
+
+@media (max-width: 1024px) {
+    .profile__grid { grid-template-columns: 1fr; }
+}
+
+/* ------------------ */
+/* Lewa kolumna       */
+/* ------------------ */
+
+.profile__avatar .avatar{
+    display: grid;
+    place-items: center;
+    color: var(--brand);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    user-select: none;
+    font-weight: 700;
+}
+
+.profile__avatar .avatar--xl{
+    width: 128px;
+    height: 128px;
+    margin-bottom: 12px;
+}
+.profile__avatar .avatar img{
+    width: 100%; height: 100%;
+    object-fit: cover; border-radius: 50%;
+}
+
+.profile .uploader{
+    display: flex; gap: 12px; margin: 12px 0 4px;
+}
+
+/* ------------------ */
+/* Przyciski          */
+/* ------------------ */
+
+.profile .btn{
+    -webkit-tap-highlight-color: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font: inherit; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 1px 0 rgba(0,0,0,.02);
+    transition: box-shadow .15s, transform .02s, border-color .15s, background-color .15s;
+}
+.profile .btn:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, .06); }
+.profile .btn:active { transform: translateY(1px); }
+.profile .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.profile .btn--primary{
+    background: var(--brand);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(91,127,255,.25);
+}
+.profile .btn--primary:hover{ box-shadow: 0 8px 20px rgba(91,127,255,.30); }
+
+.profile .btn--ghost{
+    background: transparent;
+    color: var(--text);
+}
+
+/* identyczny rozmiar dwóch przycisków uploadu */
+.profile .btn--equal {
+    width: 220px;            /* możesz dopasować 200–240px */
+    justify-content: center;
+}
+
+@media (max-width: 520px) {
+    .profile .uploader,
+    .profile .cv__row { flex-direction: column; }
+    .profile .btn--equal { width: 100%; }
+}
+
+/* ------------------ */
+/* Presety avatarów   */
+/* ------------------ */
+
+.profile details.presets { margin: 8px 0 6px; }
+.profile details.presets > summary { cursor: pointer; color: var(--muted); }
+
+.profile .presetGrid{
+    display: grid;
+    grid-template-columns: repeat(6, 56px);
+    gap: 10px;
+    margin-top: 10px;
+}
+.profile .presetGrid button{
+    width: 56px; height: 56px;
+    display: grid; place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+}
+.profile .presetGrid button.active{
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-color: transparent;
+}
+
+.profile small.muted { color: var(--muted); }
+
+/* separator */
+.profile .sep{ border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ------------------ */
+/* CV                 */
+/* ------------------ */
+
+.profile .cv { margin-top: 16px; }
+.profile .cv__label { display:block; font-weight:600; margin-bottom: 6px; }
+.profile .cv__row { display:flex; gap:12px; margin-bottom: 4px; }
+.profile .cv__info{ color: var(--muted); }
+
+/* ------------------ */
+/* Prawa kolumna      */
+/* ------------------ */
+
+.profile__fields{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.profile .fld{ margin-bottom: 16px; }
+.profile .fld label{ display:block; font-weight:600; margin-bottom: 6px; }
+
+.profile .fld input,
+.profile .fld textarea,
+.profile .fld select{
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
+    transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+
+.profile .fld textarea{
+    resize: vertical;
+    min-height: 120px;
+}
+
+.profile .fld input:focus,
+.profile .fld textarea:focus,
+.profile .fld select:focus{
+    border-color: var(--brand);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(91,127,255,.15);
+}
+
+.profile .fld input[readonly]{ background: #f3f4f6; color: #6b7280; }
+
+/* data urodzenia */
+.profile .dob-grid{
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 10px;
+}
+@media (max-width: 480px){
+    .profile .dob-grid{ grid-template-columns: 1fr 1fr; }
+}
+
+/* akcje */
+.profile .actions{
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 8px;
+}
+.profile .actions .btn--primary { min-width: 120px; }

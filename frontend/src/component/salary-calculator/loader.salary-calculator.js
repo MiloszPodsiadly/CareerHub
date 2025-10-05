@@ -1,11 +1,9 @@
 import html from './salary-calculator.html?raw';
 import './salary-calculator.css';
 import { initSalaryCalculator } from './salary-calculator.js';
+import { setView } from '../../shared/mount.js';
 
 export function mountSalaryCalculator() {
-    const root = document.getElementById('root');
-    if (!root) return;
-
-    root.innerHTML = `<main class="salary">${html}</main>`;
+    setView(`<section class="salary">${html}</section>`);
     initSalaryCalculator();
 }

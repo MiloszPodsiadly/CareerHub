@@ -1,0 +1,70 @@
+<section class="profile" aria-labelledby="profile-title">
+    <header class="profile__hdr">
+        <h1 id="profile-title">Mój profil</h1>
+        <p class="muted">Zarządzaj danymi konta, avatarem i dokumentami.</p>
+    </header>
+
+    <form id="profileForm" class="profile__grid" autocomplete="off" novalidate>
+        <!-- LEWA: Avatar & pliki -->
+        <section class="profile__avatar" aria-label="Avatar i pliki">
+            <div class="avatar avatar--xl" id="avatarPreview" aria-live="polite"></div>
+
+            <div class="uploader">
+                <input id="avatarFile" type="file" accept="image/*" hidden />
+                <label class="btn btn--equal" for="avatarFile">Wgraj zdjęcie</label>
+                <button type="button" class="btn btn--ghost" id="clearAvatar">Usuń zdjęcie</button>
+            </div>
+
+            <details class="presets">
+                <summary>…albo wybierz gotowy avatar</summary>
+                <div id="presetGrid" class="presetGrid" role="listbox" aria-label="Avatary wbudowane"></div>
+            </details>
+
+            <small class="muted">JPG/PNG/SVG do 2&nbsp;MB. Zdjęcie przycinamy do kwadratu.</small>
+
+            <hr class="sep" />
+
+            <div class="cv">
+                <label class="cv__label">CV (PDF/DOC/DOCX, do 5 MB)</label>
+                <input id="cvFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+                <div class="cv__row">
+                    <label class="btn btn--equal" for="cvFile">Dodaj / podmień CV</label>
+                    <button type="button" class="btn btn--ghost" id="clearCv">Usuń CV</button>
+                </div>
+                <div id="cvInfo" class="cv__info muted">Brak pliku.</div>
+            </div>
+        </section>
+
+        <!-- PRAWA: Pola -->
+        <section class="profile__fields">
+            <div class="fld">
+                <label for="name">Imię i nazwisko</label>
+                <input id="name" name="name" type="text" placeholder="Jan Kowalski" />
+            </div>
+
+            <div class="fld">
+                <label for="email">E-mail</label>
+                <input id="email" name="email" type="email" readonly />
+            </div>
+
+            <div class="fld">
+                <label for="desc">Opis</label>
+                <textarea id="desc" name="desc" rows="5" placeholder="Kilka słów o mnie…"></textarea>
+            </div>
+
+            <div class="fld">
+                <label for="dobDay">Data urodzenia</label>
+                <div class="dob-grid">
+                    <select id="dobDay"   name="dobDay"   aria-label="Dzień"></select>
+                    <select id="dobMonth" name="dobMonth" aria-label="Miesiąc"></select>
+                    <select id="dobYear"  name="dobYear"  aria-label="Rok"></select>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn--ghost" type="reset" id="resetBtn">Odrzuć zmiany</button>
+                <button class="btn btn--primary" type="submit">Zapisz</button>
+            </div>
+        </section>
+    </form>
+</section>
