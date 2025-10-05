@@ -8,15 +8,34 @@
         <nav class="nav" aria-label="Główna nawigacja">
             <a class="nav__link" href="/jobs" data-nav="jobs">Oferty pracy</a>
             <a class="nav__link" href="/events" data-nav="events">Wydarzenia</a>
-            <a class="nav__link" href="#hackathons" data-nav="hackathons">Hackatony</a>
+            <a class="nav__link" href="/hackathons" data-nav="hackathons">Hackatony</a>
             <a class="nav__link nav__link--accent" href="/salary-calculator" data-nav="salary">
                 Kalkulator wynagrodzeń <span class="chip">nowe</span>
             </a>
         </nav>
 
-        <div class="cta">
-            <a class="btn btn--ghost" href="/auth/login">Zaloguj się</a>
+        <!-- NOWY WRAPPER: trzecia kolumna grida -->
+        <div class="hdr__actions">
+            <!-- ZAWSZE -->
             <a class="btn btn--primary" href="/post">Dodaj ogłoszenie</a>
+
+            <!-- GOŚĆ -->
+            <div class="cta cta--guest" data-guest>
+                <a class="btn btn--ghost" href="/auth/login">Zaloguj się</a>
+            </div>
+
+            <!-- ZALOGOWANY -->
+            <div class="cta userarea cta--user" data-user hidden>
+                <a class="nav__link" href="/favorites" data-nav="fav">Ulubione</a>
+                <div class="userdrop" data-dd>
+                    <button class="avatar" data-avatar type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu konta"></button>
+                    <div class="dd" role="menu" aria-label="Menu konta">
+                        <div class="dd__meta" data-user-meta></div>
+                        <a href="/profile" role="menuitem">Profil</a>
+                        <button type="button" role="menuitem" data-logout>Wyloguj</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </header>
