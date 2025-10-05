@@ -1,17 +1,12 @@
-import pageHtml from './loginandregister.html?raw'
-import './loginandregister.css'
-import { initLoginRegister } from './loginandregister.js'
+import pageHtml from './loginandregister.html?raw';
+import './loginandregister.css';
+import { initLoginRegister } from './loginandregister.js';
+import { setView } from '../../shared/mount.js';
 
-export function mountLogin () {
-    const root = document.getElementById('root')
-    if (!root) return
-    root.innerHTML = `<main class="auth-wrap">${pageHtml}</main>`
-    initLoginRegister('login')
+function mount(mode) {
+    setView(`<section class="auth-wrap">${pageHtml}</section>`);
+    initLoginRegister(mode);
 }
 
-export function mountRegister () {
-    const root = document.getElementById('root')
-    if (!root) return
-    root.innerHTML = `<main class="auth-wrap">${pageHtml}</main>`
-    initLoginRegister('register')
-}
+export function mountLogin()    { mount('login'); }
+export function mountRegister() { mount('register'); }

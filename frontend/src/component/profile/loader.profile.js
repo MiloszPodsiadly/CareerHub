@@ -7,3 +7,4 @@ export function mountProfile() {
     setView(`<section class="profile">${pageHtml}</section>`);
     initProfile();
 }
+g
