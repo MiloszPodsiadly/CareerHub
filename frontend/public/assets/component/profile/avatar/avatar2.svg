@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="32" fill="#E6F9F1"/>
+  <!-- Head -->
+  <circle cx="128" cy="140" r="60" fill="#FFF1E6"/>
+  <!-- Bunny ears -->
+  <ellipse cx="98" cy="64" rx="18" ry="44" fill="#FFF1E6"/>
+  <ellipse cx="158" cy="64" rx="18" ry="44" fill="#FFF1E6"/>
+  <ellipse cx="98" cy="64" rx="9" ry="30" fill="#FFC4D6"/>
+  <ellipse cx="158" cy="64" rx="9" ry="30" fill="#FFC4D6"/>
+  <!-- Eyes -->
+  <circle cx="108" cy="138" r="7" fill="#333"/>
+  <circle cx="148" cy="138" r="7" fill="#333"/>
+  <circle cx="106" cy="136" r="2" fill="#fff"/>
+  <circle cx="146" cy="136" r="2" fill="#fff"/>
+  <!-- Nose and mouth -->
+  <path d="M124 150 Q128 154 132 150" stroke="#5B4337" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="128" cy="146" r="4" fill="#5B4337"/>
+  <!-- Cheeks -->
+  <circle cx="100" cy="152" r="8" fill="#FFA7B9" opacity="0.6"/>
+  <circle cx="156" cy="152" r="8" fill="#FFA7B9" opacity="0.6"/>
+  <!-- Bow -->
+  <circle cx="128" cy="98" r="10" fill="#A3D9A5"/>
+  <ellipse cx="114" cy="98" rx="12" ry="8" fill="#B9E6BA"/>
+  <ellipse cx="142" cy="98" rx="12" ry="8" fill="#B9E6BA"/>
+</svg>

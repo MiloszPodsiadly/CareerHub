@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="32" fill="#EDE7FF"/>
+  <!-- Hoodie -->
+  <circle cx="128" cy="128" r="92" fill="#D6CCFF"/>
+  <!-- Cat ears -->
+  <polygon points="84,58 104,96 64,96" fill="#D6CCFF"/>
+  <polygon points="172,58 152,96 192,96" fill="#D6CCFF"/>
+  <polygon points="84,68 98,94 72,94" fill="#F4EFFF"/>
+  <polygon points="172,68 158,94 184,94" fill="#F4EFFF"/>
+  <!-- Face -->
+  <circle cx="128" cy="132" r="60" fill="#FFE8D6"/>
+  <!-- Eyes -->
+  <circle cx="108" cy="128" r="7" fill="#333"/>
+  <circle cx="148" cy="128" r="7" fill="#333"/>
+  <circle cx="106" cy="126" r="2" fill="#fff"/>
+  <circle cx="146" cy="126" r="2" fill="#fff"/>
+  <!-- Nose & cat mouth -->
+  <path d="M128 138 m-6 0 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0" fill="#5B4337"/>
+  <path d="M128 144 Q120 150 112 148" stroke="#5B4337" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M128 144 Q136 150 144 148" stroke="#5B4337" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Whiskers -->
+  <path d="M92 140 L110 138" stroke="#5B4337" stroke-width="2" stroke-linecap="round"/>
+  <path d="M92 146 L110 146" stroke="#5B4337" stroke-width="2" stroke-linecap="round"/>
+  <path d="M164 140 L146 138" stroke="#5B4337" stroke-width="2" stroke-linecap="round"/>
+  <path d="M164 146 L146 146" stroke="#5B4337" stroke-width="2" stroke-linecap="round"/>
+  <!-- Cheeks -->
+  <circle cx="98" cy="148" r="8" fill="#FFB3C1" opacity="0.6"/>
+  <circle cx="158" cy="148" r="8" fill="#FFB3C1" opacity="0.6"/>
+</svg>
