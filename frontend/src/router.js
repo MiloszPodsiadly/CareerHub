@@ -9,6 +9,7 @@ const routes = {
     '/auth/login':    () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountLogin()),
     '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountRegister()),
     '/profile': () => import('./component/profile/loader.profile.js').then(m => m.mountProfile()),
+    '/favorite': () => import('./component/favorite/loader.favorite.js').then(m => m.mountFavorite()),
 };
 
 const FALLBACK = '/';

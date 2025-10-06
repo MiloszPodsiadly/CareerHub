@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="32" fill="#FFF5CC"/>
+  <!-- Head -->
+  <circle cx="128" cy="132" r="62" fill="#FFE3C2"/>
+  <!-- Cap -->
+  <path d="M64 116 Q128 60 192 116 L64 116 Z" fill="#B3D4FF"/>
+  <path d="M84 112 L196 112 Q188 94 168 86 Q148 78 128 78 Q108 78 88 86 Q68 94 60 112 Z" fill="#9CC8FF"/>
+  <!-- Glasses -->
+  <circle cx="110" cy="132" r="16" fill="none" stroke="#333" stroke-width="4"/>
+  <circle cx="146" cy="132" r="16" fill="none" stroke="#333" stroke-width="4"/>
+  <rect x="125" y="129" width="6" height="6" fill="#333"/>
+  <!-- Eyes -->
+  <circle cx="110" cy="132" r="6" fill="#333"/>
+  <circle cx="146" cy="132" r="6" fill="#333"/>
+  <!-- Mouth -->
+  <path d="M110 160 Q128 170 146 160" stroke="#5B4337" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Cheeks -->
+  <circle cx="92" cy="152" r="7" fill="#FF9EB0" opacity="0.6"/>
+  <circle cx="164" cy="152" r="7" fill="#FF9EB0" opacity="0.6"/>
+</svg>

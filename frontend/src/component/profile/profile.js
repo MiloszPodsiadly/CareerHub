@@ -9,7 +9,6 @@
         const form = document.getElementById('profileForm');
         if (!form) return;
 
-        // refs
         const avatarPreview = document.getElementById('avatarPreview');
         const avatarFile    = document.getElementById('avatarFile');
         const clearAvatar   = document.getElementById('clearAvatar');
@@ -29,14 +28,12 @@
         const presetGrid = document.getElementById('presetGrid');
         const resetBtn   = document.getElementById('resetBtn');
 
-        // --- stan
         const user = getUser() || {};
         const original = JSON.parse(JSON.stringify(user || {}));
-        let avatarBlob = null;      // nowy upload
-        let avatarPreset = null;    // wybrany preset
+        let avatarBlob = null;
+        let avatarPreset = null;
         let cvBlob = null;
 
-        // --- helpers
         const makeInitials = (txt) => (txt || '?').trim().slice(0,1).toUpperCase();
 
         function drawAvatar(url, fallbackLetter){
@@ -50,38 +47,34 @@
             }
         }
 
-        // --- preset avatars (podmień na realne ścieżki w /public/assets/avatars/)
-        const PRESETS = [
-            '/assets/avatars/p1.svg',
-            '/assets/avatars/p2.svg',
-            '/assets/avatars/p3.svg',
-            '/assets/avatars/p4.svg',
-            '/assets/avatars/p5.svg',
-            '/assets/avatars/p6.svg',
-        ];
+        const PRESETS = Array.from({ length: 5 }, (_, i) =>
+            `/assets/component/profile/avatar/avatar${i + 1}.svg`
+        );
+
         function renderPresets(activeUrl){
             presetGrid.innerHTML = '';
-            PRESETS.forEach((src) => {
+            PRESETS.forEach((src, idx) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.setAttribute('role','option');
-                btn.innerHTML = `<img src="${src}" alt="avatar" width="56" height="56" />`;
+                btn.setAttribute('aria-selected', String(activeUrl === src));
+                btn.title = `Avatar ${idx + 1}`;
+                btn.innerHTML = `<img src="${src}" alt="avatar ${idx + 1}" width="56" height="56" loading="lazy" />`;
                 btn.className = (activeUrl === src) ? 'active' : '';
                 btn.addEventListener('click', () => {
                     avatarPreset = src; avatarBlob = null;
-                    [...presetGrid.children].forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
+                    [...presetGrid.children].forEach(c => { c.classList.remove('active'); c.setAttribute('aria-selected','false'); });
+                    btn.classList.add('active'); btn.setAttribute('aria-selected','true');
                     drawAvatar(src);
                 });
                 presetGrid.appendChild(btn);
             });
         }
 
-        // --- DOB selects
         function fillYears(){
             const now = new Date().getFullYear();
-            const min = now - 70;        // np. 70 lat wstecz
-            const max = now - 14;        // min 14 lat
+            const min = now - 70;
+            const max = now - 14;
             dobYear.innerHTML = `<option value="" disabled selected>Rok</option>`;
             for (let y = max; y >= min; y--) {
                 const opt = document.createElement('option');
@@ -116,7 +109,6 @@
         dobYear.addEventListener('change', fillDays);
         dobMonth.addEventListener('change', fillDays);
 
-        // --- Inicjalizacja UI z usera
         const fullName = user?.name || user?.username || '';
         const email    = user?.email || '';
         const desc     = user?.desc || user?.bio || '';
@@ -125,12 +117,10 @@
         emailInput.value = email;
         descInput.value  = desc;
 
-        // avatar z usera/presetu
         const startAvatar = user?.avatarUrl || null;
         drawAvatar(startAvatar, fullName);
         renderPresets(startAvatar);
 
-        // DOB z usera (YYYY-MM-DD)
         fillYears(); fillMonths(); fillDays();
         if (user?.dob) {
             const [yy, mm, dd] = String(user.dob).split('-').map(Number);
@@ -140,7 +130,6 @@
             if (dd) dobDay.value = String(dd);
         }
 
-        // --- avatar upload
         avatarFile.addEventListener('change', () => {
             const f = avatarFile.files?.[0];
             if (!f) return;
@@ -155,7 +144,6 @@
             [...presetGrid.children].forEach(c => c.classList.remove('active'));
         });
 
-        // --- CV upload
         cvFile.addEventListener('change', () => {
             const f = cvFile.files?.[0];
             if (!f) { cvInfo.textContent = 'Brak pliku.'; cvBlob = null; return; }
@@ -167,7 +155,6 @@
             cvFile.value = ''; cvBlob = null; cvInfo.textContent = 'Brak pliku.';
         });
 
-        // reset do oryginału
         resetBtn.addEventListener('click', (e) => {
             e.preventDefault();
             nameInput.value  = original?.name || original?.username || '';
@@ -177,7 +164,6 @@
             drawAvatar(original?.avatarUrl || null, nameInput.value || emailInput.value);
             renderPresets(original?.avatarUrl || null);
 
-            // dob
             dobYear.value = ''; dobMonth.value = ''; fillDays(); dobDay.value = '';
             if (original?.dob) {
                 const [yy, mm, dd] = String(original.dob).split('-').map(Number);
@@ -187,11 +173,9 @@
                 if (dd) dobDay.value = String(dd);
             }
 
-            // CV
             cvFile.value=''; cvBlob=null; cvInfo.textContent='Brak pliku.';
         });
 
-        // --- submit
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -201,15 +185,14 @@
             const y = dobYear.value, m = dobMonth.value, d = dobDay.value;
             const dob = (y && m && d) ? `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` : '';
 
-            // budujemy multipart – backendowi wygodniej przy plikach
             const fd = new FormData();
             fd.append('name', fullName);
-            fd.append('email', emailInput.value); // readonly – i tak po backendzie
+            fd.append('email', emailInput.value);
             fd.append('desc', desc);
             if (dob) fd.append('dob', dob);
 
             if (avatarBlob) fd.append('avatar', avatarBlob);
-            else if (avatarPreset) fd.append('avatarPreset', avatarPreset); // backend: ściągnie preset po URL/ID
+            else if (avatarPreset) fd.append('avatarPreset', avatarPreset);
 
             if (cvBlob) fd.append('cv', cvBlob);
 
@@ -224,7 +207,6 @@
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const updated = await res.json();
 
-                // odśwież pamięć użytkownika (żeby header/awatar się zaktualizował)
                 setUser(updated);
 
                 // kosmetyka

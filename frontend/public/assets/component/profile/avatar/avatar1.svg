@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="32" fill="#F8E1F4"/>
+  <!-- Hoodie -->
+  <circle cx="128" cy="128" r="90" fill="#C9E7FF"/>
+  <circle cx="128" cy="120" r="74" fill="#DEF2FF"/>
+  <!-- Ears on hoodie -->
+  <circle cx="84" cy="68" r="16" fill="#C9E7FF"/>
+  <circle cx="172" cy="68" r="16" fill="#C9E7FF"/>
+  <!-- Face -->
+  <circle cx="128" cy="128" r="58" fill="#FFE8D6"/>
+  <!-- Eyes -->
+  <circle cx="106" cy="124" r="7" fill="#333"/>
+  <circle cx="150" cy="124" r="7" fill="#333"/>
+  <!-- Sparkles in eyes -->
+  <circle cx="104" cy="122" r="2" fill="#fff"/>
+  <circle cx="148" cy="122" r="2" fill="#fff"/>
+  <!-- Nose & mouth -->
+  <ellipse cx="128" cy="138" rx="8" ry="6" fill="#5B4337"/>
+  <path d="M120 146 Q128 152 136 146" stroke="#5B4337" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Cheeks -->
+  <circle cx="98" cy="140" r="8" fill="#FFB3C1" opacity="0.6"/>
+  <circle cx="158" cy="140" r="8" fill="#FFB3C1" opacity="0.6"/>
+  <!-- Strings -->
+  <line x1="104" y1="172" x2="104" y2="196" stroke="#9CCEF7" stroke-width="4" stroke-linecap="round"/>
+  <line x1="152" y1="172" x2="152" y2="200" stroke="#9CCEF7" stroke-width="4" stroke-linecap="round"/>
+</svg>
