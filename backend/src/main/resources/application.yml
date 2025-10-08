@@ -12,6 +12,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     properties:
@@ -23,6 +24,15 @@ spring:
     port: 5672
     username: app
     password: app
+    listener:
+      simple:
+        concurrency: 2
+        max-concurrency: 8
+        prefetch: 10
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+    template:
+      mandatory: true
 
 eureka:
   client:
@@ -48,6 +58,23 @@ auth:
     access-minutes: 60
     refresh-days: 7
 
+jobs:
+  ingest:
+    exchange: ingest.jobs
+    routing:
+      urls: job-url
+    queue:
+      urls: ingest.jobs.url
+    source-default: JUSTJOIN
+
+ingest:
+  scheduler:
+    enabled: true
+    initial-delay: PT3M
+    fixed-delay: PT1H
+    sources:
+      - source: JUSTJOIN
+        sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
 logging:
   level:
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE

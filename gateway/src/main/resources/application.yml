@@ -42,4 +42,8 @@ auth:
   public-paths:
     - /api/auth/**
     - /api/public/**
+    - /api/jobs
+    - /api/jobs/**
+    - /api/ingest/**
+    - /api/ingest
     - /actuator/**
