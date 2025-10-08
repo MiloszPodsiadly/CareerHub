@@ -46,4 +46,14 @@ public class JwtFilter extends OncePerRequestFilter {
                     .map(Cookie::getValue).findFirst().orElse(null);
         return null;
     }
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest req) {
+        String uri = req.getRequestURI();
+        return uri.startsWith("/api/auth/")
+                || uri.startsWith("/api/public/")
+                || uri.equals("/api/jobs")   || uri.startsWith("/api/jobs/")
+                || uri.equals("/api/ingest") || uri.startsWith("/api/ingest/");
+    }
+
+
 }
