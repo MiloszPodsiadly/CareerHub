@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({GwJwtProperties.class, PublicPathsProperties.class})
 public class GatewayConfig {
 
-
+/*
     @Bean
     public FilterRegistrationBean<JwtAuthServletFilter> jwtFilterRegistration(JwtAuthServletFilter filter) {
         FilterRegistrationBean<JwtAuthServletFilter> reg = new FilterRegistrationBean<>();
@@ -22,4 +22,6 @@ public class GatewayConfig {
         reg.setOrder(-100);
         return reg;
     }
+
+ */
 }
