@@ -31,9 +31,11 @@ public class RabbitConfig {
     @Bean
     SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             org.springframework.amqp.rabbit.connection.ConnectionFactory cf,
-            MessageConverter rabbitJsonConverter) {
+            MessageConverter rabbitJsonConverter,
+            org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer configurer
+    ) {
         var f = new SimpleRabbitListenerContainerFactory();
-        f.setConnectionFactory(cf);
+        configurer.configure(f, cf);
         f.setMessageConverter(rabbitJsonConverter);
         f.setDefaultRequeueRejected(false);
         f.setAutoStartup(false);

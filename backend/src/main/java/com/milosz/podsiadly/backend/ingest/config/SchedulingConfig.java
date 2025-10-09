@@ -14,7 +14,7 @@ public class SchedulingConfig {
     @Bean
     TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler t = new ThreadPoolTaskScheduler();
-        t.setPoolSize(2);
+        t.setPoolSize(4);
         t.setThreadNamePrefix("ingest-scheduler-");
         t.initialize();
         return t;
