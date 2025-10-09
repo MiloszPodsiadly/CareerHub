@@ -231,3 +231,78 @@
     .jobs .toolbar__row{ grid-template-columns:1fr 1fr 1fr; gap:8px }
     .jobs .filters__grid{ grid-template-columns:1fr }
 }
+/* === Paginacja (DODAĆ na końcu pliku) === */
+.jobs .list + .pager{
+    margin-top: 12px;
+}
+
+.jobs .pager{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    flex-wrap: wrap;
+}
+
+.jobs .pager__btn{
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.jobs .pager__btn:hover{
+    border-color: var(--acc2);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+.jobs .pager__btn:active{
+    transform: translateY(1px);
+}
+.jobs .pager__btn[aria-current="page"]{
+    border-color: var(--acc1);
+    background: linear-gradient(135deg, #eef3ff, #f4f8ff);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+.jobs .pager__btn:disabled{
+    opacity: .5;
+    cursor: default;
+    box-shadow: none;
+}
+
+.jobs .pager__dots{
+    min-width: 20px;
+    text-align: center;
+    color: var(--muted);
+    user-select: none;
+}
+
+/* Jeśli przypadkiem sentinel został w HTML, ukryjemy go przy stronicowaniu */
+.jobs .sentinel{
+    display: none !important;
+}
+
+/* Na węższych ekranach trochę mniejsze przyciski */
+@media (max-width: 640px){
+    .jobs .pager{
+        gap: 4px;
+        padding: 8px;
+    }
+    .jobs .pager__btn{
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        border-radius: 8px;
+    }
+}
+

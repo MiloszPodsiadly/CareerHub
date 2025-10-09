@@ -86,7 +86,9 @@ The platform emphasizes:
 docker-compose up --build
 ```
 
-Application services run at:  
+Application services run at:
+Please give ten minutes app to for real action
+
 👉 [http://localhost:3000](http://localhost:3000) – React frontend  
 👉 [http://localhost:8080](http://localhost:8080) – Gateway  
 👉 [http://localhost:15672](http://localhost:15672) – RabbitMQ Management Dashboard

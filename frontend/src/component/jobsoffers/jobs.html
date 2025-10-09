@@ -13,16 +13,24 @@
     <div class="toolbar__row">
         <input id="q" class="inp" placeholder="Szukaj: stanowisko, firma, tech…" autocomplete="off" />
         <input id="city" class="inp" placeholder="Miasto (np. Warszawa)" autocomplete="off" />
+
         <select id="seniority" class="inp" aria-label="Poziom seniority">
             <option value="">Poziom</option>
-            <option>intern</option><option>junior</option><option>mid</option>
-            <option>senior</option><option>lead</option>
+            <option value="INTERNSHIP">intern</option>
+            <option value="JUNIOR">junior</option>
+            <option value="MID">mid</option>
+            <option value="SENIOR">senior</option>
+            <option value="LEAD">lead</option>
         </select>
+
         <select id="contract" class="inp" aria-label="Typ kontraktu">
             <option value="">Kontrakt</option>
-            <option value="b2b">B2B</option><option value="perm">UoP</option>
-            <option value="mandate">Zlecenie</option><option value="internship">Staż</option>
+            <option value="UOP">UoP</option>
+            <option value="B2B">B2B</option>
+            <option value="UZ">Umowa zlecenie</option>
+            <option value="UOD">Umowa o dzieło</option>
         </select>
+
         <input id="minSalary" type="number" min="0" inputmode="numeric" class="inp" placeholder="Min. PLN/mies." />
         <select id="sort" class="inp" aria-label="Sortowanie">
             <option value="relevance">Sortuj: Trafność</option>
@@ -210,9 +218,9 @@
 <!-- KROK 3: Wyniki -->
 <section class="results" aria-live="polite">
     <div id="list" class="list" role="list"></div>
-    <div id="sentinel" class="sentinel" aria-hidden="true"></div>
     <div id="loading" class="loading hidden">Ładowanie…</div>
     <div id="empty" class="empty hidden">Brak wyników dla tych filtrów.</div>
+    <nav id="pager" class="pager" aria-label="Paginacja"></nav>
 </section>
 
 <!-- KROK 4: Modal -->

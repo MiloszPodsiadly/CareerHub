@@ -30,6 +30,7 @@ public class JobUrlConsumer {
     @RabbitListener(id = "jobUrlConsumer",
             queues = "#{ingestMessagingProperties.queue.urls}",
             containerFactory = "rabbitListenerContainerFactory",
+            concurrency = "4-8",
             autoStartup = "false")
     public void onMessage(UrlMessage msg) throws Exception {
         final String url = msg.url();
