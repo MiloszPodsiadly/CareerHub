@@ -1,29 +1,59 @@
 export function initJobs(opts = {}) {
-    const API_URL = opts.apiUrl ?? 'java/api/jobs';
+    // realny backend; można nadpisać przez initJobs({ apiUrl: '...' })
+    const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
 
+    // Bezpieczne mapowanie -> enum backendu
+    const LEVEL_MAP = {
+        '': '',
+        internship: 'INTERNSHIP',
+        intern: 'INTERNSHIP',
+        junior: 'JUNIOR',
+        mid: 'MID',
+        senior: 'SENIOR',
+        lead: 'LEAD',
+        INTERNSHIP: 'INTERNSHIP',
+        JUNIOR: 'JUNIOR',
+        MID: 'MID',
+        SENIOR: 'SENIOR',
+        LEAD: 'LEAD'
+    };
+
+    const mapLevel = v => LEVEL_MAP[String(v ?? '').trim()] ?? '';
+
+    const CONTRACT_MAP = {
+        '': '',
+        UOP:'UOP', B2B:'B2B', UZ:'UZ', UOD:'UOD',
+        // tolerancja na stare wartości z frontu:
+        uop:'UOP', b2b:'B2B', uz:'UZ', uod:'UOD',
+        perm:'UOP', mandate:'UZ'
+    };
+
+    const mapContract = v => CONTRACT_MAP[String(v ?? '').trim()] ?? '';
+
     const state = {
-        page: 1,
+        page: 1,                 // 1-based (zgodnie z kontrolerem)
+        size: PAGE_SIZE,
+        totalElements: 0,
+        totalPages: 0,
         items: [],
-        total: 0,
         loading: false,
-        end: false,
         filters: {
-            q: '', city: '', seniority: '', contract: '',
-            minSalary: '', withSalary: false, remote: false,
-            sort: 'relevance', group: 'city',
-            specs: [],
-            techs: []
+            q:'', city:'', seniority:'', contract:'',
+            minSalary:'', withSalary:false, remote:false,
+            sort:'relevance', group:'city',
+            specs:[], techs:[]
         }
     };
 
+    // ---- DOM
     const $list      = byId('list');
     const $count     = byId('count');
     const $loading   = byId('loading');
     const $empty     = byId('empty');
-    const $sentinel  = byId('sentinel');
     const $modal     = byId('modal');
     const $modalBody = byId('modalBody');
+    const $pager     = byId('pager');
 
     const $q         = byId('q');
     const $city      = byId('city');
@@ -39,34 +69,124 @@ export function initJobs(opts = {}) {
     const specChecks = Array.from(document.querySelectorAll('input[name="spec[]"].chipcheck'));
     const techChecks = Array.from(document.querySelectorAll('input[name="tech[]"].chipcheck'));
 
+    // ---- API
     async function fetchJobs(page) {
         const p = new URLSearchParams({
-            page, pageSize: PAGE_SIZE,
+            page,
+            pageSize: state.size,
             q: state.filters.q,
             city: state.filters.city,
-            seniority: state.filters.seniority,
-            contract: state.filters.contract,
+            // do backendu wysyłamy 'level' w formacie ENUM
+            level: mapLevel(state.filters.seniority),
+            contract: mapContract(state.filters.contract),
             salaryMin: state.filters.minSalary || '',
             sort: state.filters.sort
         });
-        if (state.filters.withSalary) p.append('withSalary', '1');
-        if (state.filters.remote)     p.append('remote', 'yes');
-
+        if (state.filters.withSalary) p.append('withSalary', 'true');
+        if (state.filters.remote)     p.append('remote', 'true');
         state.filters.specs.forEach(v => p.append('spec', v));
-        state.filters.techs .forEach(v => p.append('tech', v));
+        state.filters.techs.forEach(v => p.append('tech', v));
 
         try {
-            const res = await fetch(`${API_URL}?${p.toString()}`, { headers: { Accept: 'application/json' } });
+            const res = await fetch(`${API_URL}?${p.toString()}`, { headers:{ Accept:'application/json' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return await res.json();
+            const json = await res.json();
+
+            // Akceptujemy Page oraz fallbacki
+            let rawItems = [];
+            let totalElements = 0, totalPages = 0;
+
+            if (Array.isArray(json?.content)) {
+                rawItems = json.content;
+                totalElements = json.totalElements ?? rawItems.length;
+                totalPages = json.totalPages ?? Math.ceil(totalElements / state.size);
+            } else if (Array.isArray(json?.items)) {
+                rawItems = json.items;
+                totalElements = json.total ?? rawItems.length;
+                totalPages = Math.ceil(totalElements / state.size);
+            } else if (Array.isArray(json)) {
+                rawItems = json;
+                totalElements = json.length;
+                totalPages = Math.ceil(totalElements / state.size);
+            }
+
+            return {
+                items: rawItems.map(toUiListItem),
+                totalElements,
+                totalPages
+            };
         } catch (e) {
-            console.warn('API niedostępne – używam danych DEMO.', e);
-            const start = (page - 1) * PAGE_SIZE;
-            const slice = DEMO_ITEMS.slice(start, start + PAGE_SIZE);
-            return { items: slice, pagination: { hasNext: start + PAGE_SIZE < DEMO_ITEMS.length } };
+            console.warn('API niedostępne – fallback DEMO', e);
+            // prosta paginacja po DEMO
+            const start = (page - 1) * state.size;
+            const slice = DEMO_ITEMS.slice(start, start + state.size);
+            return {
+                items: slice.map(toUiListItem),
+                totalElements: DEMO_ITEMS.length,
+                totalPages: Math.ceil(DEMO_ITEMS.length / state.size)
+            };
         }
     }
 
+    async function fetchJobDetail(id) {
+        try {
+            const res = await fetch(`${API_URL}/${id}`, { headers:{ Accept:'application/json' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return toUiDetail(await res.json());
+        } catch (e) {
+            console.warn('Detail API fail – fallback do list item/DEMO', e);
+            const found = state.items.find(x => x.id === id);
+            return found ? toUiDetail(found) : null;
+        }
+    }
+
+    // ---- MAPOWANIE
+    function toSalary(x) {
+        const min = x?.salaryMin ?? x?.salary?.min ?? null;
+        const max = x?.salaryMax ?? x?.salary?.max ?? null;
+        const currency = x?.currency ?? x?.salary?.currency ?? 'PLN';
+        const period = x?.salary?.period ?? 'MONTH';
+        if (min == null && max == null) return null;
+        return { min, max, currency, period };
+    }
+
+    function toUiListItem(x) {
+        return {
+            id: x.id ?? x._id ?? x.externalId ?? null,
+            url: x.url ?? x.applyUrl ?? null,
+            title: x.title ?? '',
+            company: x.companyName ?? x.company ?? null,
+            city: x.cityName ?? x.city ?? null,
+            country: x.country ?? null,
+            datePosted: x.publishedAt ?? x.datePosted ?? null,
+            keywords: Array.isArray(x.techTags) ? x.techTags
+                : Array.isArray(x.keywords) ? x.keywords
+                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean)
+                        : [],
+            salary: toSalary(x),
+            remote: !!x.remote,
+            description: x.description ?? null
+        };
+    }
+
+    function toUiDetail(x) {
+        return {
+            id: x.id ?? null,
+            url: x.url ?? null,
+            title: x.title ?? '',
+            description: x.description ?? '',
+            company: x.companyName ?? x.company ?? null,
+            city: x.cityName ?? x.city ?? null,
+            datePosted: x.publishedAt ?? x.datePosted ?? null,
+            keywords: Array.isArray(x.techTags) ? x.techTags
+                : Array.isArray(x.keywords) ? x.keywords
+                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean)
+                        : [],
+            salary: toSalary(x)
+        };
+    }
+
+    // ---- RENDERING
     function groupKey(job) {
         return state.filters.group === 'city'
             ? (job.city || '— inne —')
@@ -82,7 +202,7 @@ export function initJobs(opts = {}) {
         return `${min}${max ? ' – ' + max : ''} ${cur}/${per}`;
     }
 
-    function escapeHtml(s){
+    function escapeHtml(s) {
         return String(s ?? '').replace(/[&<>"']/g, m => (
             {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
         ));
@@ -110,7 +230,10 @@ export function initJobs(opts = {}) {
         ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Aplikuj ↗</a>` : ''}
       </div>
     `;
-        el.querySelector('[data-open]')?.addEventListener('click', () => openModal(job));
+        el.querySelector('[data-open]')?.addEventListener('click', async () => {
+            const detail = await fetchJobDetail(job.id);
+            openModal(detail ?? job);
+        });
         return el;
     }
 
@@ -119,10 +242,12 @@ export function initJobs(opts = {}) {
         if (!state.items.length) {
             $empty.classList.remove('hidden');
             $count.textContent = '0 ofert';
+            $pager.innerHTML = '';
             return;
         }
         $empty.classList.add('hidden');
 
+        // grupowanie
         const groups = new Map();
         for (const job of state.items) {
             const key = groupKey(job);
@@ -137,30 +262,74 @@ export function initJobs(opts = {}) {
             for (const job of arr) $list.appendChild(renderCard(job));
         }
 
-        $count.textContent = `${state.items.length.toLocaleString('pl-PL')} ofert`;
+        const total = state.totalElements || state.items.length;
+        $count.textContent = `${total.toLocaleString('pl-PL')} ofert • strona ${state.page}/${Math.max(state.totalPages, 1)}`;
+
+        renderPager();
     }
 
-    const io = new IntersectionObserver(async (entries) => {
-        for (const e of entries) {
-            if (e.isIntersecting && !state.loading && !state.end) await loadNext();
+    function renderPager() {
+        if (!$pager) return;
+        const total = state.totalPages;
+        const cur = state.page;
+
+        if (!total || total <= 1) { $pager.innerHTML = ''; return; }
+
+        const btn = (label, page, disabled = false, current = false) => {
+            const a = document.createElement('button');
+            a.type = 'button';
+            a.className = 'pager__btn';
+            a.textContent = label;
+            if (disabled) a.disabled = true;
+            if (current) a.setAttribute('aria-current', 'page');
+            a.addEventListener('click', () => gotoPage(page));
+            return a;
+        };
+
+        $pager.innerHTML = '';
+
+        // Prev
+        $pager.appendChild(btn('«', Math.max(1, cur - 1), cur === 1));
+
+        // okno numerków (5 stron wokół aktualnej)
+        let start = Math.max(1, cur - 2);
+        let end = Math.min(total, start + 4);
+        start = Math.max(1, end - 4);
+
+        if (start > 1) {
+            $pager.appendChild(btn('1', 1, false, cur === 1));
+            if (start > 2) $pager.appendChild(ellipsis());
         }
-    });
-    io.observe($sentinel);
+        for (let p = start; p <= end; p++) {
+            $pager.appendChild(btn(String(p), p, false, p === cur));
+        }
+        if (end < total) {
+            if (end < total - 1) $pager.appendChild(ellipsis());
+            $pager.appendChild(btn(String(total), total, false, cur === total));
+        }
 
-    async function loadNext(reset = false) {
+        // Next
+        $pager.appendChild(btn('»', Math.min(total, cur + 1), cur === total));
+
+        function ellipsis() {
+            const s = document.createElement('span');
+            s.className = 'pager__dots';
+            s.textContent = '…';
+            return s;
+        }
+    }
+
+    // ---- Paginacja / ładowanie strony
+    async function gotoPage(page) {
+        if (state.loading) return;
+        state.loading = true;
+        $loading.classList.remove('hidden');
         try {
-            state.loading = true;
-            $loading.classList.remove('hidden');
-            if (reset) { state.page = 1; state.items = []; state.end = false; }
-
-            const data = await fetchJobs(state.page);
-            const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-            state.items.push(...items);
-            state.page += 1;
-
-            const hasNext = data?.pagination?.hasNext ?? (items.length >= PAGE_SIZE);
-            if (!hasNext || items.length === 0) state.end = true;
-
+            const { items, totalElements, totalPages } = await fetchJobs(page);
+            state.page = page;
+            state.items = items;
+            state.totalElements = totalElements;
+            state.totalPages = totalPages;
             renderList();
         } catch (err) {
             console.error(err);
@@ -170,7 +339,9 @@ export function initJobs(opts = {}) {
         }
     }
 
+    // ---- Modal
     function openModal(job) {
+        if (!job) return;
         $modalBody.innerHTML = `
       <header style="padding:0 6px 8px">
         <h3>${escapeHtml(job.title || '')}</h3>
@@ -183,7 +354,7 @@ export function initJobs(opts = {}) {
       <section style="display:grid; grid-template-columns:1.3fr .7fr; gap:16px">
         <article>
           <h4>Opis</h4>
-          <div class="muted">${escapeHtml((job.description || '').slice(0, 4000)).replace(/\n/g, '<br>')}</div>
+          <div class="muted">${escapeHtml((job.description || '').slice(0, 8000)).replace(/\n/g, '<br>')}</div>
         </article>
         <aside>
           <h4>Tagi</h4>
@@ -198,39 +369,39 @@ export function initJobs(opts = {}) {
     }
     document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
 
+    // ---- Handlery UI
     let t;
     const deb = (fn) => { clearTimeout(t); t = setTimeout(fn, 250); };
 
-    $q.addEventListener('input',      e => { state.filters.q = e.target.value.trim(); deb(()=>loadNext(true)); });
-    $city.addEventListener('input',   e => { state.filters.city = e.target.value.trim(); deb(()=>loadNext(true)); });
-    $seniority.addEventListener('change', e => { state.filters.seniority = e.target.value; loadNext(true); });
-    $contract.addEventListener('change',  e => { state.filters.contract  = e.target.value; loadNext(true); });
-    $minSalary.addEventListener('input',  e => { state.filters.minSalary = e.target.value; deb(()=>loadNext(true)); });
-    $sort.addEventListener('change',      e => { state.filters.sort      = e.target.value; loadNext(true); });
+    $q.addEventListener('input',      e => { state.filters.q = e.target.value.trim(); deb(()=>gotoPage(1)); });
+    $city.addEventListener('input',   e => { state.filters.city = e.target.value.trim(); deb(()=>gotoPage(1)); });
+    $seniority.addEventListener('change', e => { state.filters.seniority = e.target.value; gotoPage(1); });
+    $contract.addEventListener('change',  e => { state.filters.contract  = e.target.value; gotoPage(1); });
+    $minSalary.addEventListener('input',  e => { state.filters.minSalary = e.target.value; deb(()=>gotoPage(1)); });
+    $sort.addEventListener('change',      e => { state.filters.sort      = e.target.value; gotoPage(1); });
 
     $withSalary.addEventListener('click', (e) => {
         togglePressed(e.currentTarget);
         state.filters.withSalary = e.currentTarget.getAttribute('aria-pressed') === 'true';
-        loadNext(true);
+        gotoPage(1);
     });
     $remote.addEventListener('click', (e) => {
         togglePressed(e.currentTarget);
         state.filters.remote = e.currentTarget.getAttribute('aria-pressed') === 'true';
-        loadNext(true);
+        gotoPage(1);
     });
     $group.addEventListener('click', (e) => {
         state.filters.group = state.filters.group === 'city' ? 'company' : 'city';
         e.currentTarget.textContent = 'Grupuj: ' + (state.filters.group === 'city' ? 'miasto' : 'firma');
-        loadNext(true);
+        renderList(); // samo przegrupowanie
     });
 
     specChecks.forEach(chk => chk.addEventListener('change', onChipChange));
     techChecks.forEach(chk => chk.addEventListener('change', onChipChange));
-
     function onChipChange() {
         state.filters.specs = specChecks.filter(x => x.checked).map(x => x.value);
         state.filters.techs = techChecks.filter(x => x.checked).map(x => x.value);
-        loadNext(true);
+        gotoPage(1);
     }
 
     $reset.addEventListener('click', () => {
@@ -245,11 +416,13 @@ export function initJobs(opts = {}) {
         $group.textContent = 'Grupuj: miasto';
         specChecks.forEach(x => x.checked = false);
         techChecks.forEach(x => x.checked = false);
-        loadNext(true);
+        gotoPage(1);
     });
 
-    loadNext(true);
+    // start
+    gotoPage(1);
 
+    // ---- helpers
     function byId(id){ return document.getElementById(id); }
     function togglePressed(btn){
         const v = btn.getAttribute('aria-pressed') === 'true';
@@ -257,6 +430,7 @@ export function initJobs(opts = {}) {
     }
 }
 
+// DEMO fallback
 const DEMO_ITEMS = [
     { id:'1', url:'https://justjoin.it/', title:'Senior Java Developer', company:'Acme', city:'Warszawa', country:'PL',
         description:'Mikroserwisy, Spring Boot, Kafka, AWS.', salary:{currency:'PLN', min:22000, max:32000, period:'MONTH'},
