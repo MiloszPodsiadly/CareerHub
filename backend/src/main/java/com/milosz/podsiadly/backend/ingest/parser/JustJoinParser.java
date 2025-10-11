@@ -528,6 +528,21 @@ public class JustJoinParser {
         return t.matches(".*[\\p{L}\\p{Nd}#.+].*");
     }
 
+    public boolean isExpiredPage(String url, String html) {
+        org.jsoup.nodes.Document doc = Jsoup.parse(html, url);
+
+        if (doc.selectFirst("*:matchesOwn(^\\s*Offer expired\\s*$)") != null) return true;
+        if (doc.selectFirst("*:matchesOwn(^\\s*Oferta wygasła\\s*$)") != null) return true;
+
+        if (doc.selectFirst("[data-test='offer-expired-banner'],[data-testid='offer-expired-banner']") != null)
+            return true;
+
+        String all = doc.text().toLowerCase(java.util.Locale.ROOT);
+        if (all.contains("offer expired") || all.contains("oferta wygasła")) return true;
+
+        return false;
+    }
+
     // ===== parsing result =====
     public record ParsedOffer(
             String title,

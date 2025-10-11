@@ -78,5 +78,4 @@ ingest:
         sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
 logging:
   level:
-    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
     org.springframework.web.servlet.DispatcherServlet: DEBUG

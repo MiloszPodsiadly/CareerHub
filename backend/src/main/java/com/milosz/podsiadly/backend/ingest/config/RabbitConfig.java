@@ -1,45 +1,62 @@
 package com.milosz.podsiadly.backend.ingest.config;
 
-import org.springframework.amqp.core.*;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.util.ErrorHandler;
 
 @Configuration
 @EnableRabbit
 public class RabbitConfig {
 
-    @Bean DirectExchange jobsExchange(IngestMessagingProperties p) {
+    @Bean
+    DirectExchange jobsExchange(IngestMessagingProperties p) {
         return new DirectExchange(p.getExchange(), true, false);
     }
 
-    @Bean Queue urlsQueue(IngestMessagingProperties p) {
+    @Bean
+    Queue urlsQueue(IngestMessagingProperties p) {
         return QueueBuilder.durable(p.getQueue().getUrls()).build();
     }
 
-    @Bean Binding urlsBinding(Queue urlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+    @Bean
+    Binding urlsBinding(Queue urlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
         return BindingBuilder.bind(urlsQueue).to(jobsExchange).with(p.getRouting().getUrls());
     }
+
     @Bean
     MessageConverter rabbitJsonConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
     @Bean
+    public ErrorHandler amqpErrorHandler() {
+        return new SilentAmqpErrorHandler();
+    }
+
+    @Bean
     SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            org.springframework.amqp.rabbit.connection.ConnectionFactory cf,
+            ConnectionFactory connectionFactory,
             MessageConverter rabbitJsonConverter,
-            org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer configurer
+            SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            ErrorHandler amqpErrorHandler
     ) {
         var f = new SimpleRabbitListenerContainerFactory();
-        configurer.configure(f, cf);
+        configurer.configure(f, connectionFactory);
         f.setMessageConverter(rabbitJsonConverter);
         f.setDefaultRequeueRejected(false);
         f.setAutoStartup(false);
+        f.setErrorHandler(amqpErrorHandler);
         return f;
     }
-
 }
