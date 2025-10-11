@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/ingest/service/OfferUpsertService.java
 package com.milosz.podsiadly.backend.ingest.service;
 
 import com.milosz.podsiadly.backend.ingest.parser.JustJoinParser;
@@ -13,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,16 +25,18 @@ public class OfferUpsertService {
     @Transactional
     public void upsert(JustJoinParser.ParsedOffer p) {
         Company company = null;
-        if (p.companyName() != null && !p.companyName().isBlank()) {
-            company = companies.findByNameIgnoreCase(p.companyName())
-                    .orElseGet(() -> companies.save(Company.builder().name(p.companyName()).build()));
+        if (notBlank(p.companyName())) {
+            String name = normalizeName(p.companyName());
+            companies.insertIgnore(name);
+            company = companies.findFirstByNameIgnoreCaseOrderByIdAsc(name).orElse(null);
         }
 
         City city = null;
-        if (p.cityName() != null && !p.cityName().isBlank()) {
-            city = cities.findByNameIgnoreCase(p.cityName())
+        if (notBlank(p.cityName())) {
+            String name = normalizeName(p.cityName());
+            city = cities.findFirstByNameIgnoreCaseOrderByIdAsc(name)
                     .orElseGet(() -> cities.save(City.builder()
-                            .name(p.cityName())
+                            .name(name)
                             .countryCode("PL")
                             .build()));
         }
@@ -62,8 +60,8 @@ public class OfferUpsertService {
         e.setSalaryMin(p.min());
         e.setSalaryMax(p.max());
         e.setCurrency(p.currency());
-        e.setTechTags(p.techStack() != null ?
-                p.techStack().stream().map(JustJoinParser.ParsedSkill::name).distinct().limit(24).toList()
+        e.setTechTags(p.techStack() != null
+                ? p.techStack().stream().map(JustJoinParser.ParsedSkill::name).distinct().limit(24).toList()
                 : (p.techTags() != null ? p.techTags() : Collections.emptyList()));
         e.setPublishedAt(p.publishedAt() != null ? p.publishedAt() : Instant.now());
         e.setLastSeenAt(Instant.now());
@@ -85,14 +83,20 @@ public class OfferUpsertService {
         offers.save(e);
     }
 
+    private static boolean notBlank(String s) { return s != null && !s.isBlank(); }
+    private static String normalizeName(String s) {
+        if (s == null) return null;
+        return s.trim().replaceAll("\\s{2,}", " ");
+    }
+
     private SkillSource toSourceEnum(String src) {
         if (src == null) return SkillSource.STACK;
         return switch (src.toUpperCase(Locale.ROOT)) {
-            case "REQUIRED"     -> SkillSource.REQUIRED;
+            case "REQUIRED" -> SkillSource.REQUIRED;
             case "NICE_TO_HAVE" -> SkillSource.NICE_TO_HAVE;
-            case "LD"           -> SkillSource.LD;
-            case "STACK"        -> SkillSource.STACK;
-            default             -> SkillSource.STACK;
+            case "LD" -> SkillSource.LD;
+            case "STACK" -> SkillSource.STACK;
+            default -> SkillSource.STACK;
         };
     }
 }
