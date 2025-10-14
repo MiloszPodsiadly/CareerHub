@@ -68,6 +68,13 @@ jobs:
       urls: ingest.jobs.url
     source-default: JUSTJOIN
 
+events:
+  meetup:
+    groups:
+      - warsawjs
+      - pykonik
+      - wrocnet
+
 ingest:
   scheduler:
     enabled: true

@@ -53,6 +53,9 @@ dependencies {
     testImplementation 'org.testcontainers:rabbitmq'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.jsoup:jsoup:1.17.2'
+    implementation 'net.sf.biweekly:biweekly:0.6.8'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
 }
 
 dependencyManagement {
