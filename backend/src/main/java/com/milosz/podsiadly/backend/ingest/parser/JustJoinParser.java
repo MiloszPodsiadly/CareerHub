@@ -20,13 +20,11 @@ import java.util.regex.Pattern;
 @Component
 public class JustJoinParser {
 
-    // ===== Salary (DOM fallback) =====
     private static final Pattern SAL_RANGE =
             Pattern.compile("(\\d[\\d\\s]*)\\s*-\\s*(\\d[\\d\\s]*)\\s*(PLN|EUR|USD)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern CURR_FALLBACK =
             Pattern.compile("\\b(PLN|EUR|USD)\\b", Pattern.CASE_INSENSITIVE);
 
-    // Breadcrumb tokens
     private static final Set<String> TECH_TOKENS = Set.of(
             "frontend","backend","fullstack","mobile","devops","qa","q a","test","testing","data","bi","data/bi",
             "security","ai","ml","ai/ml","embedded","others","other",
@@ -35,12 +33,13 @@ public class JustJoinParser {
             "architecture","admin","analytics","erp"
     );
 
-    // Tag section
+    // ====== Tag sections (DOM) ======
     private static final Set<String> TAG_SECTION_TITLES = Set.of(
             "Must have","Nice to have","Tech stack",
             "Wymagane","Mile widziane","Stack technologiczny","Technologie"
     );
 
+    // ====== Tag blacklist ======
     private static final Set<String> TAG_BLACKLIST = Set.of(
             "b2b","uop","uod","uz","full remote","hybrid","onsite",
             "per month","month","net","gross","brutto","netto",
@@ -50,13 +49,21 @@ public class JustJoinParser {
             "english","polish","german","deutsch","niem","french","francuski","italian","hiszpański","spanish"
     );
 
+    private static final int RX = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
+    private static final String LB = "(?<![\\p{L}\\p{N}])";
+    private static final String RB = "(?![\\p{L}\\p{N}])";
+
+    private static final Pattern RX_LEAD   = Pattern.compile(LB + "(?:lead|tech\\s*lead|team\\s*lead|principal|staff|head)" + RB, RX);
+    private static final Pattern RX_SENIOR = Pattern.compile(LB + "(?:senior|starszy|sr\\.?|sen\\.?)" + RB, RX);
+    private static final Pattern RX_MID    = Pattern.compile(LB + "(?:regular|mid(?!dle)|middle|średni\\w*)" + RB, RX);
+    private static final Pattern RX_JUNIOR = Pattern.compile(LB + "(?:junior|młodszy|mlodszy|jr\\.?)" + RB, RX);
+    private static final Pattern RX_INTERN = Pattern.compile(LB + "(?:intern(?:ship)?|trainee|apprentice|praktyk\\w*|staż\\w*|staz\\w*)" + RB, RX);
+
     private final ObjectMapper om = new ObjectMapper();
 
-    // ===== public =====
     public ParsedOffer parse(String url, String html) {
         Document doc = Jsoup.parse(html, url);
 
-        // --- JSON-LD ---
         JsonNode ld = firstJobPostingJsonLd(doc);
         String title       = text(ld, "title");
         String description = text(ld, "description");
@@ -71,17 +78,18 @@ public class JustJoinParser {
         Boolean remote     = parseRemoteFromLd(ld);
         Instant postedAt   = parseIsoInstant(text(ld, "datePosted"));
 
-        // --- fallback: title/company/city ---
         if (blank(title)) {
             Element h1 = doc.selectFirst("h1, h1[class]");
             if (h1 != null) title = h1.text();
         }
         if (blank(title)) title = doc.select("meta[property=og:title]").attr("content");
         if (blank(title)) title = doc.title();
+
         if (blank(company)) {
             Element compA = doc.selectFirst("a[href*=\"companies=\"]");
             if (compA != null) company = nz(compA.text(), null);
         }
+
         if (blank(city)) {
             Elements crumbs = doc.select("nav a[href^='/job-offers/']");
             for (Element a : crumbs) {
@@ -96,14 +104,12 @@ public class JustJoinParser {
             }
         }
 
-        // --- fallback: remote ---
         if (remote == null) {
             String all = doc.text().toLowerCase(Locale.ROOT);
             if (all.contains("remote")) remote = true;
             else if (all.contains("office")) remote = false;
         }
 
-        // --- salary: Next.js payload (employmentTypes) ---
         if (min == null && max == null) {
             Salary sNext = salaryFromNextData(html);
             if (sNext != null) {
@@ -113,7 +119,6 @@ public class JustJoinParser {
             }
         }
 
-        // --- salary: visible HTML near label ---
         SalaryTriplet sSalary = findSalaryNearLabel(doc, "Salary");
         SalaryTriplet sB2B    = findSalaryNearLabel(doc, "B2B");
         SalaryTriplet sPL1    = findSalaryNearLabel(doc, "Wynagrodzenie");
@@ -127,10 +132,13 @@ public class JustJoinParser {
         if (min == null && max != null) min = max;
         if (max == null && min != null) max = min;
 
-        // --- level(Junior/Mid/Senior/Lead/Intern) ---
-        JobLevel level = levelFromText((title == null ? "" : title) + " " + (description == null ? "" : description));
+        JobLevel level = firstNonNull(
+                levelFromNext(html),
+                levelFromChips(doc),
+                levelFromTextStrict((nz(title, "") + " " + nz(description, "")))
+        );
+        if (level == null) level = JobLevel.MID;
 
-        // --- TECH: accurate stack + light tags ---
         List<ParsedSkill> techStack = extractTechStack(ld, doc, html);
         List<String> techTags = techStack.stream().map(ParsedSkill::name).distinct().limit(24).toList();
 
@@ -149,7 +157,6 @@ public class JustJoinParser {
         );
     }
 
-    // ===== JSON-LD =====
     private JsonNode firstJobPostingJsonLd(Document doc) {
         for (Element s : doc.select("script[type=application/ld+json]")) {
             try {
@@ -173,7 +180,6 @@ public class JustJoinParser {
             if ("JobPosting".equalsIgnoreCase(text(g, "@type"))) return g;
         return n;
     }
-
     private static String firstCityFromLd(JsonNode ld) {
         JsonNode jl = ld.get("jobLocation");
         if (jl == null || jl.isNull()) return null;
@@ -231,7 +237,6 @@ public class JustJoinParser {
         return null;
     }
 
-    // ===== Salary from Next.js payloadu =====
     private Salary salaryFromNextData(String html) {
         String arr = extractNextFieldArray(html, "\"employmentTypes\"");
         if (arr == null) return null;
@@ -239,7 +244,6 @@ public class JustJoinParser {
             ArrayNode node = (ArrayNode) om.readTree(arr);
             Integer min = null, max = null; String curr = null; String unit = null;
 
-            // preferencja: b2b -> permanent
             List<String> order = List.of("b2b","permanent");
             for (String pref : order) {
                 for (JsonNode it : node) {
@@ -259,7 +263,6 @@ public class JustJoinParser {
                 if (min != null || max != null) break;
             }
 
-            // if nothing after preference – first with numbers
             if (min == null && max == null) {
                 for (JsonNode it : node) {
                     Integer f = intOrNull(it, "from");
@@ -278,7 +281,6 @@ public class JustJoinParser {
             if (min != null && max == null) max = min;
             if (max != null && min == null) min = max;
 
-            // conversion hour → month (JJIT usues ~168 h)
             if ("hour".equalsIgnoreCase(unit)) {
                 min = min != null ? min * 168 : null;
                 max = max != null ? max * 168 : null;
@@ -290,47 +292,93 @@ public class JustJoinParser {
         }
     }
 
-    // ===== Tech stack (accurate) =====
-    public record ParsedSkill(String name, String levelLabel, Integer levelValue, String source) {}
+    private String findNextStringAny(String html, String... keys) {
+        for (String key : keys) {
+            Pattern p = Pattern.compile(key + "\\s*:\\s*\"(.*?)\"", Pattern.DOTALL);
+            Matcher m = p.matcher(html);
+            if (m.find()) return unescapeJson(m.group(1)).trim();
+        }
+        return null;
+    }
+    private JobLevel levelFromNext(String html) {
+        String s = findNextStringAny(html, "\"experienceLevel\"", "\"seniority\"");
+        if (!blank(s)) return mapLevelString(s);
 
+        String arr = extractNextFieldArray(html, "\"experienceLevels\"");
+        if (arr != null) {
+            try {
+                ArrayNode node = (ArrayNode) om.readTree(arr);
+                JobLevel best = null;
+                for (JsonNode it : node) {
+                    if (it.isTextual()) best = pickHigher(best, mapLevelString(it.asText()));
+                }
+                return best;
+            } catch (Exception ignore) {}
+        }
+        return null;
+    }
+    private JobLevel levelFromChips(Document doc) {
+        Element chip = doc.selectFirst(
+                "*:matchesOwn((?i)^\\s*(Intern(ship)?|Trainee|Staż|Praktyk\\w*|Junior|Jr\\.?|Mid(dle)?|Regular|Senior|Sr\\.?|Lead|Principal|Staff|Head)\\s*$)");
+        return chip != null ? mapLevelString(chip.text()) : null;
+    }
+    private JobLevel mapLevelString(String s) {
+        if (blank(s)) return null;
+        String t = s.trim().toLowerCase(Locale.ROOT);
+        if (t.matches("(?i)intern(ship)?|trainee|apprentice|praktyk\\p{L}*|staż\\p{L}*|staz\\p{L}*")) return JobLevel.INTERNSHIP;
+        if (t.matches("(?i)jr\\.?|junior|młodsz\\p{L}*|mlodsz\\p{L}*"))   return JobLevel.JUNIOR;
+        if (t.matches("(?i)mid(dle)?|regular|średni\\p{L}*"))            return JobLevel.MID;
+        if (t.matches("(?i)sr\\.?|senior|starsz\\p{L}*"))                return JobLevel.SENIOR;
+        if (t.matches("(?i)lead|principal|staff|head|tech\\s*lead"))     return JobLevel.LEAD;
+        return null;
+    }
+    private JobLevel pickHigher(JobLevel a, JobLevel b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        List<JobLevel> order = List.of(JobLevel.INTERNSHIP, JobLevel.JUNIOR, JobLevel.MID, JobLevel.SENIOR, JobLevel.LEAD);
+        return order.indexOf(b) > order.indexOf(a) ? b : a;
+    }
+    private static JobLevel levelFromTextStrict(String txt) {
+        if (txt == null || txt.isBlank()) return null;
+        String t = txt.toLowerCase(Locale.ROOT);
+        if (RX_LEAD.matcher(t).find())   return JobLevel.LEAD;
+        if (RX_SENIOR.matcher(t).find()) return JobLevel.SENIOR;
+        if (RX_MID.matcher(t).find())    return JobLevel.MID;
+        if (RX_JUNIOR.matcher(t).find()) return JobLevel.JUNIOR;
+        if (RX_INTERN.matcher(t).find()) return JobLevel.INTERNSHIP;
+        return null;
+    }
+
+    public record ParsedSkill(String name, String levelLabel, Integer levelValue, String source) {}
     private List<ParsedSkill> extractTechStack(JsonNode ld, Document doc, String html) {
         LinkedHashMap<String, ParsedSkill> out = new LinkedHashMap<>();
 
-        // 1) Next: requiredSkills/niceToHaveSkills (name + level)
         addAll(out, readNextSkills(html, "\"requiredSkills\"", "REQUIRED"));
         addAll(out, readNextSkills(html, "\"niceToHaveSkills\"", "NICE_TO_HAVE"));
 
-        // 2) DOM: section „Tech stack” – use OR w ONE :matchesOwn(...)
-        for (Element header : doc.select(
-                "*:matchesOwn((?i)^\\s*(Tech\\s*stack|Stack\\s*technologiczny|Technologie)\\s*$)")) {
-
+        for (Element header : doc.select("*:matchesOwn((?i)^\\s*(Tech\\s*stack|Stack\\s*technologiczny|Technologie)\\s*$)")) {
             Element box = header.parent() != null ? header.parent() : header;
             for (Element h4 : box.select("h4, h4[class*=MuiTypography-]")) {
                 String raw = h4.text();
                 if (blank(raw)) continue;
-
                 String lvlTxt = nearestLevelWord(h4);
                 Integer lvlVal = levelLabelToValue(lvlTxt);
                 String name = normalizeTag(raw);
-
                 if (isPlausibleTag(name)) {
                     out.putIfAbsent(name, new ParsedSkill(name, lvlTxt, lvlVal, "STACK"));
                 }
             }
         }
 
-        // 3) JSON-LD: skills/knowsAbout/occupationalCategory
         collectLdTagsAsSkills(ld, out, "skills");
         collectLdTagsAsSkills(ld, out, "knowsAbout");
         collectLdTagsAsSkills(ld, out, "occupationalCategory");
 
         return new ArrayList<>(out.values());
     }
-
     private void addAll(Map<String, ParsedSkill> out, List<ParsedSkill> list) {
         for (ParsedSkill s : list) out.putIfAbsent(s.name(), s);
     }
-
     private List<ParsedSkill> readNextSkills(String html, String field, String source) {
         String arrJson = extractNextFieldArray(html, field);
         if (arrJson == null) return List.of();
@@ -348,7 +396,6 @@ public class JustJoinParser {
         } catch (Exception ignore) {}
         return out;
     }
-
     private void collectLdTagsAsSkills(JsonNode ld, Map<String, ParsedSkill> out, String field) {
         if (ld == null || ld.isMissingNode()) return;
         JsonNode n = ld.get(field);
@@ -369,9 +416,7 @@ public class JustJoinParser {
             if (isPlausibleTag(name)) out.putIfAbsent(name, new ParsedSkill(name, null, null, "LD"));
         }
     }
-
     private String nearestLevelWord(Element base) {
-        // Looks for the words "junior/regular/advanced/master/nice to have/B2/C1..." near the technology name
         Element scope = base.parent() != null ? base.parent() : base;
         String t = scope.text().toLowerCase(Locale.ROOT);
         if (t.contains("master")) return "master";
@@ -383,7 +428,6 @@ public class JustJoinParser {
         if (t.contains("b2")) return "B2";
         return null;
     }
-
     private Integer levelLabelToValue(String lbl) {
         if (lbl == null) return null;
         switch (lbl.toLowerCase(Locale.ROOT)) {
@@ -392,7 +436,7 @@ public class JustJoinParser {
             case "regular":      return 3;
             case "advanced":     return 4;
             case "master":       return 5;
-            default: return null; // np. B2/C1
+            default: return null;
         }
     }
     private String levelValueToLabel(Integer v) {
@@ -406,7 +450,6 @@ public class JustJoinParser {
         };
     }
 
-    // ===== Salary z DOM =====
     private static final class SalaryTriplet {
         final Integer min, max; final String currency;
         SalaryTriplet(Integer min,Integer max,String currency){this.min=min;this.max=max;this.currency=currency;}
@@ -442,7 +485,6 @@ public class JustJoinParser {
         return null;
     }
 
-    // ===== utils =====
     private static String text(JsonNode n, String field) {
         return n != null && n.has(field) && !n.get(field).isNull() ? n.get(field).asText(null) : null;
     }
@@ -463,17 +505,50 @@ public class JustJoinParser {
     }
     @SafeVarargs private static <T> T firstNonNull(T... vals){ for (T v:vals) if (v!=null) return v; return null; }
 
-    private static JobLevel levelFromText(String txt) {
-        if (txt == null) return JobLevel.MID;
-        String t = txt.toLowerCase(Locale.ROOT);
-        if (t.contains("intern")) return JobLevel.INTERNSHIP;
-        if (t.contains("junior") || t.contains("młodszy")) return JobLevel.JUNIOR;
-        if (t.contains("senior") || t.contains("starszy")) return JobLevel.SENIOR;
-        if (t.contains("lead") || t.contains("principal")) return JobLevel.LEAD;
-        return JobLevel.MID;
+    private String normalizeTag(String s) {
+        if (s == null) return null;
+
+        String t = s.replace('\u00A0', ' ')
+                .trim()
+                .replaceAll("\\s{2,}", " ");
+        if (t.isEmpty()) return t;
+
+        if (t.matches("(?i)^js$")) t = "JavaScript";
+        else if (t.matches("(?i)^ts$")) t = "TypeScript";
+        else if (t.matches("(?i)^node\\s*\\.\\s*js$|^nodejs$|^node\\.js$")) t = "Node.js";
+        else if (t.matches("(?i)^dotnet$|^\\.net$|^net$")) t = ".NET";
+        else if (t.matches("(?i)^c\\s*sharp$|^csharp$")) t = "C#";
+        else if (t.matches("(?i)^pl\\s*/\\s*sql$")) t = "PL/SQL";
+        else if (t.matches("(?i)^k8s$")) t = "Kubernetes";
+        else if (t.matches("(?i)^gcp$")) t = "GCP";
+
+        if (t.length() <= 3) {
+            t = t.toUpperCase(Locale.ROOT);
+        } else if (t.equals(t.toLowerCase(Locale.ROOT))) {
+            t = Character.toUpperCase(t.charAt(0)) + t.substring(1);
+        }
+
+        return t;
     }
 
-    // === Next.js field extractor (for arrays) ===
+    private boolean isPlausibleTag(String t) {
+        if (t == null || t.isBlank()) return false;
+
+        String lc = t.toLowerCase(Locale.ROOT);
+
+        if (LANGUAGE_WORDS.contains(lc)) return false;
+
+        for (String bad : TAG_BLACKLIST) {
+            if (lc.contains(bad)) return false;
+        }
+
+        if (t.length() > 30) return false;
+        if (t.matches(".*\\d{3,}.*")) return false;
+        if (t.matches("(?i).*(pln|eur|usd|brutto|netto|gross|net).*")) return false;
+
+        return t.matches(".*[\\p{L}\\p{Nd}#.+].*");
+    }
+
     private String extractNextFieldArray(String html, String fieldNameQuoted) {
         Pattern p = Pattern.compile(fieldNameQuoted + "\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
         Matcher m = p.matcher(html);
@@ -498,52 +573,15 @@ public class JustJoinParser {
         return x.replace("\\\\", "\\");
     }
 
-    //normalization/tag filters
-    private String normalizeTag(String s) {
-        if (s == null) return null;
-        String t = s.replace('\u00A0',' ').trim().replaceAll("\\s{2,}", " ");
-        if (t.isEmpty()) return t;
-
-        if (t.equalsIgnoreCase("js")) t = "JavaScript";
-        if (t.equalsIgnoreCase("ts")) t = "TypeScript";
-        if (t.matches("(?i)node ?\\.js")) t = "Node.js";
-        if (t.matches("(?i)dotnet|\\.net")) t = ".NET";
-        if (t.matches("(?i)csharp|c sharp")) t = "C#";
-        if (t.matches("(?i)pl/sql")) t = "PL/SQL";
-
-        if (t.length() <= 3) t = t.toUpperCase(Locale.ROOT);
-        else if (t.equals(t.toLowerCase(Locale.ROOT))) {
-            t = Character.toUpperCase(t.charAt(0)) + t.substring(1);
-        }
-        return t;
-    }
-    private boolean isPlausibleTag(String t) {
-        if (t == null || t.isBlank()) return false;
-        String lc = t.toLowerCase(Locale.ROOT);
-        if (LANGUAGE_WORDS.contains(lc)) return false;
-        for (String bad : TAG_BLACKLIST) if (lc.contains(bad)) return false;
-        if (t.length() > 30) return false;
-        if (t.matches(".*\\d{3,}.*")) return false;
-        if (t.matches("(?i).*(pln|eur|usd|brutto|netto|gross|net).*")) return false;
-        return t.matches(".*[\\p{L}\\p{Nd}#.+].*");
-    }
-
     public boolean isExpiredPage(String url, String html) {
-        org.jsoup.nodes.Document doc = Jsoup.parse(html, url);
-
+        Document doc = Jsoup.parse(html, url);
         if (doc.selectFirst("*:matchesOwn(^\\s*Offer expired\\s*$)") != null) return true;
         if (doc.selectFirst("*:matchesOwn(^\\s*Oferta wygasła\\s*$)") != null) return true;
-
-        if (doc.selectFirst("[data-test='offer-expired-banner'],[data-testid='offer-expired-banner']") != null)
-            return true;
-
-        String all = doc.text().toLowerCase(java.util.Locale.ROOT);
-        if (all.contains("offer expired") || all.contains("oferta wygasła")) return true;
-
-        return false;
+        if (doc.selectFirst("[data-test='offer-expired-banner'],[data-testid='offer-expired-banner']") != null) return true;
+        String all = doc.text().toLowerCase(Locale.ROOT);
+        return all.contains("offer expired") || all.contains("oferta wygasła");
     }
 
-    // ===== parsing result =====
     public record ParsedOffer(
             String title,
             String companyName,
