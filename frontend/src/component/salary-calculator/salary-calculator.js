@@ -1,3 +1,4 @@
+// ---------- helpers ----------
 const $ = (s) => document.querySelector(s);
 const PLN = (n) =>
     (Number.isFinite(n) ? n : 0).toLocaleString("pl-PL", {
@@ -5,170 +6,84 @@ const PLN = (n) =>
         currency: "PLN",
         maximumFractionDigits: 2,
     });
-const debounce = (fn, ms = 120) => {
-    let t;
-    return (...a) => {
-        clearTimeout(t);
-        t = setTimeout(() => fn(...a), ms);
-    };
-};
+const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
-const pct1 = (v) => (Math.round(v * 10) / 10).toFixed(1); // 1 miejsce po przecinku
+const pct1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
 
-function calcUOP(brutto, { pit0, authors50 }) {
-    const emerytalne = brutto * 0.0976;
-    const rentowe = brutto * 0.015;
-    const chorobowe = brutto * 0.0245;
-    const spoleczne = emerytalne + rentowe + chorobowe;
+// ---------- API ----------
+const API_BASE = window.__API_BASE__ || "";
 
-    const podstawaZdrow = Math.max(0, brutto - spoleczne);
-    const zdrowotne = podstawaZdrow * 0.09;
+const TYPE_ENUM = {
+    employment: "EMPLOYMENT",
+    mandate: "MANDATE",
+    specific: "SPECIFIC_TASK",
+    b2b: "B2B",
+};
 
-    const kup = authors50 ? Math.min(podstawaZdrow * 0.5, 120000 / 12) : 250;
-    const podstawaPIT = Math.max(0, podstawaZdrow - kup);
-    const pit = pit0 ? 0 : podstawaPIT * 0.12;
-
-    const netto = brutto - spoleczne - zdrowotne - pit;
-    return { brutto, netto, składniki: { emerytalne, rentowe, chorobowe, zdrowotne, pit } };
-}
-
-function calcUZ(brutto, { pit0, zusUZ, authors50 }) {
-    const emerytalne = zusUZ ? brutto * 0.0976 : 0;
-    const rentowe = zusUZ ? brutto * 0.015 : 0;
-    const chorobowe = zusUZ ? brutto * 0.0245 : 0;
-    const spoleczne = emerytalne + rentowe + chorobowe;
-
-    const podstawaZdrow = Math.max(0, brutto - spoleczne);
-    const zdrowotne = zusUZ ? podstawaZdrow * 0.09 : 0;
-
-    const kup = (authors50 ? 0.5 : 0.2) * Math.max(0, brutto - spoleczne);
-
-    const podstawaPIT = Math.max(0, podstawaZdrow - kup);
-    const pit = pit0 ? 0 : podstawaPIT * 0.12;
-
-    const netto = brutto - spoleczne - zdrowotne - pit;
-    return { brutto, netto, składniki: { emerytalne, rentowe, chorobowe, zdrowotne, pit } };
-}
-
-function calcUOD(brutto, { pit0, authors50 }) {
-    const emerytalne = 0,
-        rentowe = 0,
-        chorobowe = 0,
-        zdrowotne = 0;
-    const kup = (authors50 ? 0.5 : 0.2) * brutto;
-    const podstawaPIT = Math.max(0, brutto - kup);
-    const pit = pit0 ? 0 : podstawaPIT * 0.12;
-    const netto = brutto - pit;
-
-    return { brutto, netto, składniki: { emerytalne, rentowe, chorobowe, zdrowotne, pit } };
-}
-
-function compute(brutto, type, opts) {
-    if (type === "uop") return calcUOP(brutto, opts);
-    if (type === "uz") return calcUZ(brutto, opts);
-    if (type === "uod") return calcUOD(brutto, opts);
-    return calcUOP(brutto, opts);
-}
-
-function bruttoFromNetto(targetNetto, type, opts) {
-    let lo = 0,
-        hi = Math.max(5000, targetNetto * 1.8 + 2000);
-    for (let i = 0; i < 40; i++) {
-        const mid = (lo + hi) / 2;
-        const { netto } = compute(mid, type, opts);
-        if (netto < targetNetto) lo = mid;
-        else hi = mid;
-    }
-    return hi;
-}
-
-function updateUI() {
+function readUi() {
     const amount = Math.max(0, Number($("#sc-amount")?.value || 0));
-    const mode = document.querySelector('input[name="sc-mode"]:checked')?.value || "brutto";
-    const type = document.querySelector('input[name="sc-type"]:checked')?.value || "uop";
-
-    const opts = {
-        pit0: $("#sc-student")?.checked || false,
-        authors50: $("#sc-authors")?.checked || false,
-        zusUZ: $("#sc-uz-zus")?.checked || false,
-    };
-
-    const brutto = mode === "brutto" ? amount : bruttoFromNetto(amount, type, opts);
-    const { netto, składniki } = compute(brutto, type, opts);
-
-    $("#sc-netto") && ($("#sc-netto").textContent = PLN(netto));
-    $("#sc-annual") && ($("#sc-annual").textContent = `Rocznie: ${PLN(netto * 12)} netto`);
-
-    renderList(składniki, netto);
-
-    renderDonut({
-        netto,
-        emerytalne: składniki.emerytalne,
-        rentowe: składniki.rentowe,
-        chorobowe: składniki.chorobowe,
-        zdrowotne: składniki.zdrowotne,
-        pit: składniki.pit,
-        brutto,
-    });
-
-    renderBars(brutto, opts);
-
-    renderMonths({
-        brutto,
-        netto,
-        spoleczne: składniki.emerytalne + składniki.rentowe + składniki.chorobowe,
-        zdrowotne: składniki.zdrowotne,
-        pit: składniki.pit,
-    });
+    const mode = document.querySelector('input[name="sc-mode"]:checked')?.value || "gross";
+    const type = document.querySelector('input[name="sc-type"]:checked')?.value || "employment";
+    const pit0 = $("#sc-pit0")?.checked || false;
+    return { amount, mode, type, pit0 };
 }
 
-function renderList(s, netto) {
+function buildPayload(ui, overrides = {}) {
+    return {
+        amount: overrides.amount ?? ui.amount,
+        amountMode: (overrides.mode ?? ui.mode) === "net" ? "NET" : "GROSS",
+        contractType: TYPE_ENUM[overrides.type ?? ui.type] || "EMPLOYMENT",
+        year: 2025,
+        pit0: overrides.pit0 ?? ui.pit0,
+    };
+}
+
+async function callCalculate(payload) {
+    const res = await fetch(`${API_BASE}/api/salary/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text().catch(() => "")}`);
+    return await res.json();
+}
+
+// ---------- renderers ----------
+function renderList(parts, net) {
     const rows = [
-        ["Kwota netto", netto],
-        ["Ubezp. emerytalne", s.emerytalne],
-        ["Ubezp. rentowe", s.rentowe],
-        ["Ubezp. chorobowe", s.chorobowe],
-        ["Ubezp. zdrowotne", s.zdrowotne],
-        ["Zaliczka na PIT", s.pit],
+        ["Net amount", net],
+        ["Pension insurance", parts.pension],
+        ["Disability insurance", parts.disability],
+        ["Sickness insurance", parts.sickness],
+        ["Health insurance", parts.health],
+        ["PIT prepayment", parts.pit],
     ];
     const box = $("#sc-list");
     if (!box) return;
-    box.innerHTML = rows
-        .map(
-            ([label, val]) => `
-    <div class="sc-li"><span>${label}</span><b>${PLN(val)}</b></div>
-  `
-        )
-        .join("");
+    box.innerHTML = rows.map(([label, val]) =>
+        `<div class="sc-li"><span>${label}</span><b>${PLN(val)}</b></div>`).join("");
 }
 
 function renderDonut(parts) {
-    const svg = $("#sc-donut");
-    if (!svg) return;
-    const r = 52,
-        C = 2 * Math.PI * r;
-
+    const svg = $("#sc-donut"); if (!svg) return;
+    const r = 52, C = 2 * Math.PI * r;
     const segs = [
-        { key: "pit", color: "#ff6b8b" },
-        { key: "zdrowotne", color: "#f9b54c" },
-        { key: "chorobowe", color: "#7cc4ff" },
-        { key: "rentowe", color: "#b7d1ff" },
-        { key: "emerytalne", color: "#9aaeff" },
+        { key: "pit",        color: "#ff6b8b" },
+        { key: "health",     color: "#f9b54c" },
+        { key: "sickness",   color: "#7cc4ff" },
+        { key: "disability", color: "#b7d1ff" },
+        { key: "pension",    color: "#9aaeff" },
     ];
-
-    const total = parts.brutto > 0 ? parts.brutto : 1;
+    const total = parts.gross > 0 ? parts.gross : 1;
     let acc = 0;
 
     svg.innerHTML = `
-    <defs>
-      <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.15)"/>
-      </filter>
-    </defs>
+    <defs><filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.15)"/>
+    </filter></defs>
     <g transform="translate(60,60)">
       <circle r="${r}" fill="none" stroke="#e9eefb" stroke-width="16"></circle>
-    </g>
-  `;
+    </g>`;
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("transform", "translate(60,60) rotate(-90)");
@@ -181,7 +96,6 @@ function renderDonut(parts) {
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", s.color);
         path.setAttribute("stroke-width", "16");
-        path.setAttribute("stroke-linecap", "butt");
         path.setAttribute("stroke-dasharray", `${frac * C} ${C}`);
         path.setAttribute("stroke-dashoffset", `${-acc * C}`);
         acc += frac;
@@ -192,153 +106,160 @@ function renderDonut(parts) {
     const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
     center.setAttribute("transform", "translate(60,60)");
     center.innerHTML = `
-    <text x="0" y="-4" text-anchor="middle" font-size="10" fill="currentColor">Netto</text>
-    <text x="0" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">${PLN(parts.netto)}</text>
-  `;
+    <text x="0" y="-4" text-anchor="middle" font-size="10">Net</text>
+    <text x="0" y="14" text-anchor="middle" font-size="12" font-weight="700">${PLN(parts.net)}</text>`;
     svg.appendChild(center);
 }
 
 function ensureBarsLegend() {
-    const cmp = document.querySelector(".sc-compare");
-    if (!cmp) return;
-
+    const cmp = document.querySelector(".sc-compare"); if (!cmp) return;
     const headExists = cmp.querySelector(".sc-compare__head");
     const h = cmp.querySelector("h3");
     if (headExists || !h) return;
-
     const head = document.createElement("div");
     head.className = "sc-compare__head";
     head.innerHTML = `
     <h3>${h.textContent}</h3>
     <div class="sc-legend">
-      <span><i class="sw netto"></i>Netto</span>
+      <span><i class="sw netto"></i>Net</span>
       <span><i class="sw pit"></i>PIT</span>
-      <span><i class="sw zdrow"></i>Zdrowotne</span>
-      <span><i class="sw chor"></i>Chorobowe</span>
-      <span><i class="sw rent"></i>Rentowe</span>
-      <span><i class="sw emer"></i>Emerytalne</span>
+      <span><i class="sw zdrow"></i>Health</span>
+      <span><i class="sw chor"></i>Sickness</span>
+      <span><i class="sw rent"></i>Disability</span>
+      <span><i class="sw emer"></i>Pension</span>
     </div>`;
     h.replaceWith(head);
 }
 
-function renderBars(brutto, opts) {
-    const uop = compute(brutto, "uop", opts);
-    const uz  = compute(brutto, "uz",  opts);
-    const uod = compute(brutto, "uod", opts);
+async function renderBarsFromApi(gross, ui) {
+    const box = $("#sc-bars"); if (!box) return;
 
-    const items = [
-        { name: "UoP",      model: uop },
-        { name: "Zlecenie", model: uz  },
-        { name: "Dzieło",   model: uod },
-        { name: "B2B",      model: null },
+    const scenarios = [
+        { name: "Employment", type: "employment" },
+        { name: "Mandate", type: "mandate" },
+        { name: "Specific-task", type: "specific" },
+        { name: "B2B", type: "b2b" },
     ];
 
-    const box = $("#sc-bars");
-    if (!box) return;
+    const payloads = scenarios.map((s) =>
+        buildPayload(ui, { type: s.type, mode: "gross", amount: gross })
+    );
 
-    box.innerHTML = items.map((it) => {
-        if (!it.model) {
-            return `
-        <div class="sc-bar">
-          <div class="sc-bar__col">
-            <div class="sc-bar__seg sc-bar__seg--pit"        style="top:0;height:10%"><span>—</span></div>
-            <div class="sc-bar__seg sc-bar__seg--zdrowotne"  style="top:10%;height:8%"><span>—</span></div>
-            <div class="sc-bar__seg sc-bar__seg--chorobowe"  style="top:18%;height:5%"><span>—</span></div>
-            <div class="sc-bar__seg sc-bar__seg--rentowe"    style="top:23%;height:4%"><span>—</span></div>
-            <div class="sc-bar__seg sc-bar__seg--emerytalne" style="top:27%;height:6%"><span>—</span></div>
-            <div class="sc-bar__seg sc-bar__seg--netto"      style="bottom:0;height:67%"><span>—</span></div>
-          </div>
-          <div class="sc-bar__label"><span>${it.name}</span><span>–</span></div>
-        </div>`;
-        }
+    const results = await Promise.all(payloads.map((p) => callCalculate(p)));
 
-        const s = it.model.składniki;
-        const nettoPct = clamp(it.model.netto / brutto) * 100;
+    const html = results.map((r, i) => {
+        const grossR = Number(r.gross || 0);
+        const netR   = Number(r.net || 0);
+        const items  = r.items || {};
+        const parts  = {
+            pension:    Number(items.pension || 0),
+            disability: Number(items.disability || 0),
+            sickness:   Number(items.sickness || 0),
+            health:     Number(items.health || 0),
+            pit:        Number(items.pit || 0),
+        };
+        const netPct = clamp(netR / grossR) * 100;
 
-        const parts = [
-            { cls: "pit",        val: s.pit },
-            { cls: "zdrowotne",  val: s.zdrowotne },
-            { cls: "chorobowe",  val: s.chorobowe },
-            { cls: "rentowe",    val: s.rentowe },
-            { cls: "emerytalne", val: s.emerytalne },
+        const stack = [
+            { cls: "pit",        val: parts.pit },
+            { cls: "zdrowotne",  val: parts.health },
+            { cls: "chorobowe",  val: parts.sickness },
+            { cls: "rentowe",    val: parts.disability },
+            { cls: "emerytalne", val: parts.pension },
         ];
-
-        let top = 0;
-        let tinyIndex = 0;
-
-        const taxSegs = parts.map(p => {
-            const h = clamp(p.val / brutto) * 100;
+        let top = 0, tinyIndex = 0;
+        const taxSegs = stack.map((p) => {
+            const h = clamp(p.val / grossR) * 100;
             if (h < 0.5) return "";
-
-            const isTiny = h < 3;
-            const tinyCls = isTiny ? ` tiny ${ (tinyIndex++ % 2 ? 'even' : 'odd') }` : "";
-
-            const seg = `<div class="sc-bar__seg sc-bar__seg--${p.cls}${tinyCls}"
-                     style="top:${top}%;height:${h}%">
-                 <span>${pct1(h)}%</span>
-               </div>`;
-            top += h;
-            return seg;
+            const tiny = h < 3 ? ` tiny ${tinyIndex++ % 2 ? "even" : "odd"}` : "";
+            const seg = `<div class="sc-bar__seg sc-bar__seg--${p.cls}${tiny}" style="top:${top}%;height:${h}%"><span>${pct1(h)}%</span></div>`;
+            top += h; return seg;
         }).join("");
 
         return `
-      <div class="sc-bar" title="${it.name}">
+      <div class="sc-bar" title="${scenarios[i].name}">
         <div class="sc-bar__col">
           ${taxSegs}
-          <div class="sc-bar__seg sc-bar__seg--netto" style="bottom:0;height:${nettoPct}%">
-            <span>${pct1(nettoPct)}%</span>
+          <div class="sc-bar__seg sc-bar__seg--netto" style="bottom:0;height:${netPct}%">
+            <span>${pct1(netPct)}%</span>
           </div>
         </div>
         <div class="sc-bar__label">
-          <span>${it.name}</span>
-          <span>${PLN(it.model.netto)}</span>
+          <span>${scenarios[i].name}</span>
+          <span>${PLN(netR)}</span>
         </div>
       </div>`;
     }).join("");
+
+    ensureBarsLegend();
+    box.innerHTML = html;
 }
 
 function renderMonths(row) {
-    const months = [
-        "Styczeń",
-        "Luty",
-        "Marzec",
-        "Kwiecień",
-        "Maj",
-        "Czerwiec",
-        "Lipiec",
-        "Sierpień",
-        "Wrzesień",
-        "Październik",
-        "Listopad",
-        "Grudzień",
-    ];
-    const tbody = $("#sc-months");
-    if (!tbody) return;
-    tbody.innerHTML = months
-        .map(
-            (m) => `
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const tbody = $("#sc-months"); if (!tbody) return;
+    tbody.innerHTML = months.map((m) => `
     <tr>
       <td>${m}</td>
-      <td>${PLN(row.brutto)}</td>
-      <td>${PLN(row.spoleczne)}</td>
-      <td>${PLN(row.zdrowotne)}</td>
+      <td>${PLN(row.gross)}</td>
+      <td>${PLN(row.social)}</td>
+      <td>${PLN(row.health)}</td>
       <td>${PLN(row.pit)}</td>
-      <td>${PLN(row.netto)}</td>
-    </tr>`
-        )
-        .join("");
+      <td>${PLN(row.net)}</td>
+    </tr>`).join("");
+}
+
+// ---------- main ----------
+async function updateUI() {
+    const ui = readUi();
+
+    try {
+        // main calculation for selected type/mode
+        const main = await callCalculate(buildPayload(ui));
+
+        const gross = Number(main.gross || 0);
+        const net   = Number(main.net || 0);
+        const items = main.items || {};
+        const parts = {
+            pension:    Number(items.pension || 0),
+            disability: Number(items.disability || 0),
+            sickness:   Number(items.sickness || 0),
+            health:     Number(items.health || 0),
+            pit:        Number(items.pit || 0),
+        };
+
+        $("#sc-net") && ($("#sc-net").textContent = PLN(net));
+        $("#sc-annual") && ($("#sc-annual").textContent = `Per year: ${PLN(net * 12)} net`);
+
+        renderList(parts, net);
+        renderDonut({ net, gross, ...parts });
+
+        // comparison: 4 contract types on same GROSS
+        await renderBarsFromApi(gross, ui);
+
+        renderMonths({
+            gross,
+            net,
+            social: parts.pension + parts.disability + parts.sickness,
+            health: parts.health,
+            pit: parts.pit,
+        });
+
+    } catch (e) {
+        console.warn("API error:", e);
+    }
 }
 
 export function initSalaryCalculator() {
     $("#sc-amount") && $("#sc-amount").addEventListener("input", debounce(updateUI, 120));
-    document
-        .querySelectorAll('input[name="sc-mode"], input[name="sc-type"]')
-        .forEach((el) => el.addEventListener("change", updateUI));
-    ["#sc-student", "#sc-authors", "#sc-uz-zus"].forEach((id) => {
-        const el = document.querySelector(id);
-        if (el) el.addEventListener("change", updateUI);
-    });
+    document.querySelectorAll('input[name="sc-mode"], input[name="sc-type"]').forEach((el) =>
+        el.addEventListener("change", updateUI)
+    );
+    $("#sc-pit0") && $("#sc-pit0").addEventListener("change", updateUI);
 
     ensureBarsLegend();
     updateUI();
 }
+
+// expose for plain <script src>
+window.initSalaryCalculator = initSalaryCalculator;
