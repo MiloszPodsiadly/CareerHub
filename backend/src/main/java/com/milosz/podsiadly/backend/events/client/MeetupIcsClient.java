@@ -1,68 +1,47 @@
 package com.milosz.podsiadly.backend.events.client;
 
-import com.milosz.podsiadly.backend.events.domain.EventType;
 import com.milosz.podsiadly.backend.events.dto.NormalizedEvent;
-import biweekly.Biweekly;
-import biweekly.component.VEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
+@Slf4j
 @Component
 @EnableConfigurationProperties(MeetupProps.class)
 @RequiredArgsConstructor
 public class MeetupIcsClient {
+
     private final RestTemplate rt;
     private final MeetupProps props;
 
     public List<NormalizedEvent> fetch() {
+        if (props == null || props.groups() == null || props.groups().isEmpty()) {
+            return List.of();
+        }
         List<NormalizedEvent> out = new ArrayList<>();
         for (String g : props.groups()) {
             String url = "https://www.meetup.com/" + g + "/events/ical/";
-            String ics = rt.getForObject(url, String.class);
-            if (ics == null || ics.isBlank()) continue;
-
-            Biweekly.parse(ics).all()
-                    .forEach(cal -> cal.getEvents().forEach(ve -> out.add(map(g, url, ve, ics))));
+            try {
+                ResponseEntity<String> resp = rt.exchange(url, HttpMethod.GET, null, String.class);
+                log.info("[meetup.ics] {} fetched (ignored by design)", url);
+            } catch (HttpStatusCodeException e) {
+                if (e.getStatusCode().value() == 503 || e.getStatusCode().value() == 429 || e.getStatusCode().is5xxServerError()) {
+                    log.info("[meetup.ics] {} skipped HTTP {}", url, e.getRawStatusCode());
+                } else {
+                    log.info("[meetup.ics] {} skipped HTTP {}", url, e.getRawStatusCode());
+                }
+            } catch (Exception e) {
+                log.info("[meetup.ics] {} skipped {}", url, e.toString());
+            }
         }
         return out;
-    }
-
-    private static NormalizedEvent map(String group, String fallbackUrl, VEvent ve, String rawIcs) {
-        String extId = ve.getUid() != null ? ve.getUid().getValue()
-                : (group + "|" + (ve.getSummary() != null ? ve.getSummary().getValue() : "no-title"));
-
-        String url = ve.getUrl() != null ? ve.getUrl().getValue() : fallbackUrl;
-
-        Instant start = ve.getDateStart() != null ? ve.getDateStart().getValue().toInstant() : null;
-        Instant end   = ve.getDateEnd()   != null ? ve.getDateEnd().getValue().toInstant()   : null;
-
-        // <-- POPRAWKA: TZID jest parametrem właściwości
-        String tz = null;
-        if (ve.getDateStart() != null && ve.getDateStart().getParameters() != null) {
-            tz = ve.getDateStart().getParameters().getTimezoneId(); // np. "Europe/Warsaw"
-        }
-        if (tz == null && ve.getDateEnd() != null && ve.getDateEnd().getParameters() != null) {
-            tz = ve.getDateEnd().getParameters().getTimezoneId();
-        }
-
-        return new NormalizedEvent(
-                "MEETUP_ICS",
-                extId,
-                url,
-                ve.getSummary() != null ? ve.getSummary().getValue() : "(no title)",
-                ve.getDescription() != null ? ve.getDescription().getValue() : null,
-                null, null, null, tz,
-                false, EventType.MEETUP,
-                start, end, "open",
-                ve.getLocation() != null ? ve.getLocation().getValue() : null,
-                null, null,
-                List.of("meetup", group),
-                rawIcs
-        );
     }
 }
