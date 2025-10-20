@@ -1,13 +1,15 @@
+<link rel="stylesheet" href="./salary-calculator.css" />
+
 <section class="salary sc">
     <header class="sc-hero">
-        <h1>Kalkulator <span class="grad">wynagrodzeń</span></h1>
-        <p>Podaj kwotę i formę współpracy – zobacz estymację netto i strukturę potrąceń.</p>
+        <h1>Salary <span class="grad">Calculator</span></h1>
+        <p>Enter the amount and contract type to see an estimated take-home pay and deduction structure.</p>
     </header>
 
     <section class="sc-panel">
         <div class="sc-grid">
             <label class="sc-field">
-                <span>Kwota miesięczna</span>
+                <span>Monthly amount</span>
                 <div class="sc-amount">
                     <input id="sc-amount" type="number" min="0" step="50" value="5000" />
                     <span class="sc-currency">PLN</span>
@@ -15,45 +17,38 @@
             </label>
 
             <label class="sc-field">
-                <span>Tryb kwoty</span>
+                <span>Amount mode</span>
                 <div class="sc-seg">
-                    <input type="radio" name="sc-mode" id="sc-mode-brutto" value="brutto" checked>
-                    <label for="sc-mode-brutto">Brutto</label>
-                    <input type="radio" name="sc-mode" id="sc-mode-netto" value="netto">
-                    <label for="sc-mode-netto">Netto (na rękę)</label>
+                    <input type="radio" name="sc-mode" id="sc-mode-gross" value="gross" checked />
+                    <label for="sc-mode-gross">Gross</label>
+                    <input type="radio" name="sc-mode" id="sc-mode-net" value="net" />
+                    <label for="sc-mode-net">Net (take-home)</label>
                 </div>
             </label>
 
             <label class="sc-field sc-full">
-                <span>Forma</span>
+                <span>Contract type</span>
                 <div class="sc-seg sc-seg--wide">
-                    <input type="radio" name="sc-type" id="sc-type-uop" value="uop" checked>
-                    <label for="sc-type-uop">Umowa o pracę</label>
-                    <input type="radio" name="sc-type" id="sc-type-uz" value="uz">
-                    <label for="sc-type-uz">Umowa zlecenie</label>
-                    <input type="radio" name="sc-type" id="sc-type-uod" value="uod">
-                    <label for="sc-type-uod">Umowa o dzieło</label>
-                    <input type="radio" name="sc-type" id="sc-type-b2b" value="b2b" disabled>
-                    <label for="sc-type-b2b" title="Wkrótce">B2B (wkrótce)</label>
+                    <input type="radio" name="sc-type" id="sc-type-employment" value="employment" checked />
+                    <label for="sc-type-employment">Employment</label>
+
+                    <input type="radio" name="sc-type" id="sc-type-mandate" value="mandate" />
+                    <label for="sc-type-mandate">Mandate</label>
+
+                    <input type="radio" name="sc-type" id="sc-type-specific" value="specific" />
+                    <label for="sc-type-specific">Specific-task</label>
+
+                    <input type="radio" name="sc-type" id="sc-type-b2b" value="b2b" />
+                    <label for="sc-type-b2b">B2B</label>
                 </div>
             </label>
 
             <details class="sc-details sc-full">
-                <summary>Szczegóły (opcjonalnie)</summary>
+                <summary>Details (optional)</summary>
                 <div class="sc-details__grid">
                     <label class="sc-inline">
-                        <input id="sc-student" type="checkbox">
-                        <span>PIT-0 &lt; 26 lat (demo)</span>
-                    </label>
-
-                    <label class="sc-inline">
-                        <input id="sc-authors" type="checkbox">
-                        <span>KUP 50% (autorskie) – demo</span>
-                    </label>
-
-                    <label class="sc-inline">
-                        <input id="sc-uz-zus" type="checkbox" checked>
-                        <span>ZUS przy zleceniu (demo)</span>
+                        <input id="sc-pit0" type="checkbox" />
+                        <span>Tax-exempt &lt; 26 (PIT-0)</span>
                     </label>
                 </div>
             </details>
@@ -62,47 +57,52 @@
 
     <section class="sc-summary">
         <div class="sc-card sc-total">
-            <div class="sc-total__label">Szacowane <b>netto</b> / miesiąc</div>
-            <div class="sc-total__value" id="sc-netto">3 438,46 zł</div>
-            <div class="sc-total__sub" id="sc-annual">Rocznie: 41 261,46 zł netto</div>
+            <div class="sc-total__label">Estimated <b>net</b> / month</div>
+            <div class="sc-total__value" id="sc-net">—</div>
+            <div class="sc-total__sub" id="sc-annual">—</div>
         </div>
 
         <div class="sc-card sc-breakdown">
             <div class="sc-breakdown__chart">
-                <svg id="sc-donut" viewBox="0 0 120 120" aria-label="Struktura potrąceń"></svg>
+                <svg id="sc-donut" viewBox="0 0 120 120" aria-label="Deductions structure"></svg>
             </div>
-            <div class="sc-breakdown__list" id="sc-list">
-            </div>
+            <div class="sc-breakdown__list" id="sc-list"></div>
         </div>
     </section>
 
     <section class="sc-card sc-compare">
-        <h3>Porównanie form (proporcje netto/podatki - szczegolowo)</h3>
-        <div class="sc-bars" id="sc-bars">
-        </div>
+        <h3>Comparison (net/tax proportions — detailed)</h3>
+        <div class="sc-bars" id="sc-bars"></div>
     </section>
 
     <section class="sc-card sc-table">
-        <h3>Rozbicie miesięczne (demo)</h3>
+        <h3>Monthly breakdown</h3>
         <div class="sc-table__wrap">
             <table>
                 <thead>
                 <tr>
-                    <th>Miesiąc</th>
-                    <th>Brutto</th>
-                    <th>Ubezp. społ.</th>
-                    <th>Zdrowotne</th>
-                    <th>Zaliczka na PIT</th>
-                    <th>Netto</th>
+                    <th>Month</th>
+                    <th>Gross</th>
+                    <th>Social insurance</th>
+                    <th>Health</th>
+                    <th>PIT prepayment</th>
+                    <th>Net</th>
                 </tr>
                 </thead>
-                <tbody id="sc-months">
-                </tbody>
+                <tbody id="sc-months"></tbody>
             </table>
         </div>
     </section>
 
     <p class="sc-note">
-        ⚠️ To jest <b>prototyp</b> z uproszczonymi zasadami – wyłącznie poglądowo. Rzeczywiste wyliczenia zależą od pełnych przepisów i indywidualnej sytuacji.
+        ⚠️ This is a <b>prototype</b> with simplified rules — educational only. Real results depend on full regulations and your situation.
     </p>
 </section>
+
+<!-- If your backend is on a different origin and you DON'T proxy /api, set the base URL: -->
+<!-- <script>window.__API_BASE__ = "http://localhost:8081";</script> -->
+
+<script src="./salary-calculator.js"></script>
+<script>
+    window.initSalaryCalculator && window.initSalaryCalculator();
+</script>

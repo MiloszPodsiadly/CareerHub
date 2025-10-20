@@ -48,4 +48,6 @@ auth:
     - /api/jobs/**
     - /api/ingest/**
     - /api/ingest
+    - /api/salary
+    - /api/salary/**
     - /actuator/**

@@ -57,6 +57,18 @@ services:
       timeout: 5s
       retries: 15
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: [ "redis-server", "--appendonly", "yes" ]
+    expose: [ "6379" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [ devnet ]
+
   gateway:
     build:
       context: .
@@ -94,6 +106,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
     depends_on:
+      redis:
+        condition: service_healthy
       discovery-server:
         condition: service_healthy
       postgres:
