@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/job/controller/JobOfferController.java
 package com.milosz.podsiadly.backend.job.controller;
 
 import com.milosz.podsiadly.backend.job.domain.ContractType;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -20,7 +20,6 @@ import java.util.List;
 public class JobOfferController {
 
     private final JobOfferService service;
-
 
     @GetMapping
     public Page<JobOfferListDto> search(
@@ -33,7 +32,7 @@ public class JobOfferController {
             @RequestParam(required = false) List<String> tech,
             @RequestParam(required = false) Integer salaryMin,
             @RequestParam(required = false) Integer salaryMax,
-            @RequestParam(required = false) ContractType contract,
+            @RequestParam(required = false, name = "contract") List<ContractType> contracts,
             @RequestParam(required = false) Boolean withSalary,
             @RequestParam(required = false) Instant postedAfter,
             @RequestParam(defaultValue = "1") int page,
@@ -58,7 +57,8 @@ public class JobOfferController {
                 spec,
                 tech,
                 salaryMin, salaryMax, postedAfter,
-                contract, withSalary, pageable);
+                contracts != null ? Set.copyOf(contracts) : Set.of(),
+                withSalary, pageable);
     }
 
     @GetMapping("/all")
@@ -72,7 +72,7 @@ public class JobOfferController {
             @RequestParam(required = false) List<String> tech,
             @RequestParam(required = false) Integer salaryMin,
             @RequestParam(required = false) Integer salaryMax,
-            @RequestParam(required = false) ContractType contract,
+            @RequestParam(required = false, name = "contract") List<ContractType> contracts,
             @RequestParam(required = false) Boolean withSalary,
             @RequestParam(required = false) Instant postedAfter,
             @RequestParam(defaultValue = "date") String sort
@@ -87,8 +87,10 @@ public class JobOfferController {
                 spec,
                 tech,
                 salaryMin, salaryMax, postedAfter,
-                contract, withSalary, s);
+                contracts != null ? Set.copyOf(contracts) : Set.of(),
+                withSalary, s);
     }
+
     @GetMapping("/{id}")
     public JobOfferDetailDto get(@PathVariable Long id) {
         return service.get(id);
