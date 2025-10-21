@@ -1,3 +1,4 @@
+// src/main/java/com/milosz/podsiadly/backend/job/mapper/JobOfferMapper.java
 package com.milosz.podsiadly.backend.job.mapper;
 
 import com.milosz.podsiadly.backend.job.domain.*;
@@ -5,6 +6,7 @@ import com.milosz.podsiadly.backend.job.dto.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public final class JobOfferMapper {
 
@@ -18,6 +20,8 @@ public final class JobOfferMapper {
                 e.getCity() != null ? e.getCity().getName() : null,
                 e.getRemote(),
                 e.getLevel() != null ? e.getLevel().name() : null,
+                e.getContract() != null ? e.getContract().name() : null,
+                toNames(e.getContracts()),
                 e.getSalaryMin(),
                 e.getSalaryMax(),
                 e.getCurrency(),
@@ -39,6 +43,7 @@ public final class JobOfferMapper {
                 e.getRemote(),
                 e.getLevel() != null ? e.getLevel().name() : null,
                 e.getContract() != null ? e.getContract().name() : null,
+                toNames(e.getContracts()),
                 e.getSalaryMin(),
                 e.getSalaryMax(),
                 e.getCurrency(),
@@ -47,6 +52,11 @@ public final class JobOfferMapper {
                 e.getPublishedAt(),
                 e.getActive()
         );
+    }
+
+    private static List<String> toNames(Set<ContractType> set) {
+        if (set == null || set.isEmpty()) return List.of();
+        return set.stream().map(Enum::name).sorted().toList();
     }
 
     private static List<String> safeTags(List<String> tags) {

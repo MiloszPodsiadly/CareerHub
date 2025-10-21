@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Table(
@@ -31,7 +30,15 @@ public class JobOffer {
     private Boolean remote;
 
     @Enumerated(EnumType.STRING) private JobLevel level;
+
     @Enumerated(EnumType.STRING) private ContractType contract;
+
+    @Builder.Default
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "job_offer_contract", joinColumns = @JoinColumn(name = "job_offer_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "contract", nullable = false, length = 16)
+    private Set<ContractType> contracts = new HashSet<>();
 
     private Integer salaryMin;
     private Integer salaryMax;
@@ -61,5 +68,10 @@ public class JobOffer {
             stack.forEach(s -> s.setJobOffer(this));
             this.techStack.addAll(stack);
         }
+    }
+
+    public void setContracts(Set<ContractType> set) {
+        this.contracts.clear();
+        if (set != null) this.contracts.addAll(set);
     }
 }

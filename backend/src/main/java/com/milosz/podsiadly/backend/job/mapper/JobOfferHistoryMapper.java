@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +21,10 @@ public class JobOfferHistoryMapper {
     private final ObjectMapper om;
 
     public JobOfferHistory toHistory(JobOffer o, ArchiveReason reason) {
+        List<String> contracts = (o.getContracts() != null)
+                ? o.getContracts().stream().map(Enum::name).distinct().toList()
+                : (o.getContract() != null ? List.of(o.getContract().name()) : List.of());
+
         return JobOfferHistory.builder()
                 .source(o.getSource())
                 .externalId(o.getExternalId())
@@ -30,6 +35,7 @@ public class JobOfferHistoryMapper {
                 .remote(o.getRemote())
                 .level(o.getLevel() != null ? o.getLevel().name() : null)
                 .contract(o.getContract() != null ? o.getContract().name() : null)
+                .contracts(contracts)
                 .salaryMin(o.getSalaryMin())
                 .salaryMax(o.getSalaryMax())
                 .currency(o.getCurrency())
@@ -37,7 +43,7 @@ public class JobOfferHistoryMapper {
                 .reason(reason)
                 .archivedAt(Instant.now())
                 .deactivatedAt(o.getLastSeenAt() != null ? o.getLastSeenAt() : Instant.now())
-                .snapshotJson(buildSnapshot(o))
+                .snapshotJson(buildSnapshot(o, contracts))
                 .build();
     }
 
@@ -53,6 +59,7 @@ public class JobOfferHistoryMapper {
                 h.getRemote(),
                 h.getLevel(),
                 h.getContract(),
+                h.getContracts(),
                 h.getSalaryMin(),
                 h.getSalaryMax(),
                 h.getCurrency(),
@@ -64,7 +71,7 @@ public class JobOfferHistoryMapper {
         );
     }
 
-    private String buildSnapshot(JobOffer o) {
+    private String buildSnapshot(JobOffer o, List<String> contracts) {
         var detail = new JobOfferDetailDto(
                 o.getId(),
                 o.getSource(),
@@ -77,6 +84,7 @@ public class JobOfferHistoryMapper {
                 o.getRemote(),
                 o.getLevel() != null ? o.getLevel().name() : null,
                 o.getContract() != null ? o.getContract().name() : null,
+                contracts,
                 o.getSalaryMin(),
                 o.getSalaryMax(),
                 o.getCurrency(),

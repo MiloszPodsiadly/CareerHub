@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.job.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 public record JobOfferHistoryDto(
         Long id,
@@ -13,6 +14,7 @@ public record JobOfferHistoryDto(
         Boolean remote,
         String level,
         String contract,
+        List<String> contracts,
         Integer salaryMin,
         Integer salaryMax,
         String currency,
