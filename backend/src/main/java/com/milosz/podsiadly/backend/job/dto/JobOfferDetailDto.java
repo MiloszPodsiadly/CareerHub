@@ -1,7 +1,5 @@
 package com.milosz.podsiadly.backend.job.dto;
 
-import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -17,11 +15,12 @@ public record JobOfferDetailDto(
         Boolean remote,
         String level,
         String contract,
+        List<String> contracts,
         Integer salaryMin,
         Integer salaryMax,
         String currency,
         List<String> techTags,
-        List<JobOfferSkillDto> techStack,   // <— NOWE
+        List<JobOfferSkillDto> techStack,
         Instant publishedAt,
         Boolean active
 ) {}

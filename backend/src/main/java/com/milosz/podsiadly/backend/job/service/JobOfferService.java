@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/job/service/JobOfferService.java
 package com.milosz.podsiadly.backend.job.service;
 
 import com.milosz.podsiadly.backend.job.domain.ContractType;
@@ -25,7 +24,6 @@ public class JobOfferService {
 
     private final JobOfferRepository repo;
 
-    // mapowanie "szybkich filtrów" spec -> lista tagów techTags
     private static final Map<String, List<String>> SPEC_TO_TECH = Map.ofEntries(
             e("frontend",  List.of("React","Angular","Vue","JavaScript","TypeScript","HTML","CSS","Next.js","Nuxt")),
             e("backend",   List.of("Java","Spring","Kotlin","Node.js","NestJS","Python","Django","FastAPI",".NET","C#","Go","PHP","Laravel")),
@@ -57,7 +55,7 @@ public class JobOfferService {
             String q, String city, Boolean remote, JobLevel level,
             List<String> spec, List<String> tech,
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
-            ContractType contract, Boolean withSalary,
+            Set<ContractType> contracts, Boolean withSalary,
             Pageable pageable
     ) {
         List<String> allTech = Stream.concat(
@@ -74,7 +72,7 @@ public class JobOfferService {
                 JobOfferSpecifications.techAny(allTech),
                 JobOfferSpecifications.salaryBetween(salaryMin, salaryMax),
                 JobOfferSpecifications.postedAfter(postedAfter),
-                JobOfferSpecifications.contract(contract),
+                JobOfferSpecifications.contractAny(contracts),
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
@@ -86,7 +84,7 @@ public class JobOfferService {
             String q, String city, Boolean remote, JobLevel level,
             List<String> spec, List<String> tech,
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
-            ContractType contract, Boolean withSalary,
+            Set<ContractType> contracts, Boolean withSalary,
             Sort sort
     ) {
         List<String> allTech = Stream.concat(
@@ -103,7 +101,7 @@ public class JobOfferService {
                 JobOfferSpecifications.techAny(allTech),
                 JobOfferSpecifications.salaryBetween(salaryMin, salaryMax),
                 JobOfferSpecifications.postedAfter(postedAfter),
-                JobOfferSpecifications.contract(contract),
+                JobOfferSpecifications.contractAny(contracts),
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
