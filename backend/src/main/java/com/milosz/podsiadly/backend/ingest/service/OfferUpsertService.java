@@ -57,18 +57,23 @@ public class OfferUpsertService {
         e.setCity(city);
         e.setRemote(p.remote());
         e.setLevel(p.level());
+        e.setContract(mapContract(p.contract()));
+        e.setContracts(mapContracts(p.contracts()));
+
         e.setSalaryMin(p.min());
         e.setSalaryMax(p.max());
         e.setCurrency(p.currency());
-        e.setTechTags(p.techStack() != null
+
+        List<String> tags = (p.techTags() != null && !p.techTags().isEmpty())
+                ? p.techTags()
+                : (p.techStack() != null
                 ? p.techStack().stream().map(JustJoinParser.ParsedSkill::name).distinct().limit(24).toList()
-                : (p.techTags() != null ? p.techTags() : Collections.emptyList()));
+                : Collections.emptyList());
+        e.setTechTags(tags);
+
         e.setPublishedAt(p.publishedAt() != null ? p.publishedAt() : Instant.now());
         e.setLastSeenAt(Instant.now());
         e.setActive(true);
-
-        if (e.getTechStack() == null) e.setTechStack(new ArrayList<>());
-        else e.getTechStack().clear();
 
         List<JobOfferSkillDto> skills = new ArrayList<>();
         if (p.techStack() != null) {
@@ -89,14 +94,35 @@ public class OfferUpsertService {
         return s.trim().replaceAll("\\s{2,}", " ");
     }
 
+    private static ContractType mapContract(String s) {
+        if (s == null) return null;
+        return switch (s.trim().toUpperCase(Locale.ROOT)) {
+            case "B2B" -> ContractType.B2B;
+            case "UOP" -> ContractType.UOP;
+            case "UZ"  -> ContractType.UZ;
+            case "UOD" -> ContractType.UOD;
+            default    -> null;
+        };
+    }
+
+    private static Set<ContractType> mapContracts(Set<String> src) {
+        if (src == null || src.isEmpty()) return Set.of();
+        EnumSet<ContractType> out = EnumSet.noneOf(ContractType.class);
+        for (String s : src) {
+            ContractType ct = mapContract(s);
+            if (ct != null) out.add(ct);
+        }
+        return out;
+    }
+
     private SkillSource toSourceEnum(String src) {
         if (src == null) return SkillSource.STACK;
         return switch (src.toUpperCase(Locale.ROOT)) {
-            case "REQUIRED" -> SkillSource.REQUIRED;
+            case "REQUIRED"     -> SkillSource.REQUIRED;
             case "NICE_TO_HAVE" -> SkillSource.NICE_TO_HAVE;
-            case "LD" -> SkillSource.LD;
-            case "STACK" -> SkillSource.STACK;
-            default -> SkillSource.STACK;
+            case "LD"           -> SkillSource.LD;
+            case "STACK"        -> SkillSource.STACK;
+            default             -> SkillSource.STACK;
         };
     }
 }
