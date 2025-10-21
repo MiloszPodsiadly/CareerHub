@@ -1,16 +1,18 @@
 export function initJobs(opts = {}) {
-    // realny backend; można nadpisać przez initJobs({ apiUrl: '...' })
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
-
-    // Bezpieczne mapowanie -> enum backendu
     const LEVEL_MAP = {
         '': '',
         internship: 'INTERNSHIP',
         intern: 'INTERNSHIP',
+        trainee: 'INTERNSHIP',
         junior: 'JUNIOR',
+        jr: 'JUNIOR',
         mid: 'MID',
+        regular: 'MID',
+        middle: 'MID',
         senior: 'SENIOR',
+        sr: 'SENIOR',
         lead: 'LEAD',
         INTERNSHIP: 'INTERNSHIP',
         JUNIOR: 'JUNIOR',
@@ -18,81 +20,92 @@ export function initJobs(opts = {}) {
         SENIOR: 'SENIOR',
         LEAD: 'LEAD'
     };
-
     const mapLevel = v => LEVEL_MAP[String(v ?? '').trim()] ?? '';
 
     const CONTRACT_MAP = {
         '': '',
-        UOP:'UOP', B2B:'B2B', UZ:'UZ', UOD:'UOD',
-        // tolerancja na stare wartości z frontu:
-        uop:'UOP', b2b:'B2B', uz:'UZ', uod:'UOD',
-        perm:'UOP', mandate:'UZ'
+        UOP: 'UOP', B2B: 'B2B', UZ: 'UZ', UOD: 'UOD',
+        uop: 'UOP', b2b: 'B2B', uz: 'UZ', uod: 'UOD',
+        perm: 'UOP', permanent: 'UOP', mandate: 'UZ', 'specific-task': 'UOD'
     };
-
     const mapContract = v => CONTRACT_MAP[String(v ?? '').trim()] ?? '';
 
     const state = {
-        page: 1,                 // 1-based (zgodnie z kontrolerem)
+        page: 1,
         size: PAGE_SIZE,
         totalElements: 0,
         totalPages: 0,
         items: [],
         loading: false,
         filters: {
-            q:'', city:'', seniority:'', contract:'',
-            minSalary:'', withSalary:false, remote:false,
-            sort:'relevance', group:'city',
-            specs:[], techs:[]
+            q: '', city: '',
+            seniority: '',
+            contract: '',
+            contracts: [],
+            minSalary: '',
+            withSalary: false,
+            remote: false,
+            sort: 'relevance',
+            group: 'city',
+            specs: [],
+            techs: []
         }
     };
 
-    // ---- DOM
-    const $list      = byId('list');
-    const $count     = byId('count');
-    const $loading   = byId('loading');
-    const $empty     = byId('empty');
-    const $modal     = byId('modal');
-    const $modalBody = byId('modalBody');
-    const $pager     = byId('pager');
+    const $list       = byId('list');
+    const $count      = byId('count');
+    const $loading    = byId('loading');
+    const $empty      = byId('empty');
+    const $modal      = byId('modal');
+    const $modalBody  = byId('modalBody');
+    const $pager      = byId('pager');
+    const $q          = byId('q');
+    const $city       = byId('city');
+    const $seniority  = byId('seniority');
+    const $contract   = byId('contract');
+    const $minSalary  = byId('minSalary');
+    const $sort       = byId('sort');
+    const $group      = byId('group');
+    const $withSalary = byId('withSalary');
+    const $remote     = byId('remote');
+    const $reset      = byId('reset');
 
-    const $q         = byId('q');
-    const $city      = byId('city');
-    const $seniority = byId('seniority');
-    const $contract  = byId('contract');
-    const $minSalary = byId('minSalary');
-    const $sort      = byId('sort');
-    const $group     = byId('group');
-    const $withSalary= byId('withSalary');
-    const $remote    = byId('remote');
-    const $reset     = byId('reset');
+    const specChecks      = Array.from(document.querySelectorAll('input[name="spec[]"].chipcheck'));
+    const techChecks      = Array.from(document.querySelectorAll('input[name="tech[]"].chipcheck'));
+    const contractChecks  = Array.from(document.querySelectorAll('input[name="contract[]"].chipcheck')); // NOWE
 
-    const specChecks = Array.from(document.querySelectorAll('input[name="spec[]"].chipcheck'));
-    const techChecks = Array.from(document.querySelectorAll('input[name="tech[]"].chipcheck'));
-
-    // ---- API
     async function fetchJobs(page) {
-        const p = new URLSearchParams({
-            page,
-            pageSize: state.size,
-            q: state.filters.q,
-            city: state.filters.city,
-            // do backendu wysyłamy 'level' w formacie ENUM
-            level: mapLevel(state.filters.seniority),
-            contract: mapContract(state.filters.contract),
-            salaryMin: state.filters.minSalary || '',
-            sort: state.filters.sort
-        });
+        const p = new URLSearchParams();
+        p.append('page', page);
+        p.append('pageSize', state.size);
+
+        if (state.filters.q)    p.append('q', state.filters.q);
+        if (state.filters.city) p.append('city', state.filters.city);
+
+        const lvl = mapLevel(state.filters.seniority);
+        if (lvl) p.append('level', lvl);
+
+        const chosen = new Set();
+        if (state.filters.contract) chosen.add(state.filters.contract);
+        (state.filters.contracts || []).forEach(c => chosen.add(c));
+        for (const c of chosen) {
+            const norm = mapContract(c);
+            if (norm) p.append('contract', norm);
+        }
+
+        if (state.filters.minSalary) p.append('salaryMin', state.filters.minSalary);
         if (state.filters.withSalary) p.append('withSalary', 'true');
         if (state.filters.remote)     p.append('remote', 'true');
+
+        p.append('sort', state.filters.sort);
         state.filters.specs.forEach(v => p.append('spec', v));
         state.filters.techs.forEach(v => p.append('tech', v));
 
         try {
-            const res = await fetch(`${API_URL}?${p.toString()}`, { headers:{ Accept:'application/json' } });
+            const res = await fetch(`${API_URL}?${p.toString()}`, { headers: { Accept: 'application/json' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
 
-            // Akceptujemy Page oraz fallbacki
             let rawItems = [];
             let totalElements = 0, totalPages = 0;
 
@@ -117,7 +130,6 @@ export function initJobs(opts = {}) {
             };
         } catch (e) {
             console.warn('API niedostępne – fallback DEMO', e);
-            // prosta paginacja po DEMO
             const start = (page - 1) * state.size;
             const slice = DEMO_ITEMS.slice(start, start + state.size);
             return {
@@ -130,7 +142,7 @@ export function initJobs(opts = {}) {
 
     async function fetchJobDetail(id) {
         try {
-            const res = await fetch(`${API_URL}/${id}`, { headers:{ Accept:'application/json' } });
+            const res = await fetch(`${API_URL}/${id}`, { headers: { Accept: 'application/json' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return toUiDetail(await res.json());
         } catch (e) {
@@ -140,7 +152,6 @@ export function initJobs(opts = {}) {
         }
     }
 
-    // ---- MAPOWANIE
     function toSalary(x) {
         const min = x?.salaryMin ?? x?.salary?.min ?? null;
         const max = x?.salaryMax ?? x?.salary?.max ?? null;
@@ -148,6 +159,12 @@ export function initJobs(opts = {}) {
         const period = x?.salary?.period ?? 'MONTH';
         if (min == null && max == null) return null;
         return { min, max, currency, period };
+    }
+
+    function ensureContracts(x) {
+        if (Array.isArray(x?.contracts)) return x.contracts.filter(Boolean);
+        if (x?.contract) return [x.contract];
+        return [];
     }
 
     function toUiListItem(x) {
@@ -165,7 +182,10 @@ export function initJobs(opts = {}) {
                         : [],
             salary: toSalary(x),
             remote: !!x.remote,
-            description: x.description ?? null
+            description: x.description ?? null,
+            contract: x.contract ?? null,
+            contracts: ensureContracts(x),
+            level: x.level ?? null
         };
     }
 
@@ -182,11 +202,14 @@ export function initJobs(opts = {}) {
                 : Array.isArray(x.keywords) ? x.keywords
                     : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean)
                         : [],
-            salary: toSalary(x)
+            salary: toSalary(x),
+            contract: x.contract ?? null,
+            contracts: ensureContracts(x),
+            level: x.level ?? null,
+            remote: !!x.remote
         };
     }
 
-    // ---- RENDERING
     function groupKey(job) {
         return state.filters.group === 'city'
             ? (job.city || '— inne —')
@@ -202,9 +225,23 @@ export function initJobs(opts = {}) {
         return `${min}${max ? ' – ' + max : ''} ${cur}/${per}`;
     }
 
+    function prettyContract(c) {
+        if (!c) return null;
+        const up = String(c).toUpperCase();
+        if (up === 'UOP') return 'UoP';
+        if (up === 'UOD') return 'UoD';
+        return up; // B2B, UZ
+    }
+
+    function prettyLevel(lvl) {
+        if (!lvl) return null;
+        const m = { INTERNSHIP: 'Intern', JUNIOR: 'Junior', MID: 'Mid', SENIOR: 'Senior', LEAD: 'Lead' };
+        return m[String(lvl).toUpperCase()] ?? lvl;
+    }
+
     function escapeHtml(s) {
         return String(s ?? '').replace(/[&<>"']/g, m => (
-            {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
         ));
     }
 
@@ -212,6 +249,18 @@ export function initJobs(opts = {}) {
         const el = document.createElement('div');
         el.className = 'card';
         el.setAttribute('role', 'listitem');
+
+        const contracts = (job.contracts && job.contracts.length)
+            ? job.contracts
+            : (job.contract ? [job.contract] : []);
+
+        const contractsBadges = contracts
+            .map(c => `<span class="badge">${escapeHtml(prettyContract(c))}</span>`)
+            .join('');
+
+        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
+        const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
+
         el.innerHTML = `
       <div>
         <div class="card__title">${escapeHtml(job.title || '')}</div>
@@ -221,6 +270,7 @@ export function initJobs(opts = {}) {
           ${job.datePosted ? `<span>🗓 ${new Date(job.datePosted).toLocaleDateString('pl-PL')}</span>` : ''}
         </div>
         <div class="badges">
+          ${contractsBadges}${levelBadge}${remoteBadge}
           ${(job.keywords || []).slice(0, 6).map(k => `<span class="badge">${escapeHtml(k)}</span>`).join('')}
         </div>
       </div>
@@ -247,7 +297,6 @@ export function initJobs(opts = {}) {
         }
         $empty.classList.add('hidden');
 
-        // grupowanie
         const groups = new Map();
         for (const job of state.items) {
             const key = groupKey(job);
@@ -288,10 +337,8 @@ export function initJobs(opts = {}) {
 
         $pager.innerHTML = '';
 
-        // Prev
         $pager.appendChild(btn('«', Math.max(1, cur - 1), cur === 1));
 
-        // okno numerków (5 stron wokół aktualnej)
         let start = Math.max(1, cur - 2);
         let end = Math.min(total, start + 4);
         start = Math.max(1, end - 4);
@@ -308,7 +355,6 @@ export function initJobs(opts = {}) {
             $pager.appendChild(btn(String(total), total, false, cur === total));
         }
 
-        // Next
         $pager.appendChild(btn('»', Math.min(total, cur + 1), cur === total));
 
         function ellipsis() {
@@ -319,7 +365,6 @@ export function initJobs(opts = {}) {
         }
     }
 
-    // ---- Paginacja / ładowanie strony
     async function gotoPage(page) {
         if (state.loading) return;
         state.loading = true;
@@ -339,15 +384,25 @@ export function initJobs(opts = {}) {
         }
     }
 
-    // ---- Modal
     function openModal(job) {
         if (!job) return;
+
+        const contracts = (job.contracts && job.contracts.length)
+            ? job.contracts
+            : (job.contract ? [job.contract] : []);
+        const contractsBadges = contracts
+            .map(c => `<span class="badge">${escapeHtml(prettyContract(c))}</span>`)
+            .join('');
+        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
+        const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
+
         $modalBody.innerHTML = `
       <header style="padding:0 6px 8px">
         <h3>${escapeHtml(job.title || '')}</h3>
-        <div class="meta" style="margin-top:4px">
+        <div class="meta" style="margin-top:4px; display:flex; gap:8px; flex-wrap:wrap">
           <span>🏢 ${escapeHtml(job.company || '—')}</span>
           <span>📍 ${escapeHtml(job.city || '')}</span>
+          ${contractsBadges}${levelBadge}${remoteBadge}
           <span class="money">${formatSalary(job.salary)}</span>
         </div>
       </header>
@@ -369,31 +424,35 @@ export function initJobs(opts = {}) {
     }
     document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
 
-    // ---- Handlery UI
     let t;
     const deb = (fn) => { clearTimeout(t); t = setTimeout(fn, 250); };
 
-    $q.addEventListener('input',      e => { state.filters.q = e.target.value.trim(); deb(()=>gotoPage(1)); });
-    $city.addEventListener('input',   e => { state.filters.city = e.target.value.trim(); deb(()=>gotoPage(1)); });
-    $seniority.addEventListener('change', e => { state.filters.seniority = e.target.value; gotoPage(1); });
-    $contract.addEventListener('change',  e => { state.filters.contract  = e.target.value; gotoPage(1); });
-    $minSalary.addEventListener('input',  e => { state.filters.minSalary = e.target.value; deb(()=>gotoPage(1)); });
-    $sort.addEventListener('change',      e => { state.filters.sort      = e.target.value; gotoPage(1); });
+    $q?.addEventListener('input',          e => { state.filters.q = e.target.value.trim(); deb(() => gotoPage(1)); });
+    $city?.addEventListener('input',       e => { state.filters.city = e.target.value.trim(); deb(() => gotoPage(1)); });
+    $seniority?.addEventListener('change', e => { state.filters.seniority = e.target.value; gotoPage(1); });
+    $contract?.addEventListener('change',  e => { state.filters.contract = e.target.value; gotoPage(1); });
+    contractChecks.forEach(chk => chk.addEventListener('change', () => {
+        state.filters.contracts = contractChecks.filter(x => x.checked).map(x => x.value);
+        gotoPage(1);
+    }));
 
-    $withSalary.addEventListener('click', (e) => {
+    $minSalary?.addEventListener('input',  e => { state.filters.minSalary = e.target.value; deb(() => gotoPage(1)); });
+    $sort?.addEventListener('change',      e => { state.filters.sort = e.target.value; gotoPage(1); });
+
+    $withSalary?.addEventListener('click', (e) => {
         togglePressed(e.currentTarget);
         state.filters.withSalary = e.currentTarget.getAttribute('aria-pressed') === 'true';
         gotoPage(1);
     });
-    $remote.addEventListener('click', (e) => {
+    $remote?.addEventListener('click', (e) => {
         togglePressed(e.currentTarget);
         state.filters.remote = e.currentTarget.getAttribute('aria-pressed') === 'true';
         gotoPage(1);
     });
-    $group.addEventListener('click', (e) => {
+    $group?.addEventListener('click', (e) => {
         state.filters.group = state.filters.group === 'city' ? 'company' : 'city';
         e.currentTarget.textContent = 'Grupuj: ' + (state.filters.group === 'city' ? 'miasto' : 'firma');
-        renderList(); // samo przegrupowanie
+        renderList();
     });
 
     specChecks.forEach(chk => chk.addEventListener('change', onChipChange));
@@ -404,25 +463,30 @@ export function initJobs(opts = {}) {
         gotoPage(1);
     }
 
-    $reset.addEventListener('click', () => {
+    $reset?.addEventListener('click', () => {
         Object.assign(state.filters, {
-            q:'', city:'', seniority:'', contract:'', minSalary:'',
-            withSalary:false, remote:false, sort:'relevance', group:'city',
-            specs:[], techs:[]
+            q: '', city: '', seniority: '',
+            contract: '', contracts: [],
+            minSalary: '',
+            withSalary: false, remote: false,
+            sort: 'relevance', group: 'city',
+            specs: [], techs: []
         });
-        [$q,$city,$seniority,$contract,$minSalary,$sort].forEach(el => { if (!el) return; el.value = (el.tagName === 'SELECT') ? '' : ''; });
-        $withSalary.setAttribute('aria-pressed', 'false');
-        $remote.setAttribute('aria-pressed', 'false');
-        $group.textContent = 'Grupuj: miasto';
+        [$q, $city, $seniority, $contract, $minSalary, $sort].forEach(el => {
+            if (!el) return;
+            el.value = (el.tagName === 'SELECT') ? '' : '';
+        });
+        contractChecks.forEach(x => x.checked = false);
+        $withSalary?.setAttribute('aria-pressed', 'false');
+        $remote?.setAttribute('aria-pressed', 'false');
+        $group && ($group.textContent = 'Grupuj: miasto');
         specChecks.forEach(x => x.checked = false);
         techChecks.forEach(x => x.checked = false);
         gotoPage(1);
     });
 
-    // start
     gotoPage(1);
 
-    // ---- helpers
     function byId(id){ return document.getElementById(id); }
     function togglePressed(btn){
         const v = btn.getAttribute('aria-pressed') === 'true';
@@ -430,21 +494,20 @@ export function initJobs(opts = {}) {
     }
 }
 
-// DEMO fallback
 const DEMO_ITEMS = [
     { id:'1', url:'https://justjoin.it/', title:'Senior Java Developer', company:'Acme', city:'Warszawa', country:'PL',
         description:'Mikroserwisy, Spring Boot, Kafka, AWS.', salary:{currency:'PLN', min:22000, max:32000, period:'MONTH'},
-        datePosted:'2025-09-29T10:00:00Z', keywords:['Java','Spring','Kafka','AWS'] },
+        datePosted:'2025-09-29T10:00:00Z', keywords:['Java','Spring','Kafka','AWS'], contract:'B2B', contracts:['B2B','UOP'], level:'SENIOR', remote:true },
     { id:'2', url:'https://justjoin.it/', title:'React Developer', company:'OneRail', city:'Kraków', country:'PL',
         description:'React, TypeScript, Vite, REST.', salary:{currency:'PLN', min:18000, max:25000, period:'MONTH'},
-        datePosted:'2025-09-28T09:00:00Z', keywords:['React','TypeScript','Vite','REST'] },
+        datePosted:'2025-09-28T09:00:00Z', keywords:['React','TypeScript','Vite','REST'], contract:'UOP', contracts:['UOP'], level:'MID' },
     { id:'3', url:'https://justjoin.it/', title:'DevOps Engineer', company:'Cloudly', city:'Remote', country:'PL',
         description:'K8s, Terraform, GitHub Actions, Observability.', salary:{currency:'PLN', min:23000, max:30000, period:'MONTH'},
-        datePosted:'2025-09-27T11:00:00Z', keywords:['Kubernetes','Terraform','CI/CD','Prometheus'] },
+        datePosted:'2025-09-27T11:00:00Z', keywords:['Kubernetes','Terraform','CI/CD','Prometheus'], contract:'B2B', contracts:['B2B'], level:'SENIOR', remote:true },
     { id:'4', url:'https://justjoin.it/', title:'QA Automation Engineer', company:'Testify', city:'Gdańsk', country:'PL',
         description:'Cypress, Playwright, API tests.', salary:{currency:'PLN', min:14000, max:20000, period:'MONTH'},
-        datePosted:'2025-09-26T13:00:00Z', keywords:['Cypress','Playwright','QA','Automation'] },
+        datePosted:'2025-09-26T13:00:00Z', keywords:['Cypress','Playwright','QA','Automation'], contract:'UOP', contracts:['UOP'], level:'MID' },
     { id:'5', url:'https://justjoin.it/', title:'Python Backend Engineer', company:'DataForge', city:'Wrocław', country:'PL',
         description:'FastAPI, PostgreSQL, Kafka.', salary:{currency:'PLN', min:20000, max:27000, period:'MONTH'},
-        datePosted:'2025-09-25T12:00:00Z', keywords:['Python','FastAPI','PostgreSQL','Kafka'] }
+        datePosted:'2025-09-25T12:00:00Z', keywords:['Python','FastAPI','PostgreSQL','Kafka'], contract:'UOP', contracts:['UOP','B2B'], level:'SENIOR' }
 ];
