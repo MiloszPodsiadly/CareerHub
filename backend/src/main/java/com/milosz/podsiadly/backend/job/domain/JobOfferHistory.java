@@ -29,7 +29,7 @@ public class JobOfferHistory {
     private String contract;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "job_offer_history_contracts",
             joinColumns = @JoinColumn(name = "history_id")
