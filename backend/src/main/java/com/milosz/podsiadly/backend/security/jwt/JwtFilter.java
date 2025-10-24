@@ -49,8 +49,14 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
         String uri = req.getRequestURI();
-        return uri.startsWith("/api/auth/")
-                || uri.startsWith("/api/public/")
+
+        // pozwalamy pominąć filtr dla login/register/refresh/logout,
+        // ale NIE dla /api/auth/me
+        if (uri.startsWith("/api/auth/")) {
+            return !uri.equals("/api/auth/me") && !uri.equals("/api/auth/me/");
+        }
+
+        return uri.startsWith("/api/public/")
                 || uri.equals("/api/jobs")   || uri.startsWith("/api/jobs/")
                 || uri.equals("/api/ingest") || uri.startsWith("/api/ingest/");
     }

@@ -1,38 +1,34 @@
 <header class="hdr" role="banner">
     <div class="hdr__inner">
-        <a class="brand" href="/" aria-label="Strona główna">
+        <a class="brand" href="/" aria-label="Home">
             <span class="brand__badge" aria-hidden="true">⚡</span>
             <span class="brand__text">CareerHub</span>
         </a>
 
-        <nav class="nav" aria-label="Główna nawigacja">
-            <a class="nav__link" href="/jobs" data-nav="jobs">Oferty pracy</a>
-            <a class="nav__link" href="/events" data-nav="events">Wydarzenia</a>
-            <a class="nav__link" href="/hackathons" data-nav="hackathons">Hackatony</a>
+        <nav class="nav" aria-label="Main navigation">
+            <a class="nav__link" href="/jobs" data-nav="jobs">Jobs</a>
+            <a class="nav__link" href="/events" data-nav="events">Events</a>
+            <a class="nav__link" href="/hackathons" data-nav="hackathons">Hackathons</a>
             <a class="nav__link nav__link--accent" href="/salary-calculator" data-nav="salary">
-                Kalkulator wynagrodzeń <span class="chip">nowe</span>
+                Salary calculator <span class="chip">new</span>
             </a>
         </nav>
 
-        <!-- NOWY WRAPPER: trzecia kolumna grida -->
         <div class="hdr__actions">
-            <!-- ZAWSZE -->
-            <a class="btn btn--primary" href="/post">Dodaj ogłoszenie</a>
+            <a class="btn btn--primary" href="/post">Post a job</a>
 
-            <!-- GOŚĆ -->
             <div class="cta cta--guest" data-guest>
-                <a class="btn btn--ghost" href="/auth/login">Zaloguj się</a>
+                <a class="btn btn--ghost" href="/auth/login">Log in</a>
             </div>
 
-            <!-- ZALOGOWANY -->
             <div class="cta userarea cta--user" data-user hidden>
-                <a class="nav__link" href="/favorite" data-nav="fav">Ulubione</a>
+                <a class="nav__link" href="/favorite" data-nav="fav">Favourites</a>
                 <div class="userdrop" data-dd>
-                    <button class="avatar" data-avatar type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Menu konta"></button>
-                    <div class="dd" role="menu" aria-label="Menu konta">
+                    <button class="avatar" data-avatar type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu"></button>
+                    <div class="dd" role="menu" aria-label="Account menu">
                         <div class="dd__meta" data-user-meta></div>
-                        <a href="/profile" role="menuitem">Profil</a>
-                        <button type="button" role="menuitem" data-logout>Wyloguj</button>
+                        <a href="/profile" role="menuitem">Profile</a>
+                        <button type="button" role="menuitem" data-logout>Log out</button>
                     </div>
                 </div>
             </div>

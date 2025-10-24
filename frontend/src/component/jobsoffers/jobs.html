@@ -1,21 +1,20 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Oferty pracy – filtry</title>
+    <title>Job offers – filters</title>
     <link rel="stylesheet" href="jobs.css" />
 </head>
 <body class="jobs">
 
-<!-- KROK 1: Toolbar -->
-<section class="toolbar" aria-label="Podstawowe filtry">
+<section class="toolbar" aria-label="Primary filters">
     <div class="toolbar__row">
-        <input id="q" class="inp" placeholder="Szukaj: stanowisko, firma, tech…" autocomplete="off" />
-        <input id="city" class="inp" placeholder="Miasto (np. Warszawa)" autocomplete="off" />
+        <input id="q" class="inp" placeholder="Search: title, company, tech…" autocomplete="off" />
+        <input id="city" class="inp" placeholder="City (e.g. Warsaw)" autocomplete="off" />
 
-        <select id="seniority" class="inp" aria-label="Poziom seniority">
-            <option value="">Poziom</option>
+        <select id="seniority" class="inp" aria-label="Seniority">
+            <option value="">Level</option>
             <option value="INTERNSHIP">intern</option>
             <option value="JUNIOR">junior</option>
             <option value="MID">mid</option>
@@ -23,44 +22,42 @@
             <option value="LEAD">lead</option>
         </select>
 
-        <select id="contract" class="inp" aria-label="Typ kontraktu">
-            <option value="">Kontrakt</option>
+        <select id="contract" class="inp" aria-label="Contract type">
+            <option value="">Contract</option>
             <option value="UOP">UoP</option>
             <option value="B2B">B2B</option>
-            <option value="UZ">Umowa zlecenie</option>
-            <option value="UOD">Umowa o dzieło</option>
+            <option value="UZ">Mandate (UZ)</option>
+            <option value="UOD">Specific-task (UoD)</option>
         </select>
 
-        <input id="minSalary" type="number" min="0" inputmode="numeric" class="inp" placeholder="Min. PLN/mies." />
-        <select id="sort" class="inp" aria-label="Sortowanie">
-            <option value="relevance">Sortuj: Trafność</option>
-            <option value="date">Najnowsze</option>
-            <option value="salary">Najwyższe płace</option>
+        <select id="sort" class="inp" aria-label="Sorting">
+            <option value="relevance">Sort: Relevance</option>
+            <option value="date">Newest</option>
+            <option value="salary">Highest salaries</option>
         </select>
-        <button id="group" type="button" class="btn" aria-pressed="false" title="Przełącz grupowanie">Grupuj: miasto</button>
+
+        <button id="group" type="button" class="btn" aria-pressed="false" title="Toggle grouping">Group by: city</button>
     </div>
 
     <div class="toolbar__meta">
         <span id="count" aria-live="polite">—</span>
         <span class="muted" aria-hidden="true">•</span>
-        <button id="withSalary" type="button" class="chip" aria-pressed="false">Tylko z widełkami</button>
-        <button id="remote" type="button" class="chip" aria-pressed="false">Tylko zdalne</button>
-        <button id="reset" type="button" class="chip danger">Reset filtrów</button>
+        <button id="withSalary" type="button" class="chip" aria-pressed="false">Only with salary ranges</button>
+        <button id="remote" type="button" class="chip" aria-pressed="false">Remote only</button>
+        <button id="reset" type="button" class="chip danger">Reset filters</button>
     </div>
 </section>
 
-<!-- KROK 2: Szybkie filtry (z ikonami SVG) -->
 <section class="filters" aria-labelledby="filters-title">
     <header class="filters__header">
-        <h2 id="filters-title">Szybkie filtry</h2>
-        <p class="filters__hint">Zaznacz interesujące Cię specjalizacje i technologie, a potem doprecyzuj u góry.</p>
+        <h2 id="filters-title">Quick filters</h2>
+        <p class="filters__hint">Select your specializations and technologies, then refine above.</p>
     </header>
 
     <div class="filters__grid">
 
-        <!-- Specjalizacje -->
         <fieldset class="fg" aria-labelledby="fg-spec">
-            <legend id="fg-spec" class="fg__title">Specjalizacje</legend>
+            <legend id="fg-spec" class="fg__title">Specializations</legend>
             <div class="chips">
 
                 <input id="spec-frontend" class="chipcheck" type="checkbox" name="spec[]" value="Frontend">
@@ -117,7 +114,6 @@
                     Embedded
                 </label>
 
-                <!-- NOWE -->
                 <input id="spec-aiml" class="chipcheck" type="checkbox" name="spec[]" value="AI/ML">
                 <label for="spec-aiml" class="chip chip--svg">
                     <span class="i"><img src="/assets/component/jobsoffers/specialization/AI-ML.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
@@ -133,9 +129,8 @@
             </div>
         </fieldset>
 
-        <!-- Technologie -->
         <fieldset class="fg" aria-labelledby="fg-tech">
-            <legend id="fg-tech" class="fg__title">Technologie</legend>
+            <legend id="fg-tech" class="fg__title">Technologies</legend>
             <div class="chips">
 
                 <input id="tech-angular" class="chipcheck" type="checkbox" name="tech[]" value="Angular">
@@ -209,27 +204,27 @@
                     <span class="i"><img src="/assets/component/jobsoffers/technology/Kubernetes.svg" alt="" aria-hidden="true" loading="lazy" decoding="async"></span>
                     Kubernetes
                 </label>
+
             </div>
         </fieldset>
 
     </div>
 </section>
 
-<!-- KROK 3: Wyniki -->
 <section class="results" aria-live="polite">
     <div id="list" class="list" role="list"></div>
-    <div id="loading" class="loading hidden">Ładowanie…</div>
-    <div id="empty" class="empty hidden">Brak wyników dla tych filtrów.</div>
-    <nav id="pager" class="pager" aria-label="Paginacja"></nav>
+    <div id="loading" class="loading hidden">Loading…</div>
+    <div id="empty" class="empty hidden">No results for these filters.</div>
+    <nav id="pager" class="pager" aria-label="Pagination"></nav>
 </section>
 
-<!-- KROK 4: Modal -->
 <dialog id="modal" class="modal">
     <form method="dialog" class="modal__x">
-        <button class="icon-btn" type="submit" aria-label="Zamknij">✕</button>
+        <button class="icon-btn" type="submit" aria-label="Close">✕</button>
     </form>
     <article id="modalBody" class="modal__body"></article>
 </dialog>
 
+<script type="module" src="jobs.js"></script>
 </body>
 </html>
