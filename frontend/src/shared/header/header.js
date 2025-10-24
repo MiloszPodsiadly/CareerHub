@@ -1,55 +1,64 @@
-import { authApi, bootstrapAuth, getUser, onAuthChange } from "../api.js";
+import { authApi, bootstrapAuth, getUser, onAuthChange, onAuthReady } from "../api.js";
 
 (function () {
-    const guestEl  = document.querySelector("[data-guest]");
-    const userEl   = document.querySelector("[data-user]");
-    const avatarBtn= document.querySelector("[data-avatar]");
-    const metaBox  = document.querySelector("[data-user-meta]");
-    const dd       = document.querySelector("[data-dd]");
-    const logoutBtn= document.querySelector("[data-logout]");
+    var guestEl   = document.querySelector("[data-guest]");
+    var userEl    = document.querySelector("[data-user]");
+    var avatarBtn = document.querySelector("[data-avatar]");
+    var metaBox   = document.querySelector("[data-user-meta]");
+    var dd        = document.querySelector("[data-dd]");
+    var logoutBtn = document.querySelector("[data-logout]");
 
-    const show = (el, on) => {
+    function show(el, on) {
         if (!el) return;
         el.hidden = !on;
         el.setAttribute('aria-hidden', (!on).toString());
-        el.style.display = on ? '' : 'none';   // <- dopinka „na twardo”
-    };
+        el.style.display = on ? '' : 'none';
+    }
 
-    function renderUserUI(user){
-        const isLogged = !!user;
+    function getSafe(prop, fallback) { return (prop === undefined || prop === null) ? fallback : prop; }
+
+    function renderUserUI(user) {
+        var isLogged = !!user;
         show(guestEl, !isLogged);
         show(userEl,  isLogged);
-
         if (!isLogged || !avatarBtn || !metaBox) return;
 
-        avatarBtn.innerHTML = "";
-        const photo = user?.avatarUrl;
+        avatarBtn.innerHTML = '';
+        var photo = user && user.avatarUrl;
         if (photo) {
-            const img = document.createElement("img"); img.src = photo; img.alt = "Avatar";
+            var img = document.createElement('img');
+            img.src = photo; img.alt = 'Avatar';
             avatarBtn.appendChild(img);
         } else {
-            avatarBtn.textContent = (user?.name || user?.username || "U").slice(0,1).toUpperCase();
+            var letter = (getSafe(user && (user.name || user.username), 'U'))
+                .toString().charAt(0).toUpperCase();
+            avatarBtn.textContent = letter;
         }
-        metaBox.innerHTML = `<strong>${user?.name || user?.username || "Użytkownik"}</strong>${user?.email || ""}`;
+
+        var name  = getSafe(user && (user.name || user.username), 'User');
+        var email = getSafe(user && user.email, '');
+        metaBox.innerHTML = '<strong>' + name + '</strong>' + email;
     }
 
-    if (dd && avatarBtn){
-        avatarBtn.addEventListener("click", () => {
-            dd.classList.toggle("open");
-            avatarBtn.setAttribute("aria-expanded", dd.classList.contains("open") ? "true" : "false");
+    if (dd && avatarBtn) {
+        avatarBtn.addEventListener('click', function () {
+            dd.classList.toggle('open');
+            avatarBtn.setAttribute('aria-expanded', dd.classList.contains('open') ? 'true' : 'false');
         });
-        document.addEventListener("click", (e) => { if (!dd.contains(e.target)) dd.classList.remove("open"); });
-    }
-
-    if (logoutBtn){
-        logoutBtn.addEventListener("click", async () => {
-            try { await authApi.logout(); } catch {}
-            location.href = "/";
+        document.addEventListener('click', function (e) {
+            if (!dd.contains(e.target)) dd.classList.remove('open');
         });
     }
 
-    // KOLEJNOŚĆ:
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function () {
+            try { await authApi.logout(); } catch (e) {}
+            location.href = '/';
+        });
+    }
+
     renderUserUI(getUser());
+    onAuthReady(renderUserUI);
     onAuthChange(renderUserUI);
     bootstrapAuth();
 })();
