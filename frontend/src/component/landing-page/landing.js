@@ -34,7 +34,6 @@ export async function mountLanding(opts = {}) {
     const jobsEl      = mount.querySelector('[data-stat="jobs"] .stat__num');
     const companiesEl = mount.querySelector('[data-stat="companies"] .stat__num');
     const eventsEl    = mount.querySelector('[data-stat="events"] .stat__num');
-    const hacksEl     = mount.querySelector('[data-stat="hackathons"] .stat__num');
 
     if (jobsEl) {
         try { const total = await fetchJobsTotal(jobsApi); if (Number.isFinite(total)) animateCount(jobsEl, total); } catch {}
@@ -52,13 +51,6 @@ export async function mountLanding(opts = {}) {
             const { from, to } = monthBounds(new Date());
             const total = await fetchEventsTotal(eventsApi, { from, to });
             if (Number.isFinite(total)) animateCount(eventsEl, total);
-        } catch {}
-    }
-    if (hacksEl) {
-        try {
-            const from = new Date().toISOString().slice(0, 10);
-            const total = await fetchEventsTotal(eventsApi, { from, type: 'HACKATHON' });
-            if (Number.isFinite(total)) animateCount(hacksEl, total);
         } catch {}
     }
 
