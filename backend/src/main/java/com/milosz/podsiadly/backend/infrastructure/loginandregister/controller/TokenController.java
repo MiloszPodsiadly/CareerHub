@@ -1,8 +1,8 @@
 package com.milosz.podsiadly.backend.infrastructure.loginandregister.controller;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.*;
-import com.milosz.podsiadly.backend.domain.loginandregister.dto.RegisterUserDto;
-import com.milosz.podsiadly.backend.domain.loginandregister.dto.UserDto;
+import com.milosz.podsiadly.backend.domain.loginandregister.dto.*;
+import com.milosz.podsiadly.backend.domain.profile.ProfileRepository; // <--- DODAJ
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.toDto;
+import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.toMeDto; // <---
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,14 +33,15 @@ public class TokenController {
     private final LoginRepository users;
     private final UserService userService;
     private final JwtProperties props;
+    private final ProfileRepository profiles;
 
     public record LoginReq(String username, String password) {}
     public record TokenRes(String accessToken) {}
 
     @PostMapping("/register")
     public ResponseEntity<TokenRes> register(@RequestBody RegisterUserDto dto, HttpServletResponse resp) {
-        UserDto created = userService.register(dto);                    // założy konto lub rzuci 409 (patrz @ExceptionHandler)
-        User u = usersByUsername.loadUserByUsername(created.username()); // pobierz encję z rolami
+        UserDto created = userService.register(dto);
+        User u = usersByUsername.loadUserByUsername(created.username());
 
         String access  = jwt.issueAccess(u.getId(), u.getUsername(), u.getRoles().stream().map(Role::getName).toList());
         String refresh = jwt.issueRefresh(u.getId());
@@ -81,7 +83,17 @@ public class TokenController {
     }
 
     @GetMapping("/me")
-    public UserDto me(@AuthenticationPrincipal User user) { return toDto(user); }
+    public MeDto me(@AuthenticationPrincipal User user) {
+        var p = profiles.findByUserId(user.getId()).orElse(null);
+        return toMeDto(
+                user,
+                p != null ? p.getName()      : null,
+                p != null ? p.getEmail()     : null,
+                p != null ? p.getAvatarUrl() : null,
+                p != null ? p.getAbout()      : null,
+                p != null ? p.getDob()       : null
+        );
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handle(IllegalArgumentException e) {
@@ -103,5 +115,4 @@ public class TokenController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Incorrect username or password"));
     }
-
 }
