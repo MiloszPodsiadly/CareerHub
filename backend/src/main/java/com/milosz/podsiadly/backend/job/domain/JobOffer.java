@@ -9,7 +9,10 @@ import java.util.*;
 @Entity
 @Table(
         name = "job_offer",
-        uniqueConstraints = @UniqueConstraint(name = "ux_source_external", columnNames = {"source", "externalId"})
+        uniqueConstraints = @UniqueConstraint(
+                name = "ux_job_offer_source_external",
+                columnNames = {"source", "external_id"}
+        )
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class JobOffer {
