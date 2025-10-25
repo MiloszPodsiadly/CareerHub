@@ -14,9 +14,10 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        INSERT INTO company(name)
-        VALUES (:name)
-        ON CONFLICT ON CONSTRAINT ukniu8sfil2gxywcru9ah3r4ec5 DO NOTHING
-        """, nativeQuery = true)
+    INSERT INTO company(name)
+    VALUES (:name)
+    ON CONFLICT (name) DO NOTHING
+    """, nativeQuery = true)
     int insertIgnore(@Param("name") String name);
+
 }
