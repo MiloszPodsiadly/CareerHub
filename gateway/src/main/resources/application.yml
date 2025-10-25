@@ -50,4 +50,6 @@ auth:
     - /api/ingest
     - /api/salary
     - /api/salary/**
+    - /api/profile
+    - /api/profile/**
     - /actuator/**
