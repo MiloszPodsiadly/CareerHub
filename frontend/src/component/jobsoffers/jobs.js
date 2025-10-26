@@ -1,7 +1,5 @@
-// === jobs.js ===
 import { getAccess } from '../../shared/api.js';
 
-/* ---------- Favorites (z tokenem) ---------- */
 const FAV = (() => {
     const api = (p) => `${p}`;
     const auth = () => {
@@ -19,7 +17,7 @@ const FAV = (() => {
                 credentials: 'include'
             });
             if (!r.ok) throw 0;
-            return r.json(); // { favorited, count }
+            return r.json();
         } catch {
             return { favorited: false, count: 0 };
         }
@@ -84,7 +82,6 @@ const FAV = (() => {
     return { mountButton, loggedIn };
 })();
 
-/* ---------- Lista ofert ---------- */
 export function initJobs(opts = {}) {
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
@@ -298,7 +295,6 @@ export function initJobs(opts = {}) {
       </div>
     `;
 
-        // Dodaj serce tylko dla zalogowanych
         if (FAV.loggedIn()) {
             const actions = el.querySelector('.actions');
             if (actions) {
