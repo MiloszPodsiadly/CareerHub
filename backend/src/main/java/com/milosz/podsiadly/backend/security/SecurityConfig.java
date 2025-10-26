@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/events","/api/events/**").permitAll()
                         .requestMatchers("/api/salary", "/api/salary/**").permitAll()
                         .requestMatchers("api/profile", "/api/profile/**").permitAll()
+                        .requestMatchers("api/favorites","/api/favorites/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/favorites/*/*/status").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
