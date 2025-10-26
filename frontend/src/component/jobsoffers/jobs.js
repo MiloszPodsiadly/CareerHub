@@ -1,3 +1,87 @@
+import { getAccess } from '../../shared/api.js';
+
+const FAV = (() => {
+    const api = (p) => `${p}`;
+    const auth = () => {
+        try {
+            const t = getAccess?.();
+            return t ? { Authorization: `Bearer ${t}` } : {};
+        } catch { return {}; }
+    };
+    const loggedIn = () => !!getAccess?.();
+
+    async function status(type, id) {
+        try {
+            const r = await fetch(api(`/api/favorites/${type}/${id}/status`), {
+                headers: { Accept: 'application/json', ...auth() },
+                credentials: 'include'
+            });
+            if (!r.ok) throw 0;
+            return r.json();
+        } catch {
+            return { favorited: false, count: 0 };
+        }
+    }
+
+    async function toggle(type, id) {
+        const r = await fetch(api(`/api/favorites/${type}/${id}/toggle`), {
+            method: 'POST',
+            headers: { Accept: 'application/json', ...auth() },
+            credentials: 'include'
+        });
+        if (r.status === 401 || r.status === 403) throw new Error('Please log in');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+    }
+
+    function paint(el, s) {
+        if (!el) return;
+        const on = !!s.favorited;
+        el.classList.toggle('fav--on', on);
+        el.setAttribute('aria-pressed', on ? 'true' : 'false');
+        el.setAttribute('aria-label', on ? 'Remove from favourites' : 'Add to favourites');
+        const cnt = el.querySelector('.fav__count');
+        if (cnt) cnt.textContent = String(s.count ?? 0);
+    }
+
+    function mountButton(el, { type, id, disabledWhenLoggedOut = true }) {
+        if (!id) return;
+        const isLogged = loggedIn();
+
+        el.classList.add('fav');
+        el.setAttribute('data-fav-type', type);
+        el.setAttribute('data-fav-id', String(id));
+        el.setAttribute('type', 'button');
+        el.setAttribute('aria-pressed', 'false');
+        el.innerHTML = `
+      <svg class="fav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 14s-6-3.33-6-8a3.5 3.5 0 0 1 6-2.475A3.5 3.5 0 0 1 14 6c0 4.67-6 8-6 8z"></path>
+      </svg>
+      <span class="fav__count" aria-hidden="true">0</span>
+    `;
+
+        if (!isLogged && disabledWhenLoggedOut) {
+            el.classList.add('fav--disabled');
+            el.title = 'Log in to save favourites';
+            return;
+        }
+
+        status(type, id).then(s => paint(el, s)).catch(() => {});
+        el.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!loggedIn()) return;
+            try {
+                const s = await toggle(type, id);
+                paint(el, s);
+            } catch (err) {
+                console.error('fav toggle failed', err);
+            }
+        });
+    }
+
+    return { mountButton, loggedIn };
+})();
+
 export function initJobs(opts = {}) {
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
@@ -170,7 +254,7 @@ export function initJobs(opts = {}) {
         const up=String(c).toUpperCase();
         if (up==='UOP') return 'UoP';
         if (up==='UOD') return 'UoD';
-        return up; // B2B, UZ
+        return up;
     }
     function prettyLevel(lvl){
         if (!lvl) return null;
@@ -188,7 +272,7 @@ export function initJobs(opts = {}) {
 
         const contracts=(job.contracts && job.contracts.length) ? job.contracts : (job.contract ? [job.contract] : []);
         const contractsBadges=contracts.map(c=>`<span class="badge">${escapeHtml(prettyContract(c))}</span>`).join('');
-        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
+        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(pretyLevelSafe(job.level))}</span>` : '';
         const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
 
         el.innerHTML = `
@@ -204,17 +288,29 @@ export function initJobs(opts = {}) {
           ${(job.keywords || []).slice(0,6).map(k=>`<span class="badge">${escapeHtml(k)}</span>`).join('')}
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:10px">
+      <div class="actions" style="display:flex; align-items:center; gap:10px">
         <div class="money">${formatSalary(job.salary)}</div>
         <button class="chip" data-open="1">Preview</button>
         ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
       </div>
     `;
+
+        if (FAV.loggedIn()) {
+            const actions = el.querySelector('.actions');
+            if (actions) {
+                const favBtn = document.createElement('button');
+                actions.prepend(favBtn);
+                FAV.mountButton(favBtn, { type: 'JOB', id: job.id });
+            }
+        }
+
         el.querySelector('[data-open]')?.addEventListener('click', async () => {
             const detail = await fetchJobDetail(job.id);
             openModal(detail ?? job);
         });
         return el;
+
+        function pretyLevelSafe(l){ return prettyLevel(l); }
     }
 
     function renderList(){
@@ -350,8 +446,6 @@ export function initJobs(opts = {}) {
         }).join('');
         return html;
     }
-
-    document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
 
     let t; const deb = fn => { clearTimeout(t); t=setTimeout(fn, 250); };
 

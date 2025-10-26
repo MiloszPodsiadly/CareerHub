@@ -52,4 +52,6 @@ auth:
     - /api/salary/**
     - /api/profile
     - /api/profile/**
+    - /api/favorites
+    - /api/favorites/**
     - /actuator/**
