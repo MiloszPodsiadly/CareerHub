@@ -1,3 +1,83 @@
+import { getAccess } from '../../shared/api.js';
+
+const FAV = (() => {
+    const api = (p) => `${p}`;
+    const auth = () => {
+        try {
+            const t = getAccess?.();
+            return t ? { Authorization: `Bearer ${t}` } : {};
+        } catch { return {}; }
+    };
+    const loggedIn = () => !!getAccess?.();
+
+    async function status(type, id) {
+        try {
+            const r = await fetch(api(`/api/favorites/${type}/${id}/status`), {
+                headers: { Accept: 'application/json', ...auth() },
+                credentials: 'include'
+            });
+            if (!r.ok) throw 0;
+            return r.json();
+        } catch {
+            return { favorited: false, count: 0 };
+        }
+    }
+
+    async function toggle(type, id) {
+        const r = await fetch(api(`/api/favorites/${type}/${id}/toggle`), {
+            method: 'POST',
+            headers: { Accept: 'application/json', ...auth() },
+            credentials: 'include'
+        });
+        if (r.status === 401 || r.status === 403) throw new Error('Please log in');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+    }
+
+    function paint(el, s) {
+        if (!el) return;
+        el.classList.toggle('fav--on', !!s.favorited);
+        const cnt = el.querySelector('.fav__count');
+        if (cnt) cnt.textContent = String(s.count ?? 0);
+    }
+
+    function mountButton(el, { type, id, disabledWhenLoggedOut = true }) {
+        if (!id) return;
+        const isLogged = loggedIn();
+
+        el.classList.add('fav');
+        el.setAttribute('data-fav-type', type);
+        el.setAttribute('data-fav-id', String(id));
+        el.innerHTML = `
+      <svg class="fav__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21s-6.2-3.6-9.3-7.1C-0.3 10.3 1.2 6 4.9 5.3c1.9-.4 3.8.5 5 2 1.2-1.6 3.1-2.4 5-2 3.7.7 5.2 5 1.2 8.6C18.2 17.4 12 21 12 21z"/>
+      </svg>
+      <span class="fav__count" aria-hidden="true">0</span>
+      <span class="sr-only">Add to favourites</span>
+    `;
+
+        if (!isLogged && disabledWhenLoggedOut) {
+            el.classList.add('fav--disabled');
+            el.title = 'Log in to save favourites';
+            return;
+        }
+
+        status(type, id).then(s => paint(el, s)).catch(() => {});
+        el.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!loggedIn()) return;
+            try {
+                const s = await toggle(type, id);
+                paint(el, s);
+            } catch (err) {
+                console.error('fav toggle failed', err);
+            }
+        });
+    }
+
+    return { mountButton, loggedIn };
+})();
+
 export function initJobs(opts = {}) {
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
@@ -170,7 +250,7 @@ export function initJobs(opts = {}) {
         const up=String(c).toUpperCase();
         if (up==='UOP') return 'UoP';
         if (up==='UOD') return 'UoD';
-        return up; // B2B, UZ
+        return up;
     }
     function prettyLevel(lvl){
         if (!lvl) return null;
@@ -205,11 +285,21 @@ export function initJobs(opts = {}) {
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:10px">
+        <button class="fav" data-hook="fav-job"></button>
         <div class="money">${formatSalary(job.salary)}</div>
         <button class="chip" data-open="1">Preview</button>
         ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
       </div>
     `;
+
+        const favBtn = el.querySelector('[data-hook="fav-job"]');
+        if (favBtn && FAV.loggedIn()) {
+            FAV.mountButton(favBtn, { type: 'JOB', id: job.id });
+        } else if (favBtn) {
+            favBtn.classList.add('fav--disabled');
+            favBtn.title = 'Log in to save favourites';
+        }
+
         el.querySelector('[data-open]')?.addEventListener('click', async () => {
             const detail = await fetchJobDetail(job.id);
             openModal(detail ?? job);
@@ -350,8 +440,6 @@ export function initJobs(opts = {}) {
         }).join('');
         return html;
     }
-
-    document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
 
     let t; const deb = fn => { clearTimeout(t); t=setTimeout(fn, 250); };
 
