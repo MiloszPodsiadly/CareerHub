@@ -1,7 +1,5 @@
-// === events.js ===
 import { getAccess } from '../../shared/api.js';
 
-/* ---------- Favorites (z tokenem) ---------- */
 const FAV = (() => {
     const api = (p) => `${p}`;
     const auth = () => {
@@ -19,7 +17,7 @@ const FAV = (() => {
                 credentials: 'include'
             });
             if (!r.ok) throw 0;
-            return r.json(); // { favorited, count }
+            return r.json();
         } catch {
             return { favorited: false, count: 0 };
         }
@@ -84,12 +82,10 @@ const FAV = (() => {
     return { mountButton, loggedIn };
 })();
 
-/* ---------- Lista eventów ---------- */
 export function initEvents(opts = {}) {
     const API_URL = opts.apiUrl ?? '/api/events';
     const PAGE_SIZE = 25;
 
-    // stałe
     const ISO2 = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,SZ,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,VA,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NL,NC,NZ,NI,NE,NG,NU,NF,MK,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,PM,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,SD,SR,SJ,SE,CH,SY,TW,TJ,TZ,TH,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VE,VN,VG,VI,WF,EH,YE,ZM,ZW".split(",");
     const REGION = new Intl.DisplayNames(['en'], { type: 'region' });
     const COUNTRIES = [{ code: '', name: 'All countries' }, { code: 'ZZ-ONLINE', name: 'Online' }]
@@ -99,7 +95,6 @@ export function initEvents(opts = {}) {
     const TECHS = ['javascript','typescript','react','java','python','c#','php','aws','kubernetes','devops','data','ai/ml'];
     const TYPES = ['meetup','conference','hackathon','masterclass','workshop','webinar'];
 
-    // stan + uchwyty
     const state = {
         page: 0, size: PAGE_SIZE, total: 0, totalPages: 1,
         q:'', country:'', city:'', type:'', tech:'', from:'', to:''
@@ -108,14 +103,12 @@ export function initEvents(opts = {}) {
     const $grid = $('#grid'), $status = $('#status'), $meta = $('#meta'),
         $pageInfo = $('#page-info'), $btnPrev = $('#btn-prev'), $btnNext = $('#btn-next');
 
-    // select country
     const sel = $('#country');
     if (sel) {
         sel.innerHTML = COUNTRIES.map(c => `<option value="${c.code}">${escapeHtml(c.name)}</option>`).join('');
         sel.value = '';
     }
 
-    // tech chips
     const chipsTech = $('#chips-tech');
     if (chipsTech) {
         chipsTech.innerHTML = TECHS.map(t=>`<button class="chip" data-tech="${t}">${t}</button>`).join('');
@@ -125,13 +118,11 @@ export function initEvents(opts = {}) {
         }));
     }
 
-    // quick filters (type)
     document.querySelectorAll('.chip[data-type]').forEach(b => b.addEventListener('click', () => {
         const typeSel = $('#type'); if (!typeSel) return;
         typeSel.value = b.dataset.type; onChange();
     }));
 
-    // inputs
     $('#q')?.addEventListener('input', debounce(onChange, 300));
     $('#city')?.addEventListener('input', debounce(onChange, 0));
     $('#type')?.addEventListener('change', onChange);
@@ -147,11 +138,9 @@ export function initEvents(opts = {}) {
         onChange();
     });
 
-    // paginacja
     $btnPrev?.addEventListener('click', () => { if (state.page > 0){ state.page--; fetchAndRender(false); } });
     $btnNext?.addEventListener('click', () => { if (state.page + 1 < state.totalPages){ state.page++; fetchAndRender(false); } });
 
-    // domyślnie od dziś
     if ($('#from') && !$('#from').value) $('#from').value = new Date().toISOString().slice(0,10);
     if ($('#city')) $('#city').disabled = !$('#country').value || $('#country').value === 'ZZ-ONLINE';
 
@@ -252,7 +241,6 @@ export function initEvents(opts = {}) {
             row.style.display='flex'; row.style.gap='10px'; row.style.flexWrap='wrap';
             row.appendChild(link);
 
-            // ❤ tylko dla zalogowanych — nic nie renderujemy, jeśli user nie jest zalogowany
             if (FAV.loggedIn()) {
                 const favBtn = document.createElement('button');
                 favBtn.type = 'button';
@@ -268,7 +256,6 @@ export function initEvents(opts = {}) {
         }
     }
 
-    /* ---------- MOCK (fallback demo) ---------- */
     const MOCK = (() => {
         const CITY_BY = {
             PL:['Warsaw','Kraków','Wrocław','Gdańsk','Poznań'],
@@ -312,7 +299,6 @@ export function initEvents(opts = {}) {
         return { search };
     })();
 
-    // utils
     function toVM(e){
         const d = e.startAt ? new Date(e.startAt) : null;
         return {
