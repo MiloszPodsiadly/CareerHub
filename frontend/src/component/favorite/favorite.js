@@ -1,15 +1,6 @@
-// favorite.js
-// ---------------------------------------------------------
-// Ulubione: lista ofert pracy i eventów + akcje (unfav/clear)
-// ---------------------------------------------------------
-
-// Jeśli bundlujesz moduły – import działa (tak jak w jobs.js)
 import { getAccess as sharedGetAccess } from '../../shared/api.js';
 
 export function initFavorites() {
-    /* ====== config & endpoints ====== */
-    // Jeśli front i API lecą przez ten sam host (Nginx proxy /api -> backend), zostaw pusty string.
-    // Jeśli rozdzielasz – ustaw np. const API_BASE = 'https://api.example.com';
     const API_BASE = '';
 
     const API = {
@@ -27,7 +18,6 @@ export function initFavorites() {
 
     const TYPES = { JOB: 'JOB', EVENT: 'EVENT' };
 
-    /* ====== auth helpers (solidny resolver tokenu) ====== */
     function resolveAccessToken() {
         try {
             if (typeof sharedGetAccess === 'function') {
@@ -60,20 +50,17 @@ export function initFavorites() {
     };
     const isAuthed = () => !!resolveAccessToken();
 
-    /* ====== dom helpers ====== */
     const $ = (sel, root = document) => root.querySelector(sel);
     const byId = (id) => document.getElementById(id);
 
     const panels = { jobs: byId('fav-jobs'), events: byId('fav-events') };
     const tabs   = Array.from(document.querySelectorAll('.fav__tab'));
 
-    /* ====== state ====== */
     const state = {
         jobs  : { page: 0, size: 50, total: 0, items: [], loading: false },
         events: { page: 0, size: 50, total: 0, items: [], loading: false }
     };
 
-    /* ====== tabs ====== */
     const switchTo = (key) => {
         tabs.forEach(t => {
             const active = t.dataset.tab === key;
@@ -95,7 +82,6 @@ export function initFavorites() {
     switchTo(start === 'events' ? 'events' : 'jobs');
     tabs.forEach(btn => btn.addEventListener('click', () => switchTo(btn.dataset.tab)));
 
-    /* ====== UI helpers ====== */
     function setPanelStatus(panelEl, text) {
         if (!panelEl) return;
         let s = panelEl.querySelector('.fav__status');
@@ -123,7 +109,6 @@ export function initFavorites() {
     const escapeHtml = (s) =>
         String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-    /* ====== mapping ====== */
     function mapJobFavorite(item) {
         const j = item?.job || item?.payload || item?.target || item;
         const id = j?.id ?? j?._id ?? j?.jobId ?? item?.targetId ?? item?.id;
@@ -160,14 +145,13 @@ export function initFavorites() {
         return { id, title, url, city, country, startAt, tags: categories.slice(0, 6) };
     }
 
-    /* ====== public API (dla list jobs/events) ====== */
     async function statusFavorite(type, id) {
         const r = await fetch(API.status(type, id), {
             credentials: 'include',
             headers: { Accept: 'application/json', ...authHeader() }
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json(); // { favorited, count }
+        return r.json();
     }
 
     async function toggleFavorite(type, id) {
@@ -179,13 +163,9 @@ export function initFavorites() {
         });
         if (r.status === 401 || r.status === 403) throw new Error('Please log in');
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json(); // { favorited, count }
+        return r.json();
     }
-
-    // Wystaw do globala:
     window.favorites = Object.assign(window.favorites || {}, { statusFavorite, toggleFavorite, TYPES });
-
-    /* ====== fetchers ====== */
     async function fetchMine(type, page = 0, size = 50) {
         if (!isAuthed()) {
             const err = new Error('Please log in'); err.code = 401; throw err;
@@ -215,7 +195,6 @@ export function initFavorites() {
         return mapEventFavorite({ event: x });
     }
 
-    /* ====== renderers ====== */
     function renderJobs(items) {
         const panel = panels.jobs; if (!panel) return;
         const grid  = panel.querySelector('.fav__grid');
@@ -281,7 +260,6 @@ export function initFavorites() {
         }
     }
 
-    /* ====== loaders ====== */
     async function loadJobs() {
         const panel = panels.jobs;
         try{
@@ -350,7 +328,6 @@ export function initFavorites() {
         }
     }
 
-    /* ====== actions ====== */
     async function handleUnfavClick(e) {
         const btn = e.target.closest?.('[data-unfav]');
         if (!btn) return;
@@ -366,7 +343,6 @@ export function initFavorites() {
             return;
         }
 
-        // optimistic remove
         animateRemove(card);
 
         try{
@@ -407,7 +383,6 @@ export function initFavorites() {
             return;
         }
 
-        // optimistic UI
         cards.forEach(c => animateRemove(c));
 
         try{
@@ -424,13 +399,11 @@ export function initFavorites() {
         }
     }
 
-    /* ====== wire up ====== */
     document.addEventListener('click', handleUnfavClick);
     document.querySelectorAll('[data-clear]').forEach(btn => {
         btn.addEventListener('click', () => handleClear(btn.getAttribute('data-clear')));
     });
 
-    // initial loads
     loadJobs();
     loadEvents();
 }
