@@ -1,5 +1,3 @@
-/* jobs.css */
-/* Ikony w chipach (spec/tech) */
 .jobs .chip--svg .i{
     display:inline-flex; align-items:center; justify-content:center;
     width:22px; height:22px; margin-right:6px;
@@ -7,7 +5,6 @@
 }
 .jobs .chip--svg .i img{ width:20px; height:20px; display:block }
 
-/* Root */
 .jobs{
     --text:#0f172a; --muted:#5b6b80; --bg:#ffffff; --panel:#f6f8ff;
     --card:#ffffff; --card-2:#f2f6ff; --line:#e6ecf5;
@@ -31,7 +28,6 @@
 .jobs *{ box-sizing:border-box; font-feature-settings:"cv10","ss01" }
 .jobs .muted{ color:var(--muted) }
 
-/* Toolbar */
 .jobs .toolbar{
     background:linear-gradient(135deg, rgba(91,127,255,.10), rgba(156,192,255,.08));
     border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow)
@@ -41,7 +37,6 @@
 }
 .jobs .toolbar__meta{ margin-top:12px; display:flex; align-items:center; gap:10px }
 
-/* Inputs */
 .jobs .inp,.jobs .btn,.jobs .chip{
     height:40px; border-radius:12px; border:1px solid var(--line);
     background:var(--card); color:var(--text); padding:0 12px; outline:none;
@@ -56,7 +51,6 @@
 .jobs .chip:hover{ border-color:var(--acc2) }
 .jobs .chip.danger{ border-color:#ffd6db; background:#fff1f3; color:#9a1e1e }
 
-/* Filters */
 .jobs .filters{
     margin-top:16px; background:var(--card); border:1px solid var(--line);
     border-radius:18px; padding:16px; box-shadow:var(--shadow)
@@ -83,7 +77,6 @@
     border:1px solid rgba(156,192,255,.45); color:#203560;
 }
 
-/* List */
 .jobs .results{ margin-top:18px }
 .jobs .list{
     position:relative; background:var(--card); border:1px solid var(--line);
@@ -122,7 +115,6 @@
 .jobs .hidden{ display:none }
 .jobs .sentinel{ height:1px }
 
-/* Modal */
 .jobs .modal{
     border:1px solid var(--line); border-radius:18px;
     width:min(920px,96vw); background:var(--card); color:var(--text);
@@ -146,7 +138,6 @@
 .jobs .aside .badges{ display:flex; flex-wrap:wrap; gap:6px }
 .jobs .aside .cta{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap }
 
-/* Pager */
 .jobs .list + .pager{ margin-top:12px }
 .jobs .pager{
     display:flex; align-items:center; justify-content:center; gap:6px; padding:10px;
@@ -165,7 +156,6 @@
 .jobs .pager__dots{ min-width:20px; text-align:center; color:var(--muted); user-select:none }
 .jobs .sentinel{ display:none !important }
 
-/* ===== Favorites (serduszko – płaskie, piękne) ===== */
 .jobs .fav{
     display:inline-flex; align-items:center; gap:6px;
     padding:0; min-height:auto; background:transparent; border:0;
@@ -176,13 +166,11 @@
 .jobs .fav:active{ transform:translateY(1px) }
 .jobs .fav--disabled{ opacity:.55; cursor:default }
 
-/* kolorujemy svg przez currentColor */
 .jobs .fav__icon{ width:18px; height:18px; display:block; color:#ec407a }
 .jobs .fav__icon path{ fill:currentColor }
 .jobs .fav--on .fav__icon{ color:#d81b60 }
 .jobs .fav__count{ font:700 12px/1 ui-monospace,"JetBrains Mono",monospace; color:var(--text); min-width:1ch }
 
-/* A11y helper */
 .jobs .sr-only{
     position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0
