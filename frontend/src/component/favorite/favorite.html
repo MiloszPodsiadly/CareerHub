@@ -9,6 +9,7 @@
         <button id="tab-events" class="fav__tab" data-tab="events" role="tab" aria-selected="false" aria-controls="fav-events">Events</button>
     </nav>
 
+    <!-- JOBS -->
     <section id="fav-jobs" class="fav__panel is-active" role="tabpanel" tabindex="0" aria-labelledby="tab-jobs">
         <div class="fav__toolbar">
             <div class="left">
@@ -24,41 +25,8 @@
             </div>
         </div>
 
-        <div class="fav__grid">
-            <article class="fav-card job">
-                <div class="fav-card__head">
-                    <h3 class="fav-card__title">Senior Java Developer</h3>
-                    <button class="icon-btn" title="Remove from favorites" aria-label="Remove from favorites" data-unfav>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-4.35-9.33-7.18A5.91 5.91 0 1 1 12 5.66a5.91 5.91 0 1 1 9.33 8.16C18.5 16.65 12 21 12 21z"/></svg>
-                    </button>
-                </div>
-                <p class="muted">Acme Corp • Warsaw • Hybrid</p>
-                <div class="badges">
-                    <span class="badge">Java</span><span class="badge">Spring</span><span class="badge">AWS</span>
-                </div>
-                <div class="fav-card__meta">
-                    <span class="money">18 000 – 24 000 PLN</span>
-                    <a href="#" class="link">View job</a>
-                </div>
-            </article>
-
-            <article class="fav-card job">
-                <div class="fav-card__head">
-                    <h3 class="fav-card__title">Frontend Engineer (React)</h3>
-                    <button class="icon-btn" title="Remove from favorites" aria-label="Remove from favorites" data-unfav>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-4.35-9.33-7.18A5.91 5.91 0 1 1 12 5.66a5.91 5.91 0 1 1 9.33 8.16C18.5 16.65 12 21 12 21z"/></svg>
-                    </button>
-                </div>
-                <p class="muted">Nimbus • Remote</p>
-                <div class="badges">
-                    <span class="badge">React</span><span class="badge">TypeScript</span><span class="badge">Vite</span>
-                </div>
-                <div class="fav-card__meta">
-                    <span class="money">16 000 – 22 000 PLN</span>
-                    <a href="#" class="link">View job</a>
-                </div>
-            </article>
-        </div>
+        <!-- JS wstawia karty tutaj -->
+        <div class="fav__grid"></div>
 
         <div class="fav__empty hidden" data-empty="jobs">
             <p>You don’t have any saved jobs yet.</p>
@@ -66,6 +34,7 @@
         </div>
     </section>
 
+    <!-- EVENTS -->
     <section id="fav-events" class="fav__panel" role="tabpanel" tabindex="0" aria-labelledby="tab-events" hidden>
         <div class="fav__toolbar">
             <div class="left">
@@ -81,41 +50,8 @@
             </div>
         </div>
 
-        <div class="fav__grid">
-            <article class="fav-card event">
-                <div class="fav-card__head">
-                    <h3 class="fav-card__title">JSConf PL 2025</h3>
-                    <button class="icon-btn" title="Remove from favorites" aria-label="Remove from favorites" data-unfav>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-4.35-9.33-7.18A5.91 5.91 0 1 1 12 5.66a5.91 5.91 0 1 1 9.33 8.16C18.5 16.65 12 21 12 21z"/></svg>
-                    </button>
-                </div>
-                <p class="muted">Kraków • May 14–15</p>
-                <div class="badges">
-                    <span class="badge">Conference</span><span class="badge">Frontend</span>
-                </div>
-                <div class="fav-card__meta">
-                    <span class="pill">On-site</span>
-                    <a href="#" class="link">View event</a>
-                </div>
-            </article>
-
-            <article class="fav-card event">
-                <div class="fav-card__head">
-                    <h3 class="fav-card__title">Kubernetes Meetup</h3>
-                    <button class="icon-btn" title="Remove from favorites" aria-label="Remove from favorites" data-unfav>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-4.35-9.33-7.18A5.91 5.91 0 1 1 12 5.66a5.91 5.91 0 1 1 9.33 8.16C18.5 16.65 12 21 12 21z"/></svg>
-                    </button>
-                </div>
-                <p class="muted">Online • October 27</p>
-                <div class="badges">
-                    <span class="badge">Cloud</span><span class="badge">DevOps</span>
-                </div>
-                <div class="fav-card__meta">
-                    <span class="pill">Online</span>
-                    <a href="#" class="link">View event</a>
-                </div>
-            </article>
-        </div>
+        <!-- JS wstawia karty tutaj -->
+        <div class="fav__grid"></div>
 
         <div class="fav__empty hidden" data-empty="events">
             <p>You don’t have any saved events yet.</p>
