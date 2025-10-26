@@ -1,5 +1,7 @@
+// === jobs.js ===
 import { getAccess } from '../../shared/api.js';
 
+/* ---------- Favorites (z tokenem) ---------- */
 const FAV = (() => {
     const api = (p) => `${p}`;
     const auth = () => {
@@ -17,7 +19,7 @@ const FAV = (() => {
                 credentials: 'include'
             });
             if (!r.ok) throw 0;
-            return r.json();
+            return r.json(); // { favorited, count }
         } catch {
             return { favorited: false, count: 0 };
         }
@@ -36,7 +38,10 @@ const FAV = (() => {
 
     function paint(el, s) {
         if (!el) return;
-        el.classList.toggle('fav--on', !!s.favorited);
+        const on = !!s.favorited;
+        el.classList.toggle('fav--on', on);
+        el.setAttribute('aria-pressed', on ? 'true' : 'false');
+        el.setAttribute('aria-label', on ? 'Remove from favourites' : 'Add to favourites');
         const cnt = el.querySelector('.fav__count');
         if (cnt) cnt.textContent = String(s.count ?? 0);
     }
@@ -48,12 +53,13 @@ const FAV = (() => {
         el.classList.add('fav');
         el.setAttribute('data-fav-type', type);
         el.setAttribute('data-fav-id', String(id));
+        el.setAttribute('type', 'button');
+        el.setAttribute('aria-pressed', 'false');
         el.innerHTML = `
-      <svg class="fav__icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 21s-6.2-3.6-9.3-7.1C-0.3 10.3 1.2 6 4.9 5.3c1.9-.4 3.8.5 5 2 1.2-1.6 3.1-2.4 5-2 3.7.7 5.2 5 1.2 8.6C18.2 17.4 12 21 12 21z"/>
+      <svg class="fav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 14s-6-3.33-6-8a3.5 3.5 0 0 1 6-2.475A3.5 3.5 0 0 1 14 6c0 4.67-6 8-6 8z"></path>
       </svg>
       <span class="fav__count" aria-hidden="true">0</span>
-      <span class="sr-only">Add to favourites</span>
     `;
 
         if (!isLogged && disabledWhenLoggedOut) {
@@ -78,6 +84,7 @@ const FAV = (() => {
     return { mountButton, loggedIn };
 })();
 
+/* ---------- Lista ofert ---------- */
 export function initJobs(opts = {}) {
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
@@ -268,7 +275,7 @@ export function initJobs(opts = {}) {
 
         const contracts=(job.contracts && job.contracts.length) ? job.contracts : (job.contract ? [job.contract] : []);
         const contractsBadges=contracts.map(c=>`<span class="badge">${escapeHtml(prettyContract(c))}</span>`).join('');
-        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
+        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(pretyLevelSafe(job.level))}</span>` : '';
         const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
 
         el.innerHTML = `
@@ -284,20 +291,21 @@ export function initJobs(opts = {}) {
           ${(job.keywords || []).slice(0,6).map(k=>`<span class="badge">${escapeHtml(k)}</span>`).join('')}
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:10px">
-        <button class="fav" data-hook="fav-job"></button>
+      <div class="actions" style="display:flex; align-items:center; gap:10px">
         <div class="money">${formatSalary(job.salary)}</div>
         <button class="chip" data-open="1">Preview</button>
         ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
       </div>
     `;
 
-        const favBtn = el.querySelector('[data-hook="fav-job"]');
-        if (favBtn && FAV.loggedIn()) {
-            FAV.mountButton(favBtn, { type: 'JOB', id: job.id });
-        } else if (favBtn) {
-            favBtn.classList.add('fav--disabled');
-            favBtn.title = 'Log in to save favourites';
+        // Dodaj serce tylko dla zalogowanych
+        if (FAV.loggedIn()) {
+            const actions = el.querySelector('.actions');
+            if (actions) {
+                const favBtn = document.createElement('button');
+                actions.prepend(favBtn);
+                FAV.mountButton(favBtn, { type: 'JOB', id: job.id });
+            }
         }
 
         el.querySelector('[data-open]')?.addEventListener('click', async () => {
@@ -305,6 +313,8 @@ export function initJobs(opts = {}) {
             openModal(detail ?? job);
         });
         return el;
+
+        function pretyLevelSafe(l){ return prettyLevel(l); }
     }
 
     function renderList(){
