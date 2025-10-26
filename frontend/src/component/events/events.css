@@ -1,3 +1,4 @@
+/* events.css */
 .events{
     --text:#0f172a; --muted:#5b6b80; --bg:#ffffff;
     --panel:#f6f8ff; --card:#ffffff; --card-2:#f2f6ff; --line:#e6ecf5;
@@ -19,20 +20,19 @@
 }
 .events *{ box-sizing:border-box; font-feature-settings:"cv10","ss01" }
 
-/* toolbar */
+/* Toolbar */
 .events .toolbar{
     background:linear-gradient(135deg, rgba(91,127,255,.10), rgba(156,192,255,.08));
-    border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow);
+    border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow)
 }
-.events .toolbar__row{
-    display:grid; grid-template-columns:2fr 1.2fr 1fr 1fr 1fr auto; gap:10px;
-}
+.events .toolbar__row{ display:grid; grid-template-columns:2fr 1.2fr 1fr 1fr 1fr auto; gap:10px }
 .events .meta{ margin-top:12px; display:flex; gap:10px; color:var(--muted); font-size:14px }
 
-/* inputs */
-.events .inp, .events .btn, .events .chip{
+/* Inputs */
+.events .inp,.events .btn,.events .chip{
     height:40px; border-radius:12px; border:1px solid var(--line); background:var(--card);
-    color:var(--text); padding:0 12px; outline:none; transition:background .15s,border-color .15s,box-shadow .15s,transform .12s;
+    color:var(--text); padding:0 12px; outline:none;
+    transition:background .15s, border-color .15s, box-shadow .15s, transform .12s
 }
 .events .inp::placeholder{ color:#9aa8bb }
 .events .inp:focus{ border-color:var(--acc2); box-shadow:0 0 0 3px var(--ring) }
@@ -41,14 +41,14 @@
 .events .chip{ background:var(--card-2) }
 .events .chip:hover{ border-color:var(--acc2) }
 
-/* quick filters panel */
+/* Quick filters */
 .events .filters{ margin-top:16px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow) }
 .events .filters__grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
 .events .fg{ padding:14px; border:1px dashed var(--line); border-radius:16px; background:var(--panel) }
 .events .fg h3{ margin:0 0 8px; font-weight:900 }
 .events .chips{ display:flex; flex-wrap:wrap; gap:8px }
 
-/* list */
+/* List */
 .events .results{ margin-top:18px }
 .events .list{
     background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)
@@ -56,21 +56,41 @@
 .events .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; padding:14px }
 .events .card{
     display:grid; gap:10px; padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--card);
-    transition:transform .16s, box-shadow .16s, background .16s;
+    transition:transform .16s, box-shadow .16s, background .16s
 }
 .events .card:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(15,27,60,.06); background:var(--card-2) }
 .events .title{ font-weight:900 }
 .events .where{ color:var(--muted); font-size:13px }
 .events .tags{ display:flex; gap:6px; flex-wrap:wrap }
-.events .tag{ font:600 12px/1.2 ui-monospace,"JetBrains Mono",monospace; border:1px solid #dbe6ff; border-radius:999px; padding:2px 8px; background:#eef3ff; color:#1d2f57 }
+.events .tag{
+    font:600 12px/1.2 ui-monospace,"JetBrains Mono",monospace;
+    border:1px solid #dbe6ff; border-radius:999px; padding:2px 8px;
+    background:#eef3ff; color:#1d2f57
+}
 @media (prefers-color-scheme: dark){
     .events .tag{ background:#1a2032; border-color:#27324a; color:#d5e0ff }
 }
 
-/* states */
-.events .loading, .events .empty, .events .error{ padding:16px; text-align:center; }
+/* States */
+.events .loading,.events .empty,.events .error{ padding:16px; text-align:center }
 .events .error{ color:#b91c1c; background:#fee2e2; border-top:1px solid #fecaca }
 @media (max-width:1100px){
     .events .toolbar__row{ grid-template-columns:1fr 1fr 1fr; gap:8px }
     .events .filters__grid{ grid-template-columns:1fr }
 }
+
+/* ===== Favorites na kartach eventów – płaskie serce ===== */
+.events .fav{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:0; min-height:auto; background:transparent; border:0;
+    color:var(--text); cursor:pointer; box-shadow:none; transition:opacity .15s ease
+}
+.events .fav:hover{ opacity:.9 }
+.events .fav:active{ transform:translateY(1px) }
+.events .fav--disabled{ opacity:.55; cursor:default }
+
+/* Kolorujemy przez currentColor */
+.events .fav__icon{ width:18px; height:18px; display:block; color:#ec407a }
+.events .fav__icon path{ fill:currentColor }
+.events .fav--on .fav__icon{ color:#d81b60 }
+.events .fav__count{ font:700 12px/1 ui-monospace,"JetBrains Mono",monospace; min-width:1ch; color:var(--text) }
