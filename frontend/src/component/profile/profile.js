@@ -31,17 +31,27 @@ export async function initProfile(opts = {}) {
     const fileUrl = (id) => api(`/api/profile/file/${encodeURIComponent(id)}`);
     const auth = () => { const t = getAccess?.(); return t ? { Authorization: `Bearer ${t}` } : {}; };
 
+    // helpers
     async function loadProtectedImage(url) {
         const res = await fetch(url, { headers: { ...auth() }, credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
         return URL.createObjectURL(blob);
     }
+    async function downloadProtected(url, filename) {
+        const res = await fetch(url, { headers: { ...auth() }, credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const obj = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = obj; a.download = filename || 'file';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(obj);
+    }
 
     async function resolveAvatarSrc(profile) {
         if (profile?.avatarFileId) {
-            try { return await loadProtectedImage(fileUrl(profile.avatarFileId)); }
-            catch {}
+            try { return await loadProtectedImage(fileUrl(profile.avatarFileId)); } catch {}
         }
         return profile?.avatarUrl || profile?.avatarPreset || null;
     }
@@ -49,7 +59,6 @@ export async function initProfile(opts = {}) {
     let previewObjectUrl = null;
     function drawAvatarUrl(url, fallback) {
         avatarPreview.innerHTML = '';
-        if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
         if (url) {
             const img = document.createElement('img');
             img.src = url; img.alt = 'Avatar';
@@ -62,9 +71,21 @@ export async function initProfile(opts = {}) {
         const src = await resolveAvatarSrc(profile);
         drawAvatarUrl(src, fallback);
     }
+    function broadcastHeader(url, initials) {
+        window.dispatchEvent(new CustomEvent('app:avatar-preview', {
+            detail: { url: url || null, initials: initials || '?' }
+        }));
+    }
+
+    function renderCvInfo({ name, size, onClick } = {}) {
+        if (!name) { cvInfo.textContent = 'No file.'; return; }
+        const sizeMb = size ? ` • ${(size/1024/1024).toFixed(2)} MB` : '';
+        cvInfo.innerHTML = `<button type="button" class="btn--ghost" style="padding:0;border:0;background:none;text-decoration:underline;cursor:pointer">${name}</button>${sizeMb}`;
+        cvInfo.querySelector('button').addEventListener('click', (e) => { e.preventDefault(); onClick?.(); });
+    }
 
     const PRESETS = Array.from({ length: 5 }, (_, i) => `/assets/component/profile/avatar/avatar${i+1}.svg`);
-    let avatarBlob=null, avatarPreset=null, cvBlob=null;
+    let avatarBlob=null, avatarPreset=null, cvBlob=null, cvBlobUrl=null;
 
     function renderPresets(activeUrl){
         presetGrid.innerHTML = '';
@@ -78,9 +99,11 @@ export async function initProfile(opts = {}) {
             btn.className = (activeUrl === src) ? 'active' : '';
             btn.addEventListener('click', () => {
                 avatarPreset = src; avatarBlob = null;
+                if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
                 [...presetGrid.children].forEach(c => { c.classList.remove('active'); c.setAttribute('aria-selected','false'); });
                 btn.classList.add('active'); btn.setAttribute('aria-selected','true');
                 drawAvatarUrl(src);
+                broadcastHeader(src, makeInitials(nameInput.value || emailInput.value));
             });
             presetGrid.appendChild(btn);
         });
@@ -113,6 +136,7 @@ export async function initProfile(opts = {}) {
 
     await drawAvatarFromProfile(profile, nameInput.value || emailInput.value);
     renderPresets(profile?.avatarPreset || profile?.avatarUrl || null);
+    broadcastHeader(await resolveAvatarSrc(profile), makeInitials(nameInput.value || emailInput.value));
 
     fillYears(); fillMonths(); fillDays();
     if (profile?.dob) {
@@ -123,13 +147,28 @@ export async function initProfile(opts = {}) {
         if (dd) dobDay.value=String(dd);
     }
 
+    function hydrateCvFromProfile(p) {
+        if (p?.cvFileId) {
+            renderCvInfo({
+                name: 'CV',
+                onClick: () => downloadProtected(`${fileUrl(p.cvFileId)}/download`, 'CV')
+            });
+        } else {
+            renderCvInfo();
+        }
+    }
+    hydrateCvFromProfile(profile);
+
     avatarFile.addEventListener('change', () => {
         const f = avatarFile.files?.[0]; if(!f) return;
         if (f.size > 2*1024*1024) { alert('File too large (max 2 MB).'); avatarFile.value=''; return; }
-        avatarBlob=f; avatarPreset=null;
-        const url = URL.createObjectURL(f);
-        previewObjectUrl = url;
-        drawAvatarUrl(url);
+
+        if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+
+        avatarBlob = f; avatarPreset = null;
+        previewObjectUrl = URL.createObjectURL(f);
+        drawAvatarUrl(previewObjectUrl);
+        broadcastHeader(previewObjectUrl, makeInitials(nameInput.value || emailInput.value));
     });
 
     clearAvatar.addEventListener('click', async () => {
@@ -138,20 +177,43 @@ export async function initProfile(opts = {}) {
             if (!res.ok) throw 0;
             profile.avatarFileId=profile.avatarUrl=profile.avatarPreset=null;
         } catch {}
+        if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
         avatarBlob=null; avatarPreset=null; avatarFile.value='';
-        drawAvatarUrl(null, nameInput.value || emailInput.value);
+        const initials = makeInitials(nameInput.value || emailInput.value);
+        drawAvatarUrl(null, initials);
+        broadcastHeader(null, initials);
         [...presetGrid.children].forEach(c=>c.classList.remove('active'));
     });
 
     cvFile.addEventListener('change', () => {
-        const f=cvFile.files?.[0]; if(!f){ cvInfo.textContent='No file.'; cvBlob=null; return; }
+        const f=cvFile.files?.[0];
+        if(!f){ cvBlob=null; if (cvBlobUrl){URL.revokeObjectURL(cvBlobUrl); cvBlobUrl=null;} renderCvInfo(); return; }
         if (f.size > 5*1024*1024) { alert('CV too large (max 5 MB).'); cvFile.value=''; return; }
-        cvBlob=f; cvInfo.textContent=`${f.name} • ${(f.size/1024/1024).toFixed(2)} MB`;
+
+        cvBlob=f;
+        if (cvBlobUrl) { URL.revokeObjectURL(cvBlobUrl); cvBlobUrl=null; }
+        cvBlobUrl = URL.createObjectURL(f);
+
+        renderCvInfo({
+            name: f.name,
+            size: f.size,
+            onClick: () => {
+                const a = document.createElement('a');
+                a.href = cvBlobUrl;
+                a.download = f.name || 'cv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
+        });
     });
 
     clearCv.addEventListener('click', async () => {
         try { await fetch(api('/api/profile/cv'), { method:'DELETE', credentials:'include', headers:auth() }); } catch {}
-        cvFile.value=''; cvBlob=null; cvInfo.textContent='No file.'; profile.cvFileId=null;
+        cvFile.value=''; cvBlob=null;
+        if (cvBlobUrl){ URL.revokeObjectURL(cvBlobUrl); cvBlobUrl=null; }
+        renderCvInfo();
+        profile.cvFileId=null;
     });
 
     resetBtn.addEventListener('click', async (e) => {
@@ -160,17 +222,23 @@ export async function initProfile(opts = {}) {
         emailInput.value  = original?.email ?? '';
         aboutInput.value  = original?.about ?? '';
 
+        if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
         avatarBlob=null; avatarPreset=null; avatarFile.value='';
         await drawAvatarFromProfile(original, nameInput.value || emailInput.value);
         renderPresets(original?.avatarPreset || original?.avatarUrl || null);
+        broadcastHeader(await resolveAvatarSrc(original), makeInitials(nameInput.value || emailInput.value));
 
         dobYear.value=''; dobMonth.value=''; fillDays(); dobDay.value='';
         if (original?.dob) {
             const [yy,mm,dd]=String(original.dob).split('-').map(Number);
             if (yy) dobYear.value=String(yy); if (mm) dobMonth.value=String(mm); fillDays(); if (dd) dobDay.value=String(dd);
         }
-        cvFile.value=''; cvBlob=null; cvInfo.textContent='No file.';
+
+        cvFile.value=''; cvBlob=null;
+        if (cvBlobUrl){ URL.revokeObjectURL(cvBlobUrl); cvBlobUrl=null; }
+        hydrateCvFromProfile(original);
     });
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const y=dobYear.value, m=dobMonth.value, d=dobDay.value;
@@ -194,6 +262,21 @@ export async function initProfile(opts = {}) {
             setUser({ ...getUser(), ...updated });
 
             await drawAvatarFromProfile(updated, nameInput.value || emailInput.value);
+            if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+            broadcastHeader(await resolveAvatarSrc(updated), makeInitials(nameInput.value || emailInput.value));
+
+            if (updated?.cvFileId) {
+                renderCvInfo({
+                    name: cvBlob?.name || 'CV',
+                    size: cvBlob?.size ?? 0,
+                    onClick: () => downloadProtected(`${fileUrl(updated.cvFileId)}/download`, cvBlob?.name || 'CV')
+                });
+            } else {
+                renderCvInfo();
+            }
+            if (cvBlobUrl){ URL.revokeObjectURL(cvBlobUrl); cvBlobUrl=null; }
+            cvBlob = null;
+
             alert('Profile changes saved.');
         } catch (err) {
             console.error(err);
