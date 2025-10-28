@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/job/dto/JobOfferListDto.java
 package com.milosz.podsiadly.backend.job.dto;
 
 import java.time.Instant;
