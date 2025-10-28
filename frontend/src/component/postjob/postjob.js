@@ -1,11 +1,10 @@
-// src/component/postjob/postjob.js
 import { getAccess } from '../../shared/api.js';
 import { navigate } from '../../router.js';
 
 export function initPostJob() {
     const $  = (sel, ctx = document) => ctx.querySelector(sel);
     const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
-    const api = (p) => p; // same-origin
+    const api = (p) => p;
     const auth = () => {
         const t = getAccess?.();
         return t ? { Authorization: `Bearer ${t}` } : {};
@@ -15,7 +14,6 @@ export function initPostJob() {
     const submitBtn = $('#submit-btn');
     const msg = $('#form-msg');
 
-    // ==== DESCRIPTION COUNTER + PREVIEW BINDINGS ====
     const desc = form.description;
     const descCount = $('#desc-count');
 
@@ -56,7 +54,6 @@ export function initPostJob() {
         });
     };
 
-    // ==== TAGS (chips) ====
     const tagsBox  = $('#tags');
     const tagInput = $('#tag-input');
 
@@ -94,7 +91,6 @@ export function initPostJob() {
         }
     });
 
-    // ==== SKILLS ====
     const skillsList = $('#skills-list');
     const addSkillBtn = $('#add-skill');
 
@@ -125,12 +121,10 @@ export function initPostJob() {
         }
     });
 
-    // ==== COUNTERS + PREVIEW HOOKS ====
     const bindPreviewFields = ['title','companyName','cityName','salaryMin','salaryMax','currency','level','contract','remote'];
     bindPreviewFields.forEach(name => form[name].addEventListener('input', () => { updatePreview(); scheduleSave(); }));
     desc.addEventListener('input', () => { descCount.textContent = desc.value.length; scheduleSave(); });
 
-    // ==== VALIDATION ====
     function setError(el, message) {
         const field = el.closest('.field') || el.closest('.card') || el;
         field.classList.add('invalid');
@@ -164,7 +158,6 @@ export function initPostJob() {
         return ok;
     }
 
-    // ==== SERIALIZATION ====
     function serialize() {
         const contracts = $$('input[name="contracts"]:checked', form).map(c => c.value);
         const skills = $$('.skill-row', skillsList).map(row => {
@@ -181,7 +174,7 @@ export function initPostJob() {
         return {
             source: form.source.value.trim() || 'platform',
             externalId: form.externalId.value.trim() || null,
-            url: null, // backend generates public URL
+            url: null,
             title: form.title.value.trim(),
             description: form.description.value.trim() || null,
             companyName: form.companyName.value.trim(),
@@ -200,12 +193,10 @@ export function initPostJob() {
         };
     }
 
-    // ==== SERVER DRAFTS ====
     let DRAFT_ID = null;
     let saveTimer = null;
 
     async function ensureDraft() {
-        // try latest draft for this user
         try {
             const r = await fetch(api('/api/job-drafts/latest'), {
                 headers: { Accept:'application/json', ...auth() },
@@ -224,7 +215,6 @@ export function initPostJob() {
             }
         } catch {}
 
-        // create empty draft
         const res = await fetch(api('/api/job-drafts'), {
             method:'POST',
             headers: { Accept:'application/json', ...auth() },
@@ -291,13 +281,11 @@ export function initPostJob() {
         saveTimer = setTimeout(saveDraftNow, 500);
     }
 
-    // explicit save draft button
     $('#save-draft').addEventListener('click', async () => {
         await saveDraftNow();
         msg.textContent = 'Draft saved.';
     });
 
-    // ==== SUBMIT => publish the draft ====
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         msg.textContent = '';
@@ -320,9 +308,7 @@ export function initPostJob() {
                 const errText = await res.text();
                 throw new Error(errText || `HTTP ${res.status}`);
             }
-            // const created = await res.json();
             msg.textContent = 'Job published 🎉';
-            // Redirect to jobs list (or job page if you return URL/id)
             await navigate('/jobs');
         } catch (err) {
             console.error(err);
@@ -333,10 +319,9 @@ export function initPostJob() {
         }
     });
 
-    // ==== INIT ====
     (async () => {
         try {
-            await ensureDraft(); // create/load per-user draft on the server
+            await ensureDraft();
         } catch (e) {
             console.error('Draft init failed', e);
             return;
