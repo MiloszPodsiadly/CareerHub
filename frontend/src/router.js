@@ -10,6 +10,8 @@ const routes = {
     '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountRegister()),
     '/profile': () => import('./component/profile/loader.profile.js').then(m => m.mountProfile()),
     '/favorite': () => import('./component/favorite/loader.favorite.js').then(m => m.mountFavorite()),
+    '/post-job': () => import('./component/postjob/loader.postjob.js').then(m => m.mountPostJob()),
+    '/my-offers': () => import('./component/myoffers/loader.myoffers.js').then(m => m.mountMyOffers()),
 };
 
 const FALLBACK = '/';
