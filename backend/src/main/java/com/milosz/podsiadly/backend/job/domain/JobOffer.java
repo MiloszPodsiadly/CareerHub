@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.job.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,10 @@ public class JobOffer {
 
     @Column(nullable = false) private String title;
     @Column(columnDefinition = "text") private String description;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "jobOffer", fetch = FetchType.LAZY)
+    private JobOfferOwner owner;
 
     @ManyToOne(fetch = FetchType.LAZY) private Company company;
     @ManyToOne(fetch = FetchType.LAZY) private City city;
