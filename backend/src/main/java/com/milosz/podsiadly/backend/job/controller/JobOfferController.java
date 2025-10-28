@@ -1,18 +1,22 @@
 package com.milosz.podsiadly.backend.job.controller;
 
+import com.milosz.podsiadly.backend.domain.loginandregister.User;
 import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
-import com.milosz.podsiadly.backend.job.dto.JobOfferListDto;
+import com.milosz.podsiadly.backend.job.dto.*;
+import com.milosz.podsiadly.backend.job.service.JobOfferCommandService;
 import com.milosz.podsiadly.backend.job.service.JobOfferService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
@@ -20,6 +24,7 @@ import java.util.Set;
 public class JobOfferController {
 
     private final JobOfferService service;
+    private final JobOfferCommandService commands;
 
     @GetMapping
     public Page<JobOfferListDto> search(
@@ -94,5 +99,46 @@ public class JobOfferController {
     @GetMapping("/{id}")
     public JobOfferDetailDto get(@PathVariable Long id) {
         return service.get(id);
+    }
+
+    @PostMapping
+    public JobOfferDetailDto create(
+            @AuthenticationPrincipal User user,
+            @RequestBody JobOfferCreateRequest req
+    ) {
+        if (user == null) throw new IllegalStateException("Must be authenticated to publish a job.");
+        String baseUrl = "http://localhost:3000";
+        return commands.create(user, req, baseUrl);
+    }
+
+
+    @PutMapping("/{id}")
+    public JobOfferDetailDto update(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody JobOfferUpdateRequest req
+    ) {
+        if (user == null) throw new IllegalStateException("Unauthorized.");
+        return commands.updateOwned(user, id, req);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody DeleteWithPasswordRequest req
+    ) {
+        if (user == null) throw new IllegalStateException("Unauthorized.");
+        log.info("[jobs.delete] user={} offer={} ...", user.getUsername(), id);
+        commands.deleteOwned(user, id, req.password());
+    }
+
+    @GetMapping("/mine")
+    public List<JobOfferListDto> mine(@AuthenticationPrincipal User user) {
+        if (user == null) throw new IllegalStateException("Unauthorized.");
+        var out = service.listOwned(user.getId());
+        log.info("[jobs.mine] userId={} count={}", user.getId(), out.size());
+        return out;
     }
 }
