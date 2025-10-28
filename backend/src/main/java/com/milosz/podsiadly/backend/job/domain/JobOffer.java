@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.job.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,21 +12,28 @@ import java.util.*;
         name = "job_offer",
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_job_offer_source_external",
-                columnNames = {"source", "external_id"}
+                columnNames = {"source","external_id"}
         )
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class JobOffer {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false) private String source;
-    @Column(nullable=false) private String externalId;
-    @Column(nullable=false, columnDefinition="text") private String url;
+    @Column(nullable = false) private String source;
+    @Column(name="external_id", nullable = false) private String externalId;
 
-    @Column(nullable=false) private String title;
-    @Column(columnDefinition="text") private String description;
+    @Column(nullable = false, columnDefinition = "text")
+    private String url;
+
+    @Column(nullable = false) private String title;
+    @Column(columnDefinition = "text") private String description;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "jobOffer", fetch = FetchType.LAZY)
+    private JobOfferOwner owner;
 
     @ManyToOne(fetch = FetchType.LAZY) private Company company;
     @ManyToOne(fetch = FetchType.LAZY) private City city;
@@ -33,7 +41,6 @@ public class JobOffer {
     private Boolean remote;
 
     @Enumerated(EnumType.STRING) private JobLevel level;
-
     @Enumerated(EnumType.STRING) private ContractType contract;
 
     @Builder.Default
@@ -49,6 +56,8 @@ public class JobOffer {
 
     @Builder.Default
     @ElementCollection
+    @CollectionTable(name = "job_offer_tags", joinColumns = @JoinColumn(name = "job_offer_id"))
+    @Column(name = "tag", length = 64)
     private List<String> techTags = new ArrayList<>();
 
     @Builder.Default

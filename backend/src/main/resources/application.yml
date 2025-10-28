@@ -89,15 +89,4 @@ ingest:
         sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
 logging:
   level:
-    org.springframework.web.servlet.DispatcherServlet: DEBUG
     root: INFO
-    com.milosz.podsiadly.backend: INFO
-    com.milosz.podsiadly.backend.domain.favorite: TRACE
-    org.springframework.web: INFO
-    org.springframework.web.method.HandlerMethod: DEBUG
-    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: DEBUG
-    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: DEBUG
-    org.springframework.transaction: TRACE
-    org.springframework.dao: DEBUG
-    org.springframework.transaction.interceptor: WARN
-    org.springframework.data.jpa.repository.support.SimpleJpaRepository: WARN

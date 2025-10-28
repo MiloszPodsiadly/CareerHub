@@ -49,17 +49,31 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
         String uri = req.getRequestURI();
+        String method = req.getMethod();
 
-        // pozwalamy pominąć filtr dla login/register/refresh/logout,
-        // ale NIE dla /api/auth/me
         if (uri.startsWith("/api/auth/")) {
             return !uri.equals("/api/auth/me") && !uri.equals("/api/auth/me/");
         }
 
-        return uri.startsWith("/api/public/")
-                || uri.equals("/api/jobs")   || uri.startsWith("/api/jobs/")
-                || uri.equals("/api/ingest") || uri.startsWith("/api/ingest/");
-    }
+        if (uri.startsWith("/api/public/")) {
+            return true;
+        }
 
+        if (uri.equals("/api/ingest") || uri.startsWith("/api/ingest/")) {
+            return true;
+        }
+
+        if (uri.startsWith("/api/jobs")) {
+            if (uri.equals("/api/jobs/mine") || uri.startsWith("/api/jobs/mine/")) {
+                return false;
+            }
+            if ("GET".equalsIgnoreCase(method)) {
+                return true;
+            }
+
+            return false;
+        }
+        return false;
+    }
 
 }

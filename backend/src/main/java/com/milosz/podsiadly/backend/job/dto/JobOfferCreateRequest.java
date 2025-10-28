@@ -3,9 +3,12 @@ package com.milosz.podsiadly.backend.job.dto;
 import java.time.Instant;
 import java.util.List;
 
-public record JobOfferListDto(
-        Long id,
+public record JobOfferCreateRequest(
+        String source,
+        String externalId,
+        String url,
         String title,
+        String description,
         String companyName,
         String cityName,
         Boolean remote,
@@ -16,5 +19,7 @@ public record JobOfferListDto(
         Integer salaryMax,
         String currency,
         List<String> techTags,
-        Instant publishedAt
+        List<JobOfferSkillDto> techStack,
+        Instant publishedAt,
+        Boolean active
 ) {}

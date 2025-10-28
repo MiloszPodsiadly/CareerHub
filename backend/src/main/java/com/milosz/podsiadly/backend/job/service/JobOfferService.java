@@ -3,9 +3,11 @@ package com.milosz.podsiadly.backend.job.service;
 import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
+import com.milosz.podsiadly.backend.job.domain.JobOfferOwner;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferListDto;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
+import com.milosz.podsiadly.backend.job.repository.JobOfferOwnerRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -116,4 +118,20 @@ public class JobOfferService {
                 .map(JobOfferMapper::toDetailDto)
                 .orElseThrow(() -> new IllegalArgumentException("Offer not found: " + id));
     }
+    @Transactional(readOnly = true)
+    public List<JobOfferListDto> listOwned(String userId) {
+        return repo.findOwnedByUserId(userId).stream()
+                .map(JobOfferMapper::toListDto)
+                .toList();
+    }
+
+    // Jeśli chcesz wyświetlać tylko „platformowe”:
+    @Transactional(readOnly = true)
+    public List<JobOfferListDto> listOwnedPlatformOnly(String userId) {
+        return repo.findPlatformOwnedByUserId(userId).stream()
+                .map(JobOfferMapper::toListDto)
+                .toList();
+    }
+
+
 }

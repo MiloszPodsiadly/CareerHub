@@ -46,7 +46,7 @@ public class JustJoinParser {
     private static final String LB = "(?<![\\p{L}\\p{N}])";
     private static final String RB = "(?![\\p{L}\\p{N}])";
 
-    private static final Pattern RX_LEAD   = Pattern.compile(LB + "(?:lead|tech\\s*lead|team\\s*lead|principal|staff|head)" + RB, RX);
+    private static final Pattern RX_LEAD = Pattern.compile(LB + "(?:lead|tech\\s*lead|team\\s*lead|principal|staff|head" + "|manager|director|vp|vice\\s*president|c[-\\s]*level|chief" + "|cto|cio|cfo|cmo|cpo|ceo|coo)" + RB, RX);
     private static final Pattern RX_SENIOR = Pattern.compile(LB + "(?:senior|starszy|sr\\.?|sen\\.?)" + RB, RX);
     private static final Pattern RX_MID    = Pattern.compile(LB + "(?:regular|mid(?!dle)|middle|średni\\w*)" + RB, RX);
     private static final Pattern RX_JUNIOR = Pattern.compile(LB + "(?:junior|młodszy|mlodszy|jr\\.?)" + RB, RX);
@@ -322,10 +322,12 @@ public class JustJoinParser {
         }
         return null;
     }
+
     private JobLevel levelFromChips(Document doc) {
         try {
             Element chip = doc.selectFirst(
-                    "*:matchesOwn((?i)^\\s*(?:Intern(?:ship)?|Trainee|Staż|Praktyk\\p{L}*|Junior|Jr\\.?|Mid(?:dle)?|Regular|Senior|Sr\\.?|Lead|Principal|Staff|Head)\\s*$)"
+                    "*:matchesOwn((?i)^\\s*(?:Intern(?:ship)?|Trainee|Staż|Praktyk\\p{L}*|Junior|Jr\\.?|Mid(?:dle)?|Regular|Senior|Sr\\.?|"
+                            + "Lead|Principal|Staff|Head|Manager|Director|VP|Vice\\s*President|C[-\\s]*level|Chief|CTO|CIO|CFO|CMO|CPO|CEO|COO)\\s*$)"
             );
             return chip != null ? mapLevelString(chip.text()) : null;
         } catch (org.jsoup.select.Selector.SelectorParseException ex) {
@@ -338,14 +340,21 @@ public class JustJoinParser {
             return null;
         }
     }
+
     private JobLevel mapLevelString(String s) {
         if (blank(s)) return null;
         String t = s.trim().toLowerCase(Locale.ROOT);
-        if (t.matches("(?i)intern(ship)?|trainee|apprentice|praktyk\\p{L}*|staż\\p{L}*|staz\\p{L}*")) return JobLevel.INTERNSHIP;
-        if (t.matches("(?i)jr\\.?|junior|młodsz\\p{L}*|mlodsz\\p{L}*"))   return JobLevel.JUNIOR;
-        if (t.matches("(?i)mid(dle)?|regular|średni\\p{L}*"))            return JobLevel.MID;
-        if (t.matches("(?i)sr\\.?|senior|starsz\\p{L}*"))                return JobLevel.SENIOR;
-        if (t.matches("(?i)lead|principal|staff|head|tech\\s*lead"))     return JobLevel.LEAD;
+        if (t.matches("(?i)intern(ship)?|trainee|apprentice|praktyk\\p{L}*|staż\\p{L}*|staz\\p{L}*"))
+            return JobLevel.INTERNSHIP;
+        if (t.matches("(?i)jr\\.?|junior|młodsz\\p{L}*|mlodsz\\p{L}*"))
+            return JobLevel.JUNIOR;
+        if (t.matches("(?i)mid(dle)?|regular|średni\\p{L}*"))
+            return JobLevel.MID;
+        if (t.matches("(?i)sr\\.?|senior|starsz\\p{L}*"))
+            return JobLevel.SENIOR;
+        if (t.matches("(?i)lead|principal|staff|head|manager|director|vp|vice\\s*president|c[-\\s]*level|chief|cto|cio|cfo|cmo|cpo|ceo|coo"))
+            return JobLevel.LEAD;
+
         return null;
     }
     private JobLevel pickHigher(JobLevel a, JobLevel b) {
