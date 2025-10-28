@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/job/repository/JobOfferRepository.java
 package com.milosz.podsiadly.backend.job.repository;
 
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
