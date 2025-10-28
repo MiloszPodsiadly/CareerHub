@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/job/mapper/JobOfferMapper.java
 package com.milosz.podsiadly.backend.job.mapper;
 
 import com.milosz.podsiadly.backend.job.domain.*;
