@@ -7,13 +7,14 @@ import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
 import com.milosz.podsiadly.backend.job.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobOfferCommandService {
@@ -130,19 +131,40 @@ public class JobOfferCommandService {
         return JobOfferMapper.toDetailDto(e);
     }
 
+    // JobOfferCommandService
+
     @Transactional
     public void deleteOwned(User currentUser, Long offerId, String plainPassword) {
+        log.info("[job.delete] userId={} offerId={} start", currentUser.getId(), offerId);
+
         requirePassword(currentUser, plainPassword);
 
-        JobOfferOwner owner = owners.findByJobOffer_Id(offerId)
+        var owner = owners.findByJobOffer_Id(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offer not owned by any user."));
         if (!owner.getUser().getId().equals(currentUser.getId())) {
             throw new IllegalStateException("You are not the owner of this offer.");
         }
 
-        archiveService.archiveSingle(owner.getJobOffer(), ArchiveReason.MANUAL);
-        owners.delete(owner);
+        var offer = owner.getJobOffer();
+        log.info("[job.delete] ownerId={} company={} city={} active={}",
+                owner.getId(),
+                offer.getCompany() != null ? offer.getCompany().getName() : null,
+                offer.getCity() != null ? offer.getCity().getName() : null,
+                offer.getActive());
+
+        archiveService.archiveSingle(offer, ArchiveReason.MANUAL);
+
+        offer.setOwner(null);
+        offers.saveAndFlush(offer);
+
+        int before = owners.countByJobOffer_Id(offerId);
+        owners.deleteByJobOffer_Id(offerId);
+        log.info("[job.delete] owners deleted={} (before={})", before, before);
+
+        offers.delete(offer);
+        log.info("[job.delete] offer deleted ok (offerId={})", offerId);
     }
+
 
     @Transactional
     public int deactivateExpired() {

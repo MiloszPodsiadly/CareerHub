@@ -58,16 +58,19 @@
     </template>
 
     <dialog id="confirm-del">
-        <form method="dialog" class="dlg">
+        <div class="dlg">
             <h4>Delete offer</h4>
             <p class="muted">Enter your account password to confirm.</p>
-            <input type="password" class="dlg__pwd" placeholder="Password" required />
+
+            <input type="password" class="dlg__pwd" placeholder="Password" />
+
             <div class="dlg__actions">
-                <button value="cancel" class="btn" type="submit">Cancel</button>
-                <button value="ok" class="btn btn--danger" type="submit">Delete</button>
+                <button type="button" class="btn js-cancel">Cancel</button>
+                <button type="button" class="btn btn--danger js-ok">Delete</button>
             </div>
+
             <p class="dlg__msg" aria-live="polite"></p>
-        </form>
+        </div>
     </dialog>
 
     <noscript>

@@ -127,12 +127,21 @@ public class JobOfferController {
     public void delete(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
-            @RequestBody DeleteWithPasswordRequest req
+            @RequestHeader(value = "X-Account-Password", required = false) String pwdHeader,
+            @RequestParam(value = "password", required = false) String pwdQuery,
+            @RequestBody(required = false) DeleteWithPasswordRequest req
     ) {
         if (user == null) throw new IllegalStateException("Unauthorized.");
-        log.info("[jobs.delete] user={} offer={} ...", user.getUsername(), id);
-        commands.deleteOwned(user, id, req.password());
+
+        final String pwd = pwdHeader != null ? pwdHeader
+                : (pwdQuery != null ? pwdQuery
+                : (req != null ? req.password() : null));
+        log.info("[jobs.delete] user={} offer={} hasHeader={} hasQuery={} hasBody={}",
+                user.getUsername(), id, pwdHeader != null, pwdQuery != null, req != null);
+
+        commands.deleteOwned(user, id, pwd);
     }
+
 
     @GetMapping("/mine")
     public List<JobOfferListDto> mine(@AuthenticationPrincipal User user) {

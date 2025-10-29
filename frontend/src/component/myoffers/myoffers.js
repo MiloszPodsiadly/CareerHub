@@ -118,42 +118,70 @@ export function initMyOffers() {
     async function confirmDelete(id) {
         const pwdInput = dlg.querySelector('.dlg__pwd');
         const msg = dlg.querySelector('.dlg__msg');
+        const btnOk = dlg.querySelector('.js-ok');
+        const btnCancel = dlg.querySelector('.js-cancel');
+
         pwdInput.value = '';
         msg.textContent = '';
 
         const onKey = (e) => { if (e.key === 'Escape') dlg.close('cancel'); };
-        dlg.addEventListener('keydown', onKey, { once: true });
 
-        if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+        const onCancel = () => dlg.close('cancel');
+        const onOk = () => {
+            if (!pwdInput.value || pwdInput.value.trim().length === 0) {
+                msg.textContent = 'Please enter your password.';
+                pwdInput.focus();
+                return;
+            }
+            dlg.close('ok');
+        };
+
+        dlg.addEventListener('keydown', onKey, { once: true });
+        btnCancel.addEventListener('click', onCancel, { once: true });
+        btnOk.addEventListener('click', onOk, { once: true });
+
+        if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
 
         const proceed = await new Promise(resolve => {
-            function onClose() { dlg.removeEventListener('close', onClose); resolve(dlg.returnValue === 'ok'); }
-            dlg.addEventListener('close', onClose, { once:true });
+            function onClose() {
+                dlg.removeEventListener('close', onClose);
+                resolve(dlg.returnValue === 'ok');
+            }
+            dlg.addEventListener('close', onClose, { once: true });
         });
+
         if (!proceed) return;
 
         try {
             if (!isAuthed()) { await navigate('/auth/login'); return; }
 
-            const res = await fetch(`/api/jobs/${id}`, {
+            const url = new URL(`/api/jobs/${id}`, window.location.origin);
+            url.searchParams.set('password', pwdInput.value);
+
+            const res = await fetch(url.toString().replace(window.location.origin, ''), {
                 method: 'DELETE',
-                headers: { 'Content-Type':'application/json', Accept:'text/plain, application/json', ...authHeaders() },
+                headers: {
+                    Accept: 'text/plain, application/json',
+                    'X-Account-Password': pwdInput.value,
+                    ...authHeaders()
+                },
                 credentials: 'include',
                 body: JSON.stringify({ password: pwdInput.value })
             });
+
             const raw = await res.text();
 
             if (res.status === 401) { await navigate('/auth/login'); return; }
             if (!res.ok) {
                 msg.textContent = raw || 'Delete failed.';
-                if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+                if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
                 return;
             }
             await load();
         } catch (e) {
             console.error('[myoffers] delete error:', e);
             msg.textContent = 'Network error. Try again.';
-            if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+            if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
         }
     }
 
