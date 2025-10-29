@@ -4,6 +4,7 @@ import com.milosz.podsiadly.backend.job.domain.ArchiveReason;
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferHistoryMapper;
 import com.milosz.podsiadly.backend.job.repository.JobOfferHistoryRepository;
+import com.milosz.podsiadly.backend.job.repository.JobOfferOwnerRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class OfferArchiveService {
     private final JobOfferRepository offers;
     private final JobOfferHistoryRepository history;
     private final JobOfferHistoryMapper mapper;
+    private final JobOfferOwnerRepository owners;
 
     @Transactional
     public int archiveInactiveOlderThan(Duration age, ArchiveReason reason) {
@@ -29,7 +31,12 @@ public class OfferArchiveService {
         List<JobOffer> candidates = offers.findAllByActiveFalseAndLastSeenAtBefore(olderThan);
         int moved = 0;
         for (JobOffer o : candidates) {
-            history.save(mapper.toHistory(o, reason));
+            try {
+                history.save(mapper.toHistory(o, reason));
+            } catch (Exception e) {
+                log.warn("[archive] history save failed for offerId={}", o.getId(), e);
+            }
+            owners.deleteByJobOffer_Id(o.getId());
             offers.delete(o);
             moved++;
         }
@@ -37,9 +44,8 @@ public class OfferArchiveService {
         return moved;
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void archiveSingle(JobOffer o, ArchiveReason reason) {
-        history.save(mapper.toHistory(o, reason));
-        offers.delete(o);
+        history.saveAndFlush(mapper.toHistory(o, reason));
     }
 }
