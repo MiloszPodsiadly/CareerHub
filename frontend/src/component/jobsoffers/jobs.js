@@ -3,113 +3,68 @@ import { getAccess } from '../../shared/api.js';
 const FAV = (() => {
     const api = (p) => `${p}`;
     const auth = () => {
-        try {
-            const t = getAccess?.();
-            return t ? { Authorization: `Bearer ${t}` } : {};
-        } catch { return {}; }
+        try { const t = getAccess?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
     };
     const loggedIn = () => !!getAccess?.();
-
-    async function status(type, id) {
-        try {
-            const r = await fetch(api(`/api/favorites/${type}/${id}/status`), {
-                headers: { Accept: 'application/json', ...auth() },
-                credentials: 'include'
-            });
-            if (!r.ok) throw 0;
-            return r.json();
-        } catch {
-            return { favorited: false, count: 0 };
-        }
+    async function status(type, id){
+        try{
+            const r = await fetch(api(`/api/favorites/${type}/${id}/status`), { headers:{Accept:'application/json', ...auth()}, credentials:'include' });
+            if (!r.ok) throw 0; return r.json();
+        }catch{ return { favorited:false, count:0 }; }
     }
-
-    async function toggle(type, id) {
+    async function toggle(type, id){
         const r = await fetch(api(`/api/favorites/${type}/${id}/toggle`), {
-            method: 'POST',
-            headers: { Accept: 'application/json', ...auth() },
-            credentials: 'include'
+            method:'POST', headers:{Accept:'application/json', ...auth()}, credentials:'include'
         });
-        if (r.status === 401 || r.status === 403) throw new Error('Please log in');
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+        if (r.status===401||r.status===403) throw new Error('Please log in');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
     }
-
-    function paint(el, s) {
-        if (!el) return;
-        const on = !!s.favorited;
+    function paint(el, s){
+        if (!el) return; const on = !!s.favorited;
         el.classList.toggle('fav--on', on);
         el.setAttribute('aria-pressed', on ? 'true' : 'false');
         el.setAttribute('aria-label', on ? 'Remove from favourites' : 'Add to favourites');
-        const cnt = el.querySelector('.fav__count');
-        if (cnt) cnt.textContent = String(s.count ?? 0);
+        const cnt = el.querySelector('.fav__count'); if (cnt) cnt.textContent = String(s.count ?? 0);
     }
-
-    function mountButton(el, { type, id, disabledWhenLoggedOut = true }) {
-        if (!id) return;
-        const isLogged = loggedIn();
-
-        el.classList.add('fav');
-        el.setAttribute('data-fav-type', type);
-        el.setAttribute('data-fav-id', String(id));
-        el.setAttribute('type', 'button');
-        el.setAttribute('aria-pressed', 'false');
+    function mountButton(el, { type, id, disabledWhenLoggedOut = true }){
+        if (!id) return; const isLogged = loggedIn();
+        el.classList.add('fav'); el.setAttribute('data-fav-type', type); el.setAttribute('data-fav-id', String(id));
+        el.setAttribute('type','button'); el.setAttribute('aria-pressed','false');
         el.innerHTML = `
       <svg class="fav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d="M8 14s-6-3.33-6-8a3.5 3.5 0 0 1 6-2.475A3.5 3.5 0 0 1 14 6c0 4.67-6 8-6 8z"></path>
       </svg>
-      <span class="fav__count" aria-hidden="true">0</span>
-    `;
-
-        if (!isLogged && disabledWhenLoggedOut) {
-            el.classList.add('fav--disabled');
-            el.title = 'Log in to save favourites';
-            return;
-        }
-
-        status(type, id).then(s => paint(el, s)).catch(() => {});
+      <span class="fav__count" aria-hidden="true">0</span>`;
+        if (!isLogged && disabledWhenLoggedOut){ el.classList.add('fav--disabled'); el.title='Log in to save favourites'; return; }
+        status(type, id).then(s=>paint(el,s)).catch(()=>{});
         el.addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (!loggedIn()) return;
-            try {
-                const s = await toggle(type, id);
-                paint(el, s);
-            } catch (err) {
-                console.error('fav toggle failed', err);
-            }
+            e.preventDefault(); if (!loggedIn()) return;
+            try{ const s = await toggle(type, id); paint(el, s); }catch(err){ console.error('fav toggle failed', err); }
         });
     }
-
     return { mountButton, loggedIn };
 })();
 
-export function initJobs(opts = {}) {
+export function initJobs(opts = {}){
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
 
-    const LEVEL_MAP = {
-        '': '', internship:'INTERNSHIP', intern:'INTERNSHIP', trainee:'INTERNSHIP',
+    const LEVEL_MAP = { '': '', internship:'INTERNSHIP', intern:'INTERNSHIP', trainee:'INTERNSHIP',
         junior:'JUNIOR', jr:'JUNIOR', mid:'MID', regular:'MID', middle:'MID',
         senior:'SENIOR', sr:'SENIOR', lead:'LEAD',
         INTERNSHIP:'INTERNSHIP', JUNIOR:'JUNIOR', MID:'MID', SENIOR:'SENIOR', LEAD:'LEAD'
     };
     const mapLevel = v => LEVEL_MAP[String(v ?? '').trim()] ?? '';
 
-    const CONTRACT_MAP = {
-        '': '', UOP:'UOP', B2B:'B2B', UZ:'UZ', UOD:'UOD',
-        uop:'UOP', b2b:'B2B', uz:'UZ', uod:'UOD',
-        perm:'UOP', permanent:'UOP', mandate:'UZ', 'specific-task':'UOD'
+    const CONTRACT_MAP = { '': '', UOP:'UOP', B2B:'B2B', UZ:'UZ', UOD:'UOD',
+        uop:'UOP', b2b:'B2B', uz:'UZ', uod:'UOD', perm:'UOP', permanent:'UOP', mandate:'UZ', 'specific-task':'UOD'
     };
     const mapContract = v => CONTRACT_MAP[String(v ?? '').trim()] ?? '';
 
     const state = {
         page:1, size:PAGE_SIZE, totalElements:0, totalPages:0, items:[], loading:false,
-        filters:{
-            q:'', city:'', seniority:'',
-            contract:'', contracts:[],
-            withSalary:false, remote:false,
-            sort:'relevance', group:'city',
-            specs:[], techs:[]
-        }
+        filters:{ q:'', city:'', seniority:'', contract:'', contracts:[], withSalary:false, remote:false,
+            sort:'relevance', group:'city', specs:[], techs:[] }
     };
 
     const $list=byId('list'), $count=byId('count'), $loading=byId('loading'), $empty=byId('empty'),
@@ -122,37 +77,33 @@ export function initJobs(opts = {}) {
     const techChecks = Array.from(document.querySelectorAll('input[name="tech[]"].chipcheck'));
     const contractChecks = Array.from(document.querySelectorAll('input[name="contract[]"].chipcheck'));
 
+    let lastCtrl = null;
     async function fetchJobs(page){
+        if (lastCtrl) lastCtrl.abort();
+        lastCtrl = new AbortController();
+
         const p = new URLSearchParams();
-        p.append('page', page);
-        p.append('pageSize', state.size);
-
-        if (state.filters.q)    p.append('q', state.filters.q);
+        p.append('page', page); p.append('pageSize', state.size);
+        if (state.filters.q) p.append('q', state.filters.q);
         if (state.filters.city) p.append('city', state.filters.city);
-
-        const lvl = mapLevel(state.filters.seniority);
-        if (lvl) p.append('level', lvl);
+        const lvl = mapLevel(state.filters.seniority); if (lvl) p.append('level', lvl);
 
         const chosen = new Set();
         if (state.filters.contract) chosen.add(state.filters.contract);
-        (state.filters.contracts || []).forEach(c => chosen.add(c));
-        for (const c of chosen){
-            const norm = mapContract(c);
-            if (norm) p.append('contract', norm);
-        }
+        (state.filters.contracts||[]).forEach(c=>chosen.add(c));
+        for (const c of chosen){ const norm = mapContract(c); if (norm) p.append('contract', norm); }
 
-        if (state.filters.withSalary) p.append('withSalary', 'true');
-        if (state.filters.remote)     p.append('remote', 'true');
+        if (state.filters.withSalary) p.append('withSalary','true');
+        if (state.filters.remote) p.append('remote','true');
 
         p.append('sort', state.filters.sort);
-        state.filters.specs.forEach(v => p.append('spec', v));
-        state.filters.techs.forEach(v => p.append('tech', v));
+        state.filters.specs.forEach(v=>p.append('spec', v));
+        state.filters.techs.forEach(v=>p.append('tech', v));
 
         try{
-            const res = await fetch(`${API_URL}?${p.toString()}`, { headers:{Accept:'application/json'} });
+            const res = await fetch(`${API_URL}?${p.toString()}`, { headers:{Accept:'application/json'}, signal:lastCtrl.signal });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
-
             let rawItems=[], totalElements=0, totalPages=0;
             if (Array.isArray(json?.content)){
                 rawItems=json.content; totalElements=json.totalElements ?? rawItems.length; totalPages=json.totalPages ?? Math.ceil(totalElements/state.size);
@@ -206,8 +157,7 @@ export function initJobs(opts = {}) {
             datePosted:x.publishedAt ?? x.datePosted ?? null,
             keywords: Array.isArray(x.techTags) ? x.techTags
                 : Array.isArray(x.keywords) ? x.keywords
-                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean)
-                        : [],
+                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean) : [],
             salary: toSalary(x),
             remote: !!x.remote,
             description: x.description ?? null,
@@ -218,171 +168,127 @@ export function initJobs(opts = {}) {
     }
     function toUiDetail(x){
         return {
-            id:x.id ?? null, url:x.url ?? null, title:x.title ?? '',
-            description:x.description ?? '',
-            company:x.companyName ?? x.company ?? null,
-            city:x.cityName ?? x.city ?? null,
+            id:x.id ?? null, url:x.url ?? null, title:x.title ?? '', description:x.description ?? '',
+            company:x.companyName ?? x.company ?? null, city:x.cityName ?? x.city ?? null,
             datePosted:x.publishedAt ?? x.datePosted ?? null,
             keywords: Array.isArray(x.techTags) ? x.techTags
                 : Array.isArray(x.keywords) ? x.keywords
-                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean)
-                        : [],
-            salary: toSalary(x),
-            contract: x.contract ?? null,
-            contracts: ensureContracts(x),
-            level: x.level ?? null,
-            remote: !!x.remote
+                    : Array.isArray(x.techStack) ? x.techStack.map(s => s?.name).filter(Boolean) : [],
+            salary: toSalary(x), contract: x.contract ?? null, contracts: ensureContracts(x),
+            level: x.level ?? null, remote: !!x.remote, country:x.country ?? null
         };
     }
 
-    function groupKey(job){
-        return state.filters.group === 'city'
-            ? (job.city || '— other —')
-            : (job.company || '— company —');
-    }
-
+    function groupKey(job){ return state.filters.group === 'city' ? (job.city || '— other —') : (job.company || '— company —'); }
     function formatSalary(s){
-        if (!s) return '—';
+        if (!s) return '';
         const min = s.min!=null ? s.min.toLocaleString('en-GB') : '';
         const max = s.max!=null ? s.max.toLocaleString('en-GB') : '';
         const cur = s.currency || 'PLN';
         const per = (s.period || 'MONTH').toLowerCase();
         return `${min}${max ? ' – ' + max : ''} ${cur}/${per}`;
     }
-    function prettyContract(c){
-        if (!c) return null;
-        const up=String(c).toUpperCase();
-        if (up==='UOP') return 'UoP';
-        if (up==='UOD') return 'UoD';
-        return up;
-    }
-    function prettyLevel(lvl){
-        if (!lvl) return null;
-        const m={INTERNSHIP:'Intern', JUNIOR:'Junior', MID:'Mid', SENIOR:'Senior', LEAD:'Lead'};
-        return m[String(lvl).toUpperCase()] ?? lvl;
-    }
-    function escapeHtml(s){
-        return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
+    function prettyContract(c){ if (!c) return null; const up=String(c).toUpperCase(); if (up==='UOP') return 'UoP'; if (up==='UOD') return 'UoD'; return up; }
+    function prettyLevel(l){ if (!l) return null; const m={INTERNSHIP:'Intern', JUNIOR:'Junior', MID:'Mid', SENIOR:'Senior', LEAD:'Lead'}; return m[String(l).toUpperCase()] ?? l; }
+    function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
     function renderCard(job){
-        const el=document.createElement('div');
-        el.className='card';
-        el.setAttribute('role','listitem');
+        const el=document.createElement('div'); el.className='card'; el.setAttribute('role','listitem');
 
         const contracts=(job.contracts && job.contracts.length) ? job.contracts : (job.contract ? [job.contract] : []);
         const contractsBadges=contracts.map(c=>`<span class="badge">${escapeHtml(prettyContract(c))}</span>`).join('');
-        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(pretyLevelSafe(job.level))}</span>` : '';
+        const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
         const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
 
         el.innerHTML = `
-      <div>
-        <div class="card__title">${escapeHtml(job.title || '')}</div>
-        <div class="meta">
-          <span>🏢 ${escapeHtml(job.company || '—')}</span>
-          <span>📍 ${escapeHtml(job.city || '')}${job.country ? ' ('+escapeHtml(job.country)+')' : ''}</span>
-          ${job.datePosted ? `<span>🗓 ${new Date(job.datePosted).toLocaleDateString('en-GB')}</span>` : ''}
-        </div>
-        <div class="badges">
-          ${contractsBadges}${levelBadge}${remoteBadge}
-          ${(job.keywords || []).slice(0,6).map(k=>`<span class="badge">${escapeHtml(k)}</span>`).join('')}
-        </div>
+      <div class="card__title">${escapeHtml(job.title || '')}</div>
+      <div class="meta">
+        <span>🏢 ${escapeHtml(job.company || '—')}</span>
+        <span>📍 ${escapeHtml(job.city || '')}${job.country ? ' ('+escapeHtml(job.country)+')' : ''}</span>
+        ${job.datePosted ? `<span>🗓 ${new Date(job.datePosted).toLocaleDateString('en-GB')}</span>` : ''}
       </div>
-      <div class="actions" style="display:flex; align-items:center; gap:10px">
-        <div class="money">${formatSalary(job.salary)}</div>
-        <button class="chip" data-open="1">Preview</button>
-        ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+      <div class="badges">
+        ${contractsBadges}${levelBadge}${remoteBadge}
+        ${(job.keywords || []).slice(0,6).map(k=>`<span class="badge">${escapeHtml(k)}</span>`).join('')}
       </div>
-    `;
+      <div class="actions">
+      <div class="money">${formatSalary(job.salary)}</div>
+      <div class="actions__btns">
+          <button class="chip" data-open="1">Preview</button>
+          ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+        </div>
+      </div>`;
 
-        if (FAV.loggedIn()) {
-            const actions = el.querySelector('.actions');
-            if (actions) {
-                const favBtn = document.createElement('button');
-                actions.prepend(favBtn);
-                FAV.mountButton(favBtn, { type: 'JOB', id: job.id });
-            }
-        }
+        if (FAV.loggedIn()){
+            const btns = el.querySelector('.actions__btns');
+                if (btns){
+                    const favBtn = document.createElement('button');
+                    btns.prepend(favBtn);
+                    FAV.mountButton(favBtn, { type:'JOB', id: job.id });
+                 }
+              }
 
         el.querySelector('[data-open]')?.addEventListener('click', async () => {
-            const detail = await fetchJobDetail(job.id);
-            openModal(detail ?? job);
+            const detail = await fetchJobDetail(job.id); openModal(detail ?? job);
         });
         return el;
-
-        function pretyLevelSafe(l){ return prettyLevel(l); }
     }
 
     function renderList(){
         $list.innerHTML='';
-        if (!state.items.length){
-            $empty.classList.remove('hidden');
-            $count.textContent='0 jobs';
-            $pager.innerHTML=''; return;
-        }
+        const total=state.totalElements || state.items.length;
+        if (!state.items.length){ $empty.classList.remove('hidden'); $count.textContent='0 jobs'; $pager.innerHTML=''; return; }
         $empty.classList.add('hidden');
 
         const groups=new Map();
         for (const job of state.items){
-            const key=groupKey(job);
-            if (!groups.has(key)) groups.set(key, []);
+            const key=groupKey(job); if (!groups.has(key)) groups.set(key, []);
             groups.get(key).push(job);
         }
         for (const [g, arr] of groups){
-            const head=document.createElement('div');
-            head.className='group'; head.textContent=`${g} • ${arr.length}`;
+            const head=document.createElement('div'); head.className='group'; head.textContent=`${g} • ${arr.length}`;
+            const grid=document.createElement('div'); grid.className='grid';
             $list.appendChild(head);
-            for (const job of arr) $list.appendChild(renderCard(job));
+            $list.appendChild(grid);
+            for (const job of arr) grid.appendChild(renderCard(job));
         }
 
-        const total=state.totalElements || state.items.length;
         $count.textContent=`${total.toLocaleString('en-GB')} jobs • page ${state.page}/${Math.max(state.totalPages,1)}`;
-
         renderPager();
     }
 
     function renderPager(){
-        if (!$pager) return;
-        const total=state.totalPages, cur=state.page;
+        if (!$pager) return; const total=state.totalPages, cur=state.page;
         if (!total || total<=1){ $pager.innerHTML=''; return; }
-
         const btn=(label,page,disabled=false,current=false)=>{
-            const a=document.createElement('button');
-            a.type='button'; a.className='pager__btn'; a.textContent=label;
-            if (disabled) a.disabled=true;
-            if (current) a.setAttribute('aria-current','page');
-            a.addEventListener('click',()=>gotoPage(page));
-            return a;
+            const a=document.createElement('button'); a.type='button'; a.className='pager__btn'; a.textContent=label;
+            if (disabled) a.disabled=true; if (current) a.setAttribute('aria-current','page');
+            a.addEventListener('click',()=>gotoPage(page)); return a;
         };
-
         $pager.innerHTML='';
         $pager.appendChild(btn('«', Math.max(1,cur-1), cur===1));
-
-        let start=Math.max(1, cur-2);
-        let end=Math.min(total, start+4);
-        start=Math.max(1, end-4);
-
-        if (start>1){
-            $pager.appendChild(btn('1',1,false,cur===1));
-            if (start>2) $pager.appendChild(ellipsis());
-        }
+        let start=Math.max(1, cur-2); let end=Math.min(total, start+4); start=Math.max(1, end-4);
+        if (start>1){ $pager.appendChild(btn('1',1,false,cur===1)); if (start>2) $pager.appendChild(ellipsis()); }
         for (let p=start; p<=end; p++) $pager.appendChild(btn(String(p), p, false, p===cur));
-        if (end<total){
-            if (end<total-1) $pager.appendChild(ellipsis());
-            $pager.appendChild(btn(String(total), total, false, cur===total));
-        }
+        if (end<total){ if (end<total-1) $pager.appendChild(ellipsis()); $pager.appendChild(btn(String(total), total, false, cur===total)); }
         $pager.appendChild(btn('»', Math.min(total,cur+1), cur===total));
-
         function ellipsis(){ const s=document.createElement('span'); s.className='pager__dots'; s.textContent='…'; return s; }
     }
 
-    async function gotoPage(page){
+    async function gotoPage(page, { scroll = true } = {}){
         if (state.loading) return;
         state.loading=true; $loading.classList.remove('hidden');
         try{
             const {items,totalElements,totalPages}=await fetchJobs(page);
             state.page=page; state.items=items; state.totalElements=totalElements; state.totalPages=totalPages;
             renderList();
+            if (scroll) document.getElementById('list')?.scrollIntoView({behavior:'smooth', block:'start'});
+            const params = new URLSearchParams(); params.set('page', state.page);
+            for (const [k,v] of Object.entries(state.filters)){
+                if (!v || (Array.isArray(v) && !v.length)) continue;
+                if (Array.isArray(v)) v.forEach(x=>params.append(k, x)); else params.set(k, v);
+            }
+            history.replaceState(null, '', `?${params.toString()}`);
         }finally{
             state.loading=false; $loading.classList.add('hidden');
         }
@@ -390,7 +296,6 @@ export function initJobs(opts = {}) {
 
     function openModal(job){
         if (!job) return;
-
         const contracts=(job.contracts && job.contracts.length) ? job.contracts : (job.contract ? [job.contract] : []);
         const contractsBadges=contracts.map(c=>`<span class="badge">${escapeHtml(prettyContract(c))}</span>`).join('');
         const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
@@ -406,7 +311,6 @@ export function initJobs(opts = {}) {
           <span class="money">${formatSalary(job.salary)}</span>
         </div>
       </header>
-
       <section class="modal__grid">
         <article>
           <div class="job-desc">
@@ -414,16 +318,14 @@ export function initJobs(opts = {}) {
             ${formatDescription(job.description || '')}
           </div>
         </article>
-
         <aside class="aside">
           <h4>Tags</h4>
           <div class="badges">${(job.keywords || []).map(k => `<span class="badge">${escapeHtml(k)}</span>`).join('') || '—'}</div>
           <div class="cta">
-            ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+           ${job.url ? `<a class="chip chip--apply" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
           </div>
         </aside>
-      </section>
-    `;
+      </section>`;
         if (!$modal.open) $modal.showModal();
     }
     document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
@@ -431,15 +333,13 @@ export function initJobs(opts = {}) {
     function formatDescription(raw){
         const text = String(raw).replace(/\r\n?/g, '\n').trim();
         if (!text) return '<p class="muted">—</p>';
-
         const blocks = text.split(/\n{2,}/);
         const html = blocks.map(block => {
             const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
             const listLike = lines.length>1 && lines.every(l => /^[\-\*\u2022]|\d{1,2}[.)]\s/.test(l));
             if (listLike){
                 const items = lines.map(l => l.replace(/^[\-\*\u2022]\s?|\d{1,2}[.)]\s/, ''))
-                    .map(escapeHtml)
-                    .map(i => `<li>${i}</li>`).join('');
+                    .map(escapeHtml).map(i => `<li>${i}</li>`).join('');
                 return `<ul>${items}</ul>`;
             }
             return `<p>${escapeHtml(lines.join(' '))}</p>`;
@@ -448,30 +348,28 @@ export function initJobs(opts = {}) {
     }
 
     let t; const deb = fn => { clearTimeout(t); t=setTimeout(fn, 250); };
-
     $q?.addEventListener('input', e => { state.filters.q=e.target.value.trim(); deb(()=>gotoPage(1)); });
     $city?.addEventListener('input', e => { state.filters.city=e.target.value.trim(); deb(()=>gotoPage(1)); });
     $seniority?.addEventListener('change', e => { state.filters.seniority=e.target.value; gotoPage(1); });
     $contract?.addEventListener('change', e => { state.filters.contract=e.target.value; gotoPage(1); });
     contractChecks.forEach(chk => chk.addEventListener('change', () => {
-        state.filters.contracts = contractChecks.filter(x=>x.checked).map(x=>x.value);
-        gotoPage(1);
+        state.filters.contracts = contractChecks.filter(x=>x.checked).map(x=>x.value); gotoPage(1);
     }));
     $sort?.addEventListener('change', e => { state.filters.sort=e.target.value; gotoPage(1); });
 
     $withSalary?.addEventListener('click', e => {
         togglePressed(e.currentTarget);
-        state.filters.withSalary = e.currentTarget.getAttribute('aria-pressed') === 'true';
-        gotoPage(1);
+        state.filters.withSalary = e.currentTarget.getAttribute('aria-pressed') === 'true'; gotoPage(1);
     });
     $remote?.addEventListener('click', e => {
         togglePressed(e.currentTarget);
-        state.filters.remote = e.currentTarget.getAttribute('aria-pressed') === 'true';
-        gotoPage(1);
+        state.filters.remote = e.currentTarget.getAttribute('aria-pressed') === 'true'; gotoPage(1);
     });
     $group?.addEventListener('click', e => {
-        state.filters.group = state.filters.group === 'city' ? 'company' : 'city';
-        e.currentTarget.textContent = 'Group by: ' + (state.filters.group === 'city' ? 'city' : 'company');
+        const next = state.filters.group === 'city' ? 'company' : 'city';
+        state.filters.group = next;
+        e.currentTarget.textContent = 'Group by: ' + (next === 'city' ? 'city' : 'company');
+        e.currentTarget.setAttribute('aria-pressed', next === 'company' ? 'true' : 'false');
         renderList();
     });
 
@@ -484,24 +382,32 @@ export function initJobs(opts = {}) {
     techChecks.forEach(chk => chk.addEventListener('change', onChipChange));
 
     $reset?.addEventListener('click', () => {
-        Object.assign(state.filters, {
-            q:'', city:'', seniority:'',
-            contract:'', contracts:[],
-            withSalary:false, remote:false,
-            sort:'relevance', group:'city',
-            specs:[], techs:[]
-        });
+        Object.assign(state.filters, { q:'', city:'', seniority:'', contract:'', contracts:[],
+            withSalary:false, remote:false, sort:'relevance', group:'city', specs:[], techs:[] });
         [$q,$city,$seniority,$contract,$sort].forEach(el => { if (el) el.value=''; });
         contractChecks.forEach(x => x.checked=false);
         $withSalary?.setAttribute('aria-pressed','false');
         $remote?.setAttribute('aria-pressed','false');
-        $group && ($group.textContent='Group by: city');
+        $group && ($group.textContent='Group by: city'); $group?.setAttribute('aria-pressed','false');
         specChecks.forEach(x => x.checked=false);
         techChecks.forEach(x => x.checked=false);
+
         gotoPage(1);
     });
 
-    gotoPage(1);
+    window.addEventListener('keydown', (e) => {
+        const tag = document.activeElement?.tagName;
+        if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); byId('q')?.focus(); }
+    });
+    try {
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    } catch {}
+    window.addEventListener('pageshow', (e) => {
+        if (e.persisted) window.scrollTo(0, 0);
+    });
+
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+    gotoPage(1, { scroll: false });
 
     function byId(id){ return document.getElementById(id); }
     function togglePressed(btn){ const v=btn.getAttribute('aria-pressed')==='true'; btn.setAttribute('aria-pressed', String(!v)); }
