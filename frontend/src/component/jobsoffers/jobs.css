@@ -128,19 +128,19 @@
     align-items: stretch;
 }
 @media (max-width:1100px){
-      .jobs .grid{ grid-template-columns: repeat(2, 1fr); }
+    .jobs .grid{ grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width:640px){
-      .jobs .grid{ grid-template-columns: 1fr; }
+    .jobs .grid{ grid-template-columns: 1fr; }
 }
 
 .jobs .card{
-  display:flex;
-  flex-direction:column;
-  min-height:100%;
-  gap:10px; padding:14px;
-  border:1px solid var(--line); border-radius:14px; background:var(--card);
-  transition:transform .16s, background .16s, box-shadow .16s, border-color .16s;
+    display:flex;
+    flex-direction:column;
+    min-height:100%;
+    gap:10px; padding:14px;
+    border:1px solid var(--line); border-radius:14px; background:var(--card);
+    transition:transform .16s, background .16s, box-shadow .16s, border-color .16s;
 }
 
 .jobs .card:hover{ background:var(--card-2); transform:translateY(-2px); box-shadow:0 14px 30px rgba(15,27,60,.10) }
@@ -173,13 +173,12 @@
     flex:0 0 auto;
 }
 
-
 .jobs .money{ white-space:nowrap; line-height:1.25; flex:0 0 auto; }
 .jobs .money:empty{ display:none; }
 
 @media (max-width:640px){
-      .jobs .actions{ flex-direction:column; align-items:flex-start; gap:8px; }
-      .jobs .money{ white-space:normal; }
+    .jobs .actions{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .jobs .money{ white-space:normal; }
 }
 .jobs .money{
     font-weight:900; background:linear-gradient(90deg,var(--acc1),var(--acc2));
@@ -214,16 +213,33 @@
 .jobs .aside h4{ margin:0 0 8px; font-weight:900 }
 .jobs .aside .badges{ display:flex; flex-wrap:wrap; gap:6px }
 
-.jobs .aside .cta{
+#modal .modal__grid > .aside .cta{
     width:100%;
-    display:grid;
-    place-items:center;
+    display:flex !important;
+    justify-content:center !important;
+    align-items:center;
     gap:10px;
+    margin-top:12px;
+    text-align:initial;
+    flex-wrap:nowrap;
+}
+#modal .modal__grid > .aside .cta > *{
+    display:inline-flex;
+    flex:0 0 auto !important;
+    width:auto !important;
+}
+#modal .modal__grid > .aside .cta .chip--apply{
+    margin:0 !important;
+    float:none !important;
 }
 
-.jobs .aside .cta .chip{
-    margin:0;
+.jobs .actions__btns > .chip,
+.jobs .actions__btns > .btn,
+.jobs .actions__btns > a{
     display:inline-flex;
+    align-items:center;
+    flex:0 0 auto;
+    width:auto;
 }
 
 .jobs .list + .pager{ margin-top:12px }
