@@ -322,7 +322,7 @@ export function initJobs(opts = {}){
           <h4>Tags</h4>
           <div class="badges">${(job.keywords || []).map(k => `<span class="badge">${escapeHtml(k)}</span>`).join('') || '—'}</div>
           <div class="cta">
-            ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+           ${job.url ? `<a class="chip chip--apply" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
           </div>
         </aside>
       </section>`;
