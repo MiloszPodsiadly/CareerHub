@@ -1,21 +1,26 @@
-.jobs .chip--svg .i{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:22px; height:22px; margin-right:6px;
-    border:0; background:transparent; padding:0;
-}
-.jobs .chip--svg .i img{ width:20px; height:20px; display:block }
-
 .jobs{
-    --text:#0f172a; --muted:#5b6b80; --bg:#ffffff; --panel:#f6f8ff;
-    --card:#ffffff; --card-2:#f2f6ff; --line:#e6ecf5;
+    --container: 1200px;
+
+    max-width: var(--container);
+    margin-inline: auto;
+    margin-block: 0 24px;
+    padding-inline: 16px;
+    padding-bottom: 28px;
+
+    --text:#0f172a; --muted:#5b6b80; --bg:#ffffff;
+    --panel:#f6f8ff; --card:#ffffff; --card-2:#f2f6ff; --line:#e6ecf5;
     --acc1:#5b7fff; --acc2:#9cc0ff; --ring:rgba(91,127,255,.35);
     --ok:#0ea15a; --shadow:0 10px 26px rgba(15,27,60,.08);
-    max-width:1100px; margin:96px auto 32px; padding:0 16px 28px;
+
     color:var(--text);
     background:
             radial-gradient(900px 520px at 8% -10%, rgba(91,127,255,.12), transparent 65%),
             radial-gradient(820px 520px at 105% -8%, rgba(156,192,255,.10), transparent 60%),
+            linear-gradient(0deg, rgba(91,127,255,.045) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(91,127,255,.045) 1px, transparent 1px),
             var(--bg);
+    background-size:auto,auto,28px 28px,28px 28px,auto;
+    background-position:0 0,0 0,0 -8px,-8px 0,0 0;
 }
 @media (prefers-color-scheme: dark){
     .jobs{
@@ -29,13 +34,36 @@
 .jobs .muted{ color:var(--muted) }
 
 .jobs .toolbar{
-    background:linear-gradient(135deg, rgba(91,127,255,.10), rgba(156,192,255,.08));
-    border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow)
+    position: sticky;
+    top: var(--hdr-h);
+    z-index: 100;
+
+    background: linear-gradient(135deg, rgba(255,255,255,.65), rgba(246,248,255,.65));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+
+    border: 1px solid color-mix(in oklab, var(--line), transparent 25%);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: none;
+    transition: border-color .15s ease, background .15s ease;
 }
 .jobs .toolbar__row{
-    display:grid; grid-template-columns:2fr 1.2fr 1fr 1fr 1fr auto; gap:10px
+    display:grid;
+    grid-template-columns:1.8fr 1.2fr 1fr 1fr 1fr auto;
+    column-gap:10px;
+    row-gap:10px;
+    align-items:center;
 }
-.jobs .toolbar__meta{ margin-top:12px; display:flex; align-items:center; gap:10px }
+@media (max-width:1100px){
+    .jobs .toolbar__row{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:640px){
+    .jobs .toolbar__row{ grid-template-columns:1fr; }
+}
+.jobs .toolbar__meta{
+    margin-top:12px; display:flex; align-items:center; gap:10px; justify-content:center; text-align:center;
+}
 
 .jobs .inp,.jobs .btn,.jobs .chip{
     height:40px; border-radius:12px; border:1px solid var(--line);
@@ -43,13 +71,22 @@
     transition:background .15s, border-color .15s, box-shadow .15s, transform .12s
 }
 .jobs .inp::placeholder{ color:#9aa8bb }
-.jobs .inp:focus{ border-color:var(--acc2); box-shadow:0 0 0 3px var(--ring) }
+.jobs .inp:focus, .jobs select.inp:focus{
+    border-color:var(--acc2);
+    box-shadow:0 0 0 3px var(--ring), inset 0 0 0 1px color-mix(in oklab, var(--acc2), #fff 30%);
+}
 .jobs .btn{ font-weight:800; background:linear-gradient(180deg,#f7f9ff,#eef3ff); cursor:pointer }
 .jobs .btn:active{ transform:translateY(1px) }
 .jobs .btn[aria-pressed="true"], .jobs .chip[aria-pressed="true"]{ outline:2px solid var(--acc1); outline-offset:0 }
-.jobs .chip{ background:var(--card-2) }
+.jobs .chip{ background:var(--card-2); border-radius:999px; padding:0 14px; font-weight:700 }
 .jobs .chip:hover{ border-color:var(--acc2) }
 .jobs .chip.danger{ border-color:#ffd6db; background:#fff1f3; color:#9a1e1e }
+
+.jobs .chip--svg .i{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; margin-right:6px; border:0; background:transparent; padding:0;
+}
+.jobs .chip--svg .i img{ width:20px; height:20px; display:block }
 
 .jobs .filters{
     margin-top:16px; background:var(--card); border:1px solid var(--line);
@@ -60,6 +97,7 @@
 @media (prefers-color-scheme: dark){ .jobs .filters__header h2{ color:#e9edff } }
 .jobs .filters__hint{ margin:0; color:var(--muted); font-size:14px }
 .jobs .filters__grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
+@media (max-width:900px){ .jobs .filters__grid{ grid-template-columns:1fr; } }
 .jobs .fg{ margin:0; padding:14px; border:1px dashed var(--line); border-radius:16px; background:var(--panel) }
 .jobs .fg__title{ margin:0 0 8px; font-weight:900; color:#0c1633 }
 @media (prefers-color-scheme: dark){ .jobs .fg__title{ color:#eef1ff } }
@@ -78,26 +116,38 @@
 }
 
 .jobs .results{ margin-top:18px }
-.jobs .list{
-    position:relative; background:var(--card); border:1px solid var(--line);
-    border-radius:16px; overflow:auto; max-height:72vh; box-shadow:var(--shadow)
-}
-.jobs .group{
-    position:sticky; top:0; background:linear-gradient(180deg,#f3f7ff,#ebf2ff);
-    color:#0b1e4d; padding:8px 12px; border-bottom:1px solid var(--line);
-    font-weight:900; letter-spacing:.2px
-}
+.jobs .list{ background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden }
+.jobs .group{ padding:10px 12px; font-weight:900; letter-spacing:.2px; color:#0b1e4d; background:linear-gradient(180deg,#f3f7ff,#ebf2ff); border-bottom:1px solid var(--line) }
 @media (prefers-color-scheme: dark){ .jobs .group{ background:#141a2a; color:#dfe6ff } }
 
-.jobs .card{
-    display:grid; grid-template-columns:1fr auto; gap:14px; padding:14px;
-    border-bottom:1px solid var(--line); min-height:110px;
-    transition:transform .16s, background .16s, box-shadow .16s
+.jobs .grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:14px;
+    padding:14px;
+    align-items: stretch;
 }
-.jobs .card:hover{ background:var(--card-2); transform:translateY(-1px); box-shadow:0 8px 18px rgba(15,27,60,.06) }
+@media (max-width:1100px){
+      .jobs .grid{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width:640px){
+      .jobs .grid{ grid-template-columns: 1fr; }
+}
+
+.jobs .card{
+  display:flex;
+  flex-direction:column;
+  min-height:100%;
+  gap:10px; padding:14px;
+  border:1px solid var(--line); border-radius:14px; background:var(--card);
+  transition:transform .16s, background .16s, box-shadow .16s, border-color .16s;
+}
+
+.jobs .card:hover{ background:var(--card-2); transform:translateY(-2px); box-shadow:0 14px 30px rgba(15,27,60,.10) }
 .jobs .card__title{ font-weight:900; color:#0b1e4d; letter-spacing:.2px }
 @media (prefers-color-scheme: dark){ .jobs .card__title{ color:#e8edff } }
 
+.jobs .meta{ display:flex; gap:10px; flex-wrap:wrap; font-size:14px; color:var(--muted) }
 .jobs .badges{ display:flex; flex-wrap:wrap; gap:6px }
 .jobs .badge{
     font:600 12px/1.2 ui-monospace,"JetBrains Mono",monospace;
@@ -106,6 +156,31 @@
 }
 @media (prefers-color-scheme: dark){ .jobs .badge{ background:#1a2032; border-color:#27324a; color:#d5e0ff } }
 
+.jobs .actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    margin-top:auto;
+}
+
+.jobs .actions__btns{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-left:auto;
+    flex:0 0 auto;
+}
+
+
+.jobs .money{ white-space:nowrap; line-height:1.25; flex:0 0 auto; }
+.jobs .money:empty{ display:none; }
+
+@media (max-width:640px){
+      .jobs .actions{ flex-direction:column; align-items:flex-start; gap:8px; }
+      .jobs .money{ white-space:normal; }
+}
 .jobs .money{
     font-weight:900; background:linear-gradient(90deg,var(--acc1),var(--acc2));
     -webkit-background-clip:text; background-clip:text; color:transparent
@@ -113,12 +188,11 @@
 
 .jobs .loading,.jobs .empty{ padding:16px; text-align:center; color:var(--muted) }
 .jobs .hidden{ display:none }
-.jobs .sentinel{ height:1px }
 
 .jobs .modal{
     border:1px solid var(--line); border-radius:18px;
     width:min(920px,96vw); background:var(--card); color:var(--text);
-    padding:0; box-shadow:0 28px 80px rgba(9,18,46,.25)
+    padding:0; box-shadow:0 28px 80px rgba(9,18,46,.25); z-index:1001;
 }
 .jobs .modal::backdrop{ background:rgba(0,0,0,.45) }
 .jobs .modal__x{ display:flex; justify-content:flex-end; padding:10px }
@@ -133,10 +207,24 @@
 .jobs .job-desc p{ margin:0 0 10px }
 .jobs .job-desc ul{ margin:0 0 10px 1.1em; padding:0 }
 .jobs .job-desc li{ margin:4px 0 }
-.jobs .aside{ position:sticky; top:10px; align-self:start }
+.jobs .aside{
+    display:flex;
+    flex-direction:column;
+}
 .jobs .aside h4{ margin:0 0 8px; font-weight:900 }
 .jobs .aside .badges{ display:flex; flex-wrap:wrap; gap:6px }
-.jobs .aside .cta{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap }
+
+.jobs .aside .cta{
+    width:100%;
+    display:grid;
+    place-items:center;
+    gap:10px;
+}
+
+.jobs .aside .cta .chip{
+    margin:0;
+    display:inline-flex;
+}
 
 .jobs .list + .pager{ margin-top:12px }
 .jobs .pager{
@@ -154,18 +242,15 @@
 .jobs .pager__btn[aria-current="page"]{ border-color:var(--acc1); background:linear-gradient(135deg,#eef3ff,#f4f8ff); box-shadow:0 0 0 3px var(--ring) }
 .jobs .pager__btn:disabled{ opacity:.5; cursor:default; box-shadow:none }
 .jobs .pager__dots{ min-width:20px; text-align:center; color:var(--muted); user-select:none }
-.jobs .sentinel{ display:none !important }
 
 .jobs .fav{
-    display:inline-flex; align-items:center; gap:6px;
-    padding:0; min-height:auto; background:transparent; border:0;
-    color:var(--text); cursor:pointer; box-shadow:none;
+    display:inline-flex; align-items:center; gap:6px; padding:0; min-height:auto;
+    background:transparent; border:0; color:var(--text); cursor:pointer; box-shadow:none;
     transition:opacity .15s ease; -webkit-tap-highlight-color:transparent
 }
 .jobs .fav:hover{ opacity:.9 }
 .jobs .fav:active{ transform:translateY(1px) }
 .jobs .fav--disabled{ opacity:.55; cursor:default }
-
 .jobs .fav__icon{ width:18px; height:18px; display:block; color:#ec407a }
 .jobs .fav__icon path{ fill:currentColor }
 .jobs .fav--on .fav__icon{ color:#d81b60 }
