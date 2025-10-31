@@ -1,39 +1,64 @@
-.sc{
-    --text:#0f172a; --muted:#64748b; --bg:#ffffff;
-    --card:#f7f8ff; --line:#e5e7eb;
-    --grad1:#5b7fff; --grad2:#9cc0ff; --ring:rgba(91,127,255,.35);
-    --shadow:0 10px 26px rgba(15,27,60,.08);
-    --radius:18px;
 
-    --netto:#5b7fff;
+.sc{
+    --hdr-h: var(--hdr-h, 64px);
+    --text:#0f172a; --muted:#5b6b80; --bg:#ffffff;
+    --card:#f6f8ff; --line:#e6ecf5;
+    --grad1:#516CFF; --grad2:#9ABEFF;
+    --ring:rgba(81,108,255,.38);
+    --shadow:0 10px 26px rgba(15,27,60,.10);
+    --radius:18px;
+    --netto:#516CFF;
     --pit:#ff6b8b; --zdrow:#f9b54c; --chor:#7cc4ff; --rent:#b7d1ff; --emer:#9aaeff;
 
     color:var(--text) !important;
     isolation:isolate;
+
+    max-width:1100px;
+    margin-block: calc(var(--hdr-h) + 0px) 28px;
+    margin-inline:auto;
+    padding:0 16px 28px;
+    background:
+            radial-gradient(900px 520px at 8% -10%, rgba(81,108,255,.18), transparent 65%),
+            radial-gradient(820px 520px at 105% -8%, rgba(154,190,255,.16), transparent 60%),
+            linear-gradient(0deg, rgba(81,108,255,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(81,108,255,.06) 1px, transparent 1px),
+            var(--bg) !important;
+    background-size: auto, auto, 28px 28px, 28px 28px, auto;
+    background-position: 0 0, 0 0, 0 -8px, -8px 0, 0 0;
 }
+
 @media (prefers-color-scheme: dark){
     .sc{
         --text:#e6e7ee; --muted:#a1a1aa; --bg:#0b0b0f;
-        --card:#12131a; --line:#1f2430;
-        --grad1:#7c9bff; --grad2:#bcd0ff; --ring:rgba(124,155,255,.38);
-        --shadow:0 10px 28px rgba(0,0,0,.28);
-        --netto:#7c9bff;
+        --card:#11131a; --line:#1f2430;
+        --grad1:#7C9BFF; --grad2:#BCD0FF;
+        --ring:rgba(124,155,255,.42);
+        --shadow:0 12px 30px rgba(0,0,0,.28);
+        --netto:#7C9BFF;
+
+        background:
+                radial-gradient(900px 520px at 8% -10%, rgba(124,155,255,.18), transparent 65%),
+                radial-gradient(820px 520px at 105% -8%, rgba(188,208,255,.14), transparent 60%),
+                linear-gradient(0deg, rgba(124,155,255,.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(124,155,255,.06) 1px, transparent 1px),
+                var(--bg) !important;
+        background-size: auto, auto, 28px 28px, 28px 28px, auto;
+        background-position: 0 0, 0 0, 0 -8px, -8px 0, 0 0;
     }
 }
 
-.sc{
-    max-width:1100px; margin:96px auto 40px; padding:0 16px 28px;
-    background:
-            radial-gradient(900px 520px at 8% -10%, rgba(91,127,255,.12), transparent 65%),
-            radial-gradient(820px 520px at 105% -8%, rgba(156,192,255,.10), transparent 60%),
-            var(--bg) !important;
-}
 .sc *{ box-sizing:border-box; font-variant-numeric:tabular-nums; }
 
 .sc .sc-hero{
-    position:relative; padding:36px 20px; margin-bottom:16px; border-radius:24px;
-    background:linear-gradient(135deg, rgba(91,127,255,.12), rgba(156,192,255,.08)) !important;
-    text-align:center; overflow:hidden;
+    position:relative;
+    padding:28px 20px;
+    margin-bottom:16px;
+    border-radius:24px;
+    background:
+            linear-gradient(135deg, rgba(81,108,255,.16), rgba(154,190,255,.12)) !important;
+    text-align:center;
+    overflow:hidden;
+    box-shadow: inset 0 -1px 0 rgba(81,108,255,.18);
 }
 .sc .sc-hero h1{ margin:0 0 6px; font-size:36px; line-height:1.2; font-weight:800; }
 .sc .sc-hero p{ margin:0; color:var(--muted) !important; }
@@ -46,15 +71,22 @@
 }
 
 .sc .sc-card, .sc .sc-panel, .sc .sc-summary{
-    background:linear-gradient(180deg,#f7f9ff,#eef3ff) !important;
-    border:1px solid var(--line) !important; border-radius:var(--radius) !important;
-    padding:16px !important; box-shadow:var(--shadow) !important;
+    background:linear-gradient(180deg,#f9fbff,#eef3ff) !important;
+    border:1px solid var(--line) !important;
+    border-radius:var(--radius) !important;
+    padding:16px !important;
+    box-shadow:var(--shadow) !important;
 }
+.sc .sc-panel{ margin-top:12px; }
 
-.sc .sc-panel{ margin-top:16px; }
 .sc .sc-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .sc .sc-full{ grid-column:1 / -1; }
-.sc .sc-field > span{ display:block; font-weight:700; font-size:14px; margin:0 0 6px; color:var(--text) !important; }
+
+.sc .sc-field > span{
+    display:block; font-weight:700; font-size:14px;
+    margin:0 0 6px; color:var(--text) !important;
+}
+
 .sc .sc-amount{ position:relative; }
 .sc .sc-amount input{
     width:100% !important; height:44px !important; padding:0 64px 0 12px !important;
@@ -62,15 +94,21 @@
     background:#fff !important; color:var(--text) !important; outline:none !important;
     transition: box-shadow .15s, border-color .15s !important;
 }
-.sc .sc-amount input:focus{ border-color:var(--grad2) !important; box-shadow:0 0 0 3px var(--ring) !important; }
-.sc .sc-currency{ position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--muted) !important; font-weight:700; }
+.sc .sc-amount input:focus{
+    border-color:var(--grad2) !important; box-shadow:0 0 0 3px var(--ring) !important;
+}
+.sc .sc-currency{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    color:var(--muted) !important; font-weight:700;
+}
+
 .sc .sc-seg{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .sc .sc-seg--wide{ grid-template-columns: repeat(4, 1fr); }
 .sc .sc-seg input{ position:absolute; left:-9999px; }
 .sc .sc-seg label{
     height:44px !important; border-radius:12px !important; border:1px solid var(--line) !important;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
-    font-weight:700; background:#fff !important; color:var(--text) !important;
+    font-weight:800; background:#fff !important; color:var(--text) !important;
     transition: border-color .15s, box-shadow .15s, transform .12s, background .2s !important;
 }
 .sc .sc-seg input:checked + label{
@@ -108,7 +146,6 @@
 .sc .sc-legend .sw.chor { background:var(--chor)  !important; }
 .sc .sc-legend .sw.rent { background:var(--rent)  !important; }
 .sc .sc-legend .sw.emer { background:var(--emer)  !important; }
-
 
 .sc .sc-bars{
     display:grid;
@@ -168,10 +205,8 @@
 
 .sc .sc-bar__seg[style*="height:0%"]{ display:none !important; }
 
-.sc .sc-bar__seg.tiny span{
-    top:auto; transform:none;
-}
-.sc .sc-bar__seg.tiny.odd span{ top:0; }
+.sc .sc-bar__seg.tiny span{ top:auto; transform:none; }
+.sc .sc-bar__seg.tiny.odd  span{ top:0; }
 .sc .sc-bar__seg.tiny.even span{ bottom:0; }
 .sc .sc-bar__seg.tiny.odd  span::before{ top:6px; transform:none; }
 .sc .sc-bar__seg.tiny.even span::before{ bottom:6px; top:auto; transform:none; }
