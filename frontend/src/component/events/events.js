@@ -1,7 +1,7 @@
 import { getAccess } from '../../shared/api.js';
 
 const FAV = (() => {
-    const api = (p) => `${p}`;
+    const api  = (p) => `${p}`;
     const auth = () => { try { const t = getAccess?.(); return t ? { Authorization:`Bearer ${t}` } : {}; } catch { return {}; } };
     const loggedIn = () => !!getAccess?.();
 
@@ -42,6 +42,25 @@ const FAV = (() => {
 export function initEvents(opts = {}) {
     const API_URL   = opts.apiUrl ?? '/api/events';
     const PAGE_SIZE = 25;
+
+    const ICONS = {
+        'javascript': '/assets/component/jobsoffers/technology/JavaScript.svg',
+        'typescript': '/assets/component/jobsoffers/technology/TypeScript.svg',
+        'react':      '/assets/component/jobsoffers/technology/React.svg',
+        'java':       '/assets/component/jobsoffers/technology/Java.svg',
+        'python':     '/assets/component/jobsoffers/technology/Python.svg',
+        'c#':         '/assets/component/jobsoffers/technology/C_Sharp.svg',
+        'php':        '/assets/component/jobsoffers/technology/Php.svg',
+        'aws':        '/assets/component/jobsoffers/technology/AWS.svg',
+        'kubernetes': '/assets/component/jobsoffers/technology/Kubernetes.svg',
+        'devops':     '/assets/component/jobsoffers/specialization/DevOps.svg',
+        'data':       '/assets/component/jobsoffers/specialization/Data-Bi.svg',
+        'ai/ml':      '/assets/component/jobsoffers/specialization/AI-ML.svg',
+    };
+    const iconFor = (t) => (t ? ICONS[String(t).toLowerCase()] || null : null);
+    const withIconHTML = (label, url, cls) => url
+        ? `<img class="${cls}" src="${url}" alt="" loading="lazy" decoding="async"> ${escapeHtml(label)}`
+        : escapeHtml(label);
 
     const ISO2 = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,SZ,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,VA,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NL,NC,NZ,NI,NE,NG,NU,NF,MK,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,PM,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,SD,SR,SJ,SE,CH,SY,TW,TJ,TZ,TH,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VE,VN,VG,VI,WF,EH,YE,ZM,ZW".split(",");
     const REGION = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -84,7 +103,10 @@ export function initEvents(opts = {}) {
 
     const chipsTech = $('#chips-tech');
     if (chipsTech) {
-        chipsTech.innerHTML = TECHS.map(t => `<button class="chip" data-tech="${t}">${t}</button>`).join('');
+        chipsTech.innerHTML = TECHS.map(t => {
+            const icon = iconFor(t);
+            return `<button class="chip" data-tech="${t}">${withIconHTML(t, icon, 'chip__icon')}</button>`;
+        }).join('');
         chipsTech.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
             state.tech = (state.tech === b.dataset.tech) ? '' : b.dataset.tech;
             highlightTech(); onChange();
@@ -211,7 +233,11 @@ export function initEvents(opts = {}) {
 
             const tags = document.createElement('div');
             tags.className = 'tags';
-            tags.innerHTML = (ev.categories?.length ? ev.categories.map(c => `<span class="tag">${escapeHtml(c)}</span>`).join('') : '');
+            const tagHtml = (name) => {
+                const icon = iconFor(name);
+                return `<span class="tag">${withIconHTML(name, icon, 'tag__icon')}</span>`;
+            };
+            tags.innerHTML = (ev.categories?.length ? ev.categories.map(tagHtml).join('') : '');
             if (!ev.categories?.length) tags.style.display='none';
 
             const link = document.createElement('a');
@@ -301,7 +327,7 @@ export function initEvents(opts = {}) {
             const country = REGION.of(cc);
             const city = pick(CITY_BY[cc]);
             const type = pick(TYPES);
-            const tech = pick(['javascript','typescript','react','java','python','c#','php','aws','kubernetes','devops','data','ai/ml']);
+            const tech = pick(TECHS);
             const start = days((Math.random()*150|0)+1);
             const title = `${tech.toUpperCase()} ${type} • ${city}`;
             const url = `https://example.com/events/${cc.toLowerCase()}-${city.toLowerCase().replace(/\s+/g,'-')}-${i}`;
