@@ -232,6 +232,16 @@
 }
 .events .pagination__ellipsis{ padding:0 6px; color:var(--muted); }
 
+.events .chip__icon,
+.events .tag__icon{
+    width: 16px;
+    height: 16px;
+    vertical-align: -3px;
+    margin-right: 6px;
+    display: inline-block;
+}
+.events .tag__icon{ width: 14px; height: 14px; margin-right: 5px; }
+
 @media (max-width:1100px){
     .events .toolbar__row{ grid-template-columns: 1fr 1fr; }
     .events #q{ grid-column:1; }
