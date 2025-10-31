@@ -62,7 +62,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (uri.equals("/api/ingest") || uri.startsWith("/api/ingest/")) {
             return true;
         }
-
+        if (uri.equals("/api/salary/calculate") && "POST".equalsIgnoreCase(method)) return true;
+        if (uri.startsWith("/api/salary/report/") && "GET".equalsIgnoreCase(method)) return true;
         if (uri.startsWith("/api/jobs")) {
             if (uri.equals("/api/jobs/mine") || uri.startsWith("/api/jobs/mine/")) {
                 return false;
