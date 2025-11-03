@@ -13,10 +13,7 @@ export function initLoginRegister(mode = 'login') {
 
         const obs = new MutationObserver(() => {
             const el = root.querySelector('.auth');
-            if (el) {
-                obs.disconnect();
-                cb(el);
-            }
+            if (el) { obs.disconnect(); cb(el); }
         });
         obs.observe(root, { childList: true, subtree: true });
 
@@ -29,14 +26,9 @@ export function initLoginRegister(mode = 'login') {
     }
 
     function setup(box, mode) {
-        requestAnimationFrame(() => {
-            try { history.scrollRestoration = 'manual'; } catch {}
-            const header = document.querySelector('.site-header, .navbar, header');
-            const offset = (header?.offsetHeight || 0) + 12; // 12px margines
-            const top = box.getBoundingClientRect().top + window.scrollY - offset;
-            window.scrollTo({ top, left: 0, behavior: 'auto' });
-            box.querySelector('input[name="username"]')?.focus();
-        });
+        ensureAuthWrapper(box);
+
+        box.querySelector('input[name="username"]')?.focus();
 
         const title     = box.querySelector('.js-title');
         const subtitle  = box.querySelector('.js-subtitle');
@@ -121,5 +113,21 @@ export function initLoginRegister(mode = 'login') {
             alertBox.style.display = 'none';
             alertBox.textContent = '';
         }
+    }
+
+    function ensureAuthWrapper(box) {
+        let wrapper = box.parentElement;
+        if (!wrapper || !wrapper.classList.contains('auth-wrap')) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'auth-wrap';
+            box.parentElement?.insertBefore(wrapper, box);
+            wrapper.appendChild(box);
+        }
+
+        wrapper.style.setProperty('margin-top', '0px', 'important');
+
+        if (!wrapper.style.padding) wrapper.style.padding = '24px 16px';
+        if (!wrapper.style.display) wrapper.style.display = 'grid';
+        if (!wrapper.style.justifyContent) wrapper.style.justifyContent = 'center';
     }
 }

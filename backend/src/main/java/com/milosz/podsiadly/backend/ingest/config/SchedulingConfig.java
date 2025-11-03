@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/ingest/config/SchedulingConfig.java
 package com.milosz.podsiadly.backend.ingest.config;
 
 import org.springframework.context.annotation.Bean;

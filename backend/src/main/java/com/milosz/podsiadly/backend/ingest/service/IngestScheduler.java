@@ -1,4 +1,3 @@
-// src/main/java/com/milosz/podsiadly/backend/ingest/service/IngestScheduler.java
 package com.milosz.podsiadly.backend.ingest.service;
 
 import com.milosz.podsiadly.backend.ingest.config.IngestSchedulerProperties;

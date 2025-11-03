@@ -1,22 +1,22 @@
-import landingHtml from './landing.html?raw';
 import './landing.css';
-import { setView } from '../../shared/mount.js';
 
-export async function mountLanding(opts = {}) {
-    const jobsApi   = opts.jobsApi   || '/api/jobs';
-    const eventsApi = opts.eventsApi || '/api/events';
-    const LOCALE    = opts.locale    || 'pl-PL';
 
-    setView(landingHtml);
-    const mount = document.getElementById('view-root');
+export async function initLanding(opts = {}) {
+    const jobsApi     = opts.jobsApi     || '/api/jobs';
+    const eventsApi   = opts.eventsApi   || '/api/events';
+    const LOCALE      = opts.locale      || 'pl-PL';
+    const CITY_SAMPLE = opts.citySample  || 500;
 
-    const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-    }, { threshold: 0.15 });
-    mount.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    const root = document.getElementById('view-root');
 
-    const fmt = (n) => Number(n || 0).toLocaleString(LOCALE);
-    const animateCount = (el, target) => {
+    const io = new IntersectionObserver(
+        es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } }),
+        { threshold: 0.15 }
+    );
+    root.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    const fmt = n => Number(n || 0).toLocaleString(LOCALE);
+    function animateCount(el, target) {
         const finalVal = Math.max(0, Number(target) || 0);
         const step = Math.max(1, Math.ceil(finalVal / 50));
         let cur = 0;
@@ -25,111 +25,112 @@ export async function mountLanding(opts = {}) {
             el.textContent = fmt(cur);
             if (cur === finalVal) clearInterval(id);
         }, 30);
-    };
-
-    mount.querySelectorAll('.stat__num').forEach(el => {
-        animateCount(el, parseInt(el.dataset.count || '0', 10));
-    });
-
-    const jobsEl      = mount.querySelector('[data-stat="jobs"] .stat__num');
-    const companiesEl = mount.querySelector('[data-stat="companies"] .stat__num');
-    const eventsEl    = mount.querySelector('[data-stat="events"] .stat__num');
-
-    if (jobsEl) {
-        try { const total = await fetchJobsTotal(jobsApi); if (Number.isFinite(total)) animateCount(jobsEl, total); } catch {}
     }
-    if (companiesEl) {
-        try {
-            const totalCompanies =
-                (await fetchCompaniesTotal({ companiesApi: '/api/companies', jobsApi })) ??
-                (await estimateCompaniesFromJobs(jobsApi));
-            if (Number.isFinite(totalCompanies)) animateCount(companiesEl, totalCompanies);
-        } catch {}
+
+    const jobsEl   = root.querySelector('[data-stat="jobs"] .stat__num');
+    const citiesEl = root.querySelector('[data-stat="companies"] .stat__num');
+    const eventsEl = root.querySelector('[data-stat="events"] .stat__num');
+
+    if (jobsEl)   jobsEl.textContent   = '0';
+    if (citiesEl) citiesEl.textContent = '0';
+    if (eventsEl) eventsEl.textContent = '0';
+
+    async function fetchJson(url) {
+        const r = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+        const xTotal = r.headers.get('X-Total-Count');
+        let json = null;
+        try { json = await r.json(); } catch {}
+        return { json, xTotal: xTotal ? parseInt(xTotal, 10) : null };
     }
-    if (eventsEl) {
-        try {
-            const { from, to } = monthBounds(new Date());
-            const total = await fetchEventsTotal(eventsApi, { from, to });
-            if (Number.isFinite(total)) animateCount(eventsEl, total);
-        } catch {}
+
+    function extractTotal(json) {
+        if (typeof json?.totalElements === 'number') return json.totalElements;
+        if (typeof json?.total === 'number')         return json.total;
+        if (typeof json?.page?.totalElements === 'number') return json.page.totalElements;
+        if (Array.isArray(json?.content)) return json.content.length;
+        if (Array.isArray(json?.items))   return json.items.length;
+        if (Array.isArray(json))          return json.length;
+        return 0;
     }
 
     async function fetchJobsTotal(apiUrl) {
-        const url = new URL(apiUrl, location.origin);
-        url.searchParams.set('page', '1');      // 1-based
-        url.searchParams.set('pageSize', '1');  // tylko total
-        const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-        if (!res.ok) throw new Error('Jobs API error: ' + res.status);
-
-        const headerTotal = res.headers.get('X-Total-Count');
-        if (headerTotal) return parseInt(headerTotal, 10);
-
-        const json = await res.json();
-        if (Array.isArray(json?.content)) return typeof json.totalElements === 'number' ? json.totalElements : json.content.length;
-        if (Array.isArray(json?.items))   return typeof json.total === 'number' ? json.total : json.items.length;
-        if (Array.isArray(json))          return json.length;
-        return 0;
-    }
-
-    async function fetchEventsTotal(apiUrl, { from, to, type } = {}) {
-        const url = new URL(apiUrl, location.origin);
-        if (from) url.searchParams.set('from', `${from}T00:00:00Z`);
-        if (to)   url.searchParams.set('to',   `${to}T23:59:59Z`);
-        if (type) url.searchParams.set('type', String(type).toUpperCase());
-        url.searchParams.set('page', '0');
-        url.searchParams.set('size', '1');
-        url.searchParams.set('sort', 'startAt,asc');
-
-        const res = await fetch(url.toString(), { headers: { Accept: 'application/json' }, mode: 'cors' });
-        if (!res.ok) throw new Error('Events API error: ' + res.status);
-
-        const json = await res.json();
-        if (Array.isArray(json?.content)) return typeof json.totalElements === 'number' ? json.totalElements : json.content.length;
-        if (Array.isArray(json?.items))   return typeof json.total === 'number' ? json.total : json.items.length;
-        if (Array.isArray(json))          return json.length;
-        return 0;
-    }
-
-    async function fetchCompaniesTotal({ companiesApi = '/api/companies', jobsApi }) {
+        // A) 1-based
+        let u = new URL(apiUrl, location.origin);
+        u.searchParams.set('page', '1');
+        u.searchParams.set('pageSize', '1');
         try {
-            const url = new URL(companiesApi, location.origin);
-            url.searchParams.set('page', '0');
-            url.searchParams.set('size', '1');
-            const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-            if (!res.ok) throw new Error('Companies API error');
-            const json = await res.json();
-            if (Array.isArray(json?.content)) return json.totalElements ?? json.content.length;
-            if (Array.isArray(json?.items))   return json.total ?? json.items.length;
-            if (Array.isArray(json))          return json.length;
-            return undefined;
-        } catch { return undefined; }
+            let { json, xTotal } = await fetchJson(u.toString());
+            if (Number.isFinite(xTotal)) return xTotal;
+            const t = extractTotal(json);
+            if (t > 0) return t;
+        } catch {}
+
+        u = new URL(apiUrl, location.origin);
+        u.searchParams.set('page', '0');
+        u.searchParams.set('size', '1');
+        try {
+            let { json, xTotal } = await fetchJson(u.toString());
+            if (Number.isFinite(xTotal)) return xTotal;
+            return extractTotal(json);
+        } catch { return 0; }
     }
 
-    async function estimateCompaniesFromJobs(apiUrl) {
-        const url = new URL(apiUrl, location.origin);
-        url.searchParams.set('page', '1');
-        url.searchParams.set('pageSize', '500');
-        url.searchParams.set('sort', 'company,asc');
+    async function estimateCitiesFromJobs(apiUrl, sampleSize = CITY_SAMPLE) {
+        const u = new URL(apiUrl, location.origin);
+        u.searchParams.set('page', '1');
+        u.searchParams.set('pageSize', String(sampleSize));
+        u.searchParams.set('size',     String(sampleSize));
+        u.searchParams.set('sort', 'date');
 
-        const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-        if (!res.ok) throw new Error('Jobs list error: ' + res.status);
+        try {
+            const { json } = await fetchJson(u.toString());
+            const list =
+                Array.isArray(json?.content) ? json.content :
+                    Array.isArray(json?.items)   ? json.items   :
+                        Array.isArray(json)          ? json         : [];
 
-        const json = await res.json();
-        const list = Array.isArray(json?.content) ? json.content
-            : Array.isArray(json?.items)   ? json.items
-                : Array.isArray(json)          ? json
-                    : [];
-        const names = new Set(
-            list.map(x => x.companyName || x.company || '')
-                .map(String).map(s => s.trim()).filter(Boolean)
-        );
-        return names.size;
+            const cities = new Set(
+                list.map(x => x?.cityName || x?.city || '')
+                    .map(String).map(s => s.trim()).filter(Boolean)
+            );
+            return cities.size;
+        } catch { return 0; }
     }
 
-    function monthBounds(d) {
-        const y = d.getFullYear(), m = d.getMonth();
-        const from = new Date(y, m, 1).toISOString().slice(0, 10);
-        const to   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
-        return { from, to };
+    async function fetchEventsTotal(apiUrl) {
+        let u = new URL(apiUrl, location.origin);
+        u.searchParams.set('from', new Date().toISOString());
+        u.searchParams.set('page', '0');
+        u.searchParams.set('size', '1');
+        u.searchParams.set('sort', 'startAt,asc');
+        try {
+            let { json, xTotal } = await fetchJson(u.toString());
+            if (Number.isFinite(xTotal)) return xTotal;
+            const t = extractTotal(json);
+            if (t > 0) return t;
+        } catch {}
+
+        u = new URL(apiUrl, location.origin);
+        u.searchParams.set('page', '0');
+        u.searchParams.set('size', '1');
+        u.searchParams.set('sort', 'startAt,asc');
+        try {
+            let { json, xTotal } = await fetchJson(u.toString());
+            if (Number.isFinite(xTotal)) return xTotal;
+            return extractTotal(json);
+        } catch { return 0; }
     }
+
+    const [jobsTotal, citiesTotal, eventsTotal] = await Promise.all([
+        fetchJobsTotal(jobsApi).catch(() => 0),
+        estimateCitiesFromJobs(jobsApi, CITY_SAMPLE).catch(() => 0),
+        fetchEventsTotal(eventsApi).catch(() => 0),
+    ]);
+
+    const dataCount = el => parseInt(el?.dataset.count || '0', 10);
+
+    if (jobsEl)   animateCount(jobsEl,   jobsTotal   || dataCount(jobsEl));
+    if (citiesEl) animateCount(citiesEl, citiesTotal || dataCount(citiesEl));
+    if (eventsEl) animateCount(eventsEl, eventsTotal || dataCount(eventsEl));
 }
