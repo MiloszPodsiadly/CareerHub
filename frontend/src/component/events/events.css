@@ -18,18 +18,14 @@
     max-width: var(--container);
     margin-inline: auto;
     margin-block: calc(var(--hdr-h) + 0px) 24px;
-    padding-inline: 16px;
+    padding-inline: 0px;
     padding-bottom: 28px;
     color: var(--text);
 
-    background:
-            radial-gradient(900px 520px at 8% -10%, rgba(91,127,255,.12), transparent 65%),
-            radial-gradient(820px 520px at 105% -8%, rgba(156,192,255,.10), transparent 60%),
-            linear-gradient(0deg, rgba(91,127,255,.045) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(91,127,255,.045) 1px, transparent 1px),
-            var(--bg);
-    background-size: auto, auto, 28px 28px, 28px 28px, auto;
-    background-position: 0 0, 0 0, 0 -8px, -8px 0, 0 0;
+    background: var(--bg) !important;
+    background-image: none !important;
+    background-size: auto !important;
+    background-position: 0 0 !important;
 }
 
 .events > .toolbar,
