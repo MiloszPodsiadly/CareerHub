@@ -11,7 +11,7 @@
 
         width:min(1240px,100%);
         margin:0 auto;
-        padding:12px 20px 72px;
+        padding:0px 20px 72px;
 
         color:var(--tx);
         background:var(--bg);
