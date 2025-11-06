@@ -1,22 +1,22 @@
-<link rel="stylesheet" href="./salary-calculator.css" />
-
 <section class="salary sc">
     <header class="sc-hero">
-        <h1>Salary <span class="grad">Calculator</span></h1>
+        <h1 class="grad">Salary Calculator</h1>
         <p>Enter the amount and contract type to see an estimated take-home pay and deduction structure.</p>
     </header>
 
-    <section class="sc-panel">
+    <section class="sc-panel" aria-labelledby="sc-form-title">
+        <h2 id="sc-form-title" style="text-align:center;margin:0 0 14px;font-weight:900;letter-spacing:.2px;">Calculator form</h2>
+
         <div class="sc-grid">
             <label class="sc-field">
                 <span>Monthly amount</span>
                 <div class="sc-amount">
-                    <input id="sc-amount" type="number" min="0" step="50" value="5000" />
+                    <input id="sc-amount" type="number" min="0" step="50" value="5000" inputmode="numeric" />
                     <span class="sc-currency">PLN</span>
                 </div>
             </label>
 
-            <label class="sc-field">
+            <fieldset class="sc-field" role="group" aria-label="Amount mode">
                 <span>Amount mode</span>
                 <div class="sc-seg">
                     <input type="radio" name="sc-mode" id="sc-mode-gross" value="gross" checked />
@@ -24,9 +24,9 @@
                     <input type="radio" name="sc-mode" id="sc-mode-net" value="net" />
                     <label for="sc-mode-net">Net (take-home)</label>
                 </div>
-            </label>
+            </fieldset>
 
-            <label class="sc-field sc-full">
+            <fieldset class="sc-field sc-full" role="group" aria-label="Contract type">
                 <span>Contract type</span>
                 <div class="sc-seg sc-seg--wide">
                     <input type="radio" name="sc-type" id="sc-type-employment" value="employment" checked />
@@ -41,7 +41,7 @@
                     <input type="radio" name="sc-type" id="sc-type-b2b" value="b2b" />
                     <label for="sc-type-b2b">B2B</label>
                 </div>
-            </label>
+            </fieldset>
 
             <details class="sc-details sc-full">
                 <summary>Details (optional)</summary>
@@ -55,12 +55,9 @@
         </div>
     </section>
 
-    <section class="sc-summary">
-        <div class="sc-card sc-total">
-            <div class="sc-total__label">Estimated <b>net</b> / month</div>
-            <div class="sc-total__value" id="sc-net">—</div>
-            <div class="sc-total__sub" id="sc-annual">—</div>
-        </div>
+    <section class="sc-summary" aria-labelledby="sc-summary-title">
+        <h2 id="sc-summary-title" class="visually-hidden">Summary</h2>
+
 
         <div class="sc-card sc-breakdown">
             <div class="sc-breakdown__chart">
@@ -70,13 +67,13 @@
         </div>
     </section>
 
-    <section class="sc-card sc-compare">
-        <h3>Comparison (net/tax proportions — detailed)</h3>
+    <section class="sc-card sc-compare" aria-labelledby="sc-compare-title">
+        <h3 id="sc-compare-title">Comparison (net/tax proportions — detailed)</h3>
         <div class="sc-bars" id="sc-bars"></div>
     </section>
 
-    <section class="sc-card sc-table">
-        <h3>Monthly breakdown</h3>
+    <section class="sc-card sc-table" aria-labelledby="sc-table-title">
+        <h3 id="sc-table-title" style="text-align:center;margin:0 0 14px;">Monthly breakdown</h3>
         <div class="sc-table__wrap">
             <table>
                 <thead>
@@ -98,11 +95,3 @@
         ⚠️ This is a <b>prototype</b> with simplified rules — educational only. Real results depend on full regulations and your situation.
     </p>
 </section>
-
-<!-- If your backend is on a different origin and you DON'T proxy /api, set the base URL: -->
-<!-- <script>window.__API_BASE__ = "http://localhost:8081";</script> -->
-
-<script src="./salary-calculator.js"></script>
-<script>
-    window.initSalaryCalculator && window.initSalaryCalculator();
-</script>
