@@ -25,7 +25,12 @@
 
             <div class="cv">
                 <label class="cv__label">CV (PDF/DOC/DOCX, up to 5 MB)</label>
-                <input id="cvFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+                <input
+                        id="cvFile"
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        hidden
+                />
                 <div class="cv__row">
                     <label class="btn btn--equal" for="cvFile">Add / replace CV</label>
                     <button type="button" class="btn btn--ghost" id="clearCv">Remove CV</button>
@@ -60,7 +65,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn--ghost" type="reset" id="resetBtn">Discard changes</button>
+                <button class="btn btn--ghost"   type="reset"  id="resetBtn">Discard changes</button>
                 <button class="btn btn--primary" type="submit">Save</button>
             </div>
         </section>
