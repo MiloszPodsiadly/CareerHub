@@ -11,6 +11,8 @@ export function initPostJob() {
     };
 
     const form = $('#postjob-form');
+    if (!form) return;
+
     const submitBtn = $('#submit-btn');
     const msg = $('#form-msg');
 
@@ -122,41 +124,108 @@ export function initPostJob() {
     });
 
     const bindPreviewFields = ['title','companyName','cityName','salaryMin','salaryMax','currency','level','contract','remote'];
-    bindPreviewFields.forEach(name => form[name].addEventListener('input', () => { updatePreview(); scheduleSave(); }));
-    desc.addEventListener('input', () => { descCount.textContent = desc.value.length; scheduleSave(); });
+    bindPreviewFields.forEach(name =>
+        form[name].addEventListener('input', () => { updatePreview(); scheduleSave(); })
+    );
+    desc.addEventListener('input', () => { if (descCount) descCount.textContent = desc.value.length; scheduleSave(); });
 
     function setError(el, message) {
         const field = el.closest('.field') || el.closest('.card') || el;
-        field.classList.add('invalid');
         removeError(field);
+
+        const input = field.querySelector('input,select,textarea') || el;
+        input.setAttribute('aria-invalid', 'true');
+
+        const errId = `${input.name || input.id || 'fld'}-err`;
         const small = document.createElement('div');
         small.className = 'error';
+        small.id = errId;
         small.textContent = message;
         field.appendChild(small);
+        input.setAttribute('aria-describedby', errId);
+
+        field.classList.add('invalid');
+        field.classList.remove('valid');
+
+        const card = field.closest('.card');
+        if (card) card.classList.add('card--invalid');
     }
+
     function removeError(field) {
-        const prev = field.querySelector('.error');
+        const input = field.querySelector?.('input,select,textarea');
+        const prev = field.querySelector?.('.error');
         if (prev) prev.remove();
         field.classList.remove('invalid');
+        if (input) {
+            input.removeAttribute('aria-invalid');
+            input.removeAttribute('aria-describedby');
+        }
+        const card = field.closest?.('.card');
+        if (card && !card.querySelector('.invalid')) {
+            card.classList.remove('card--invalid');
+        }
     }
-    function clearErrors() { $$('.invalid').forEach(f => removeError(f)); }
+
+    function clearErrors() {
+        [...form.querySelectorAll('.invalid')].forEach(removeError);
+        [...form.querySelectorAll('.card--invalid')].forEach(c => c.classList.remove('card--invalid'));
+    }
+
+    function validateField(input) {
+        const field = (input.closest && input.closest('.field')) || input;
+        if (field.classList.contains('invalid')) removeError(field);
+
+        if (input === form.title && !form.title.value.trim()) {
+            setError(field, 'Required.');
+            return false;
+        }
+        if (input === form.companyName && !form.companyName.value.trim()) {
+            setError(field, 'Required.');
+            return false;
+        }
+        if (input === form.level && !form.level.value) {
+            setError(field, 'Select a level.');
+            return false;
+        }
+        if (input === form.salaryMin || input === form.salaryMax) {
+            const min = form.salaryMin.value ? Number(form.salaryMin.value) : null;
+            const max = form.salaryMax.value ? Number(form.salaryMax.value) : null;
+            if (min !== null && max !== null && min > max) {
+                setError(form.salaryMax.closest('.field'), 'Max cannot be less than Min.');
+                return false;
+            }
+        }
+
+        field.classList.add('valid');
+        return true;
+    }
+
+    function scrollToFirstError() {
+        const firstInvalid = form.querySelector('.invalid input, .invalid select, .invalid textarea');
+        if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus({ preventScroll: true });
+        }
+    }
 
     function validate() {
         clearErrors();
         let ok = true;
-
-        if (!form.title.value.trim())  { setError(form.title, 'Required.'); ok = false; }
-        if (!form.companyName.value.trim()) { setError(form.companyName, 'Required.'); ok = false; }
-        if (!form.level.value) { setError(form.level, 'Select a level.'); ok = false; }
-
-        const min = form.salaryMin.value ? Number(form.salaryMin.value) : null;
-        const max = form.salaryMax.value ? Number(form.salaryMax.value) : null;
-        if (min !== null && max !== null && min > max) {
-            setError(form.salaryMax, 'Max cannot be less than Min.');
-            ok = false;
-        }
-        return ok;
+        ok &= validateField(form.title);
+        ok &= validateField(form.companyName);
+        ok &= validateField(form.level);
+        ok &= validateField(form.salaryMin);
+        ok &= validateField(form.salaryMax);
+        if (!ok) scrollToFirstError();
+        return !!ok;
     }
+
+    const liveValidate = [form.title, form.companyName, form.level, form.salaryMin, form.salaryMax];
+    liveValidate.forEach(inp => {
+        const markDirty = () => inp.closest('.field')?.classList.add('dirty');
+        inp.addEventListener('input', () => { markDirty(); validateField(inp); });
+        inp.addEventListener('blur',  () => { markDirty(); validateField(inp); });
+    });
 
     function serialize() {
         const contracts = $$('input[name="contracts"]:checked', form).map(c => c.value);
@@ -255,7 +324,7 @@ export function initPostJob() {
             form.active.checked = d.active ?? true;
 
             updatePreview();
-            descCount.textContent = form.description.value.length;
+            if (descCount) descCount.textContent = form.description.value.length;
         } catch {}
     }
 
@@ -291,6 +360,7 @@ export function initPostJob() {
         msg.textContent = '';
         if (!validate()) {
             msg.textContent = 'Please fix the highlighted fields.';
+            scrollToFirstError();
             return;
         }
 
