@@ -7,6 +7,7 @@
     </header>
 
     <div class="postjob__grid">
+        <!-- LEFT: FORM -->
         <form id="postjob-form" novalidate>
             <fieldset class="card">
                 <legend>Source</legend>
@@ -121,12 +122,8 @@
 
             <fieldset class="card">
                 <legend>Tech stack & requirements</legend>
-
                 <div id="skills-list" class="skills"></div>
-
-                <button type="button" class="btn btn--ghost" id="add-skill">
-                    + Add skill
-                </button>
+                <button type="button" class="btn btn--ghost" id="add-skill">+ Add skill</button>
             </fieldset>
 
             <fieldset class="card">
@@ -146,13 +143,12 @@
 
             <div class="actions">
                 <button class="btn" type="button" id="save-draft">Save draft</button>
-                <button class="btn btn--primary" id="submit-btn" type="submit">
-                    Publish job
-                </button>
+                <button class="btn btn--primary" id="submit-btn" type="submit">Publish job</button>
                 <div id="form-msg" role="status" aria-live="polite"></div>
             </div>
         </form>
 
+        <!-- RIGHT: LIVE PREVIEW -->
         <aside class="preview card" aria-label="Preview">
             <div class="preview__header">
                 <h3 id="pv-title">Job title</h3>
