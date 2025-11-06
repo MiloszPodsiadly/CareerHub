@@ -179,7 +179,7 @@ export function initJobs(opts = {}){
         };
     }
 
-    function groupKey(job){ return state.filters.group === 'city' ? (job.city || '— other —') : (job.company || '— company —'); }
+    function groupKey(job){ return state.filters.group === 'city' ? (job.city || 'Other') : (job.company || 'Company'); }
     function formatSalary(s){
         if (!s) return '';
         const min = s.min!=null ? s.min.toLocaleString('en-GB') : '';
