@@ -5,7 +5,7 @@
         --acc1:#5b7fff; --acc2:#9cc0ff; --ring:rgba(91,127,255,.35);
         --shadow:0 22px 60px rgba(16,24,40,.10);
         --hero-min:168px;
-        width:min(1200px,100%); margin:0 auto; padding:24px 20px 72px;
+        width:min(1200px,100%); margin:0 auto; padding:0px 0px 72px;
         color:var(--text); background:var(--bg);
     }
     .favorite *{ box-sizing:border-box; }
