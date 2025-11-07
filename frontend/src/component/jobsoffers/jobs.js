@@ -45,6 +45,56 @@ const FAV = (() => {
     return { mountButton, loggedIn };
 })();
 
+function mdSanitize(html){
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html || '';
+    const ALLOWED = new Set(['p','br','strong','em','u','h2','h3','ul','ol','li','blockquote','a']);
+    (function walk(node){
+        [...node.childNodes].forEach(ch=>{
+            if (ch.nodeType===1){
+                const tag = ch.tagName.toLowerCase();
+                if (!ALLOWED.has(tag)){
+                    const frag=document.createDocumentFragment();
+                    while (ch.firstChild) frag.appendChild(ch.firstChild);
+                    ch.replaceWith(frag); return;
+                }
+                if (tag==='a'){
+                    [...ch.attributes].forEach(a=>{ if (a.name.toLowerCase()!=='href') ch.removeAttribute(a.name); });
+                    const href = ch.getAttribute('href') || '';
+                    if (!/^https?:\/\//i.test(href)) ch.removeAttribute('href');
+                    else { ch.setAttribute('rel','noopener noreferrer'); ch.setAttribute('target','_blank'); }
+                } else {
+                    [...ch.attributes].forEach(a=>ch.removeAttribute(a.name));
+                }
+                walk(ch);
+            }
+        });
+    })(tpl.content);
+    return tpl.innerHTML.replace(/<p>\s*<\/p>/g,'');
+}
+function mdToHtml(md){
+    if (!md) return '';
+    let html = String(md).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/^\s*###\s+(.*)$/gm,'<h3>$1</h3>')
+        .replace(/^\s*##\s+(.*)$/gm, '<h2>$1</h2>');
+    html = html.replace(/(^|\n)>\s?(.*)/g, (m, lead, line) => `${lead}<blockquote>${line}</blockquote>`);
+    html = html.replace(/(^|\n)[\*\-]\s+(.*)/g, (m, lead, item) => `${lead}<ul><li>${item}</li></ul>`);
+    html = html.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g,   '<em>$1</em>')
+        .replace(/__(.*?)__/g,   '<u>$1</u>');
+    html = html.split(/\n{2,}/).map(block=>{
+        const t = block.trim();
+        if (!t) return '';
+        if (/^<h[23]|^<ul>|^<blockquote>/.test(t)) return t;
+        return `<p>${t.replace(/\n/g,'<br>')}</p>`;
+    }).join('').replace(/<\/ul>\s*<ul>/g,'');
+
+    return mdSanitize(html);
+}
+
 export function initJobs(opts = {}){
     const API_URL = opts.apiUrl ?? '/api/jobs';
     const PAGE_SIZE = 50;
@@ -315,7 +365,7 @@ export function initJobs(opts = {}){
         <article>
           <div class="job-desc">
             <h4>Description</h4>
-            ${formatDescription(job.description || '')}
+            <div class="prose">${mdToHtml(job.description || '')}</div>
           </div>
         </article>
         <aside class="aside">
