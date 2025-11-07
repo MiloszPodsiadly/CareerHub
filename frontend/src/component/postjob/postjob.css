@@ -194,16 +194,6 @@
     }
     .chip button{ border:none; background:transparent; cursor:pointer; font-weight:800; }
 
-    .skills{ display:grid; gap:12px; }
-    .skill-row{
-        display:grid; gap:12px;
-        grid-template-columns:1.5fr 1fr 1fr 1fr auto;
-        align-items:center; background:#fff; border:1px solid var(--lp-border);
-        border-radius:12px; padding:12px;
-    }
-    .skill-row input, .skill-row select{ height:36px; }
-    .skill-remove{ border:none; background:transparent; cursor:pointer; font-size:18px; }
-
     .preview__header h3{ margin:0 0 4px; }
     .preview__meta{ display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
     .pill{ padding:4px 10px; border-radius:999px; border:1px solid var(--lp-border); font-size:12px; background:#fff; }
@@ -213,6 +203,70 @@
 
     @media (max-width:720px){
         .field.two, .field.three{ grid-template-columns:1fr; }
-        .skill-row{ grid-template-columns:1fr 1fr 1fr 1fr auto; }
     }
+
+    /* ---------- RTE styles ---------- */
+    .postjob .rte{
+        border:1px solid var(--lp-border);
+        border-radius:12px;
+        background:#fff;
+        box-shadow:inset 0 1px 0 rgba(16,24,40,.04);
+    }
+    .postjob .rte__toolbar{
+        display:flex; align-items:center; gap:6px;
+        padding:8px; border-bottom:1px solid var(--lp-border);
+        background:linear-gradient(180deg,#f7f9ff,#eef3ff);
+        border-top-left-radius:12px; border-top-right-radius:12px;
+    }
+    .postjob .rte__btn{
+        height:32px; padding:0 10px; border-radius:8px;
+        border:1px solid var(--lp-border); background:#fff;
+        font:600 12px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        cursor:pointer; -webkit-tap-highlight-color:transparent;
+    }
+    .postjob .rte__btn:hover{ border-color:#d7e3f6; box-shadow:0 0 0 3px rgba(91,127,255,.12); }
+    .postjob .rte__sep{ width:1px; height:20px; background:var(--lp-border); margin:0 2px; }
+
+    .postjob .rte__area{
+        min-height:220px; padding:14px;
+        border-bottom-left-radius:12px; border-bottom-right-radius:12px;
+        outline:none;
+    }
+    .postjob .rte__area:empty:before{
+        content:attr(data-placeholder);
+        color:#93a1b6;
+    }
+    .postjob .rte__area p{ margin:0 0 10px; }
+    .postjob .rte__area h2{ margin:12px 0 6px; font-size:18px; font-weight:900; }
+    .postjob .rte__area h3{ margin:10px 0 6px; font-size:16px; font-weight:800; }
+    .postjob .rte__area ul, .postjob .rte__area ol{ padding-left:1.2rem; margin:0 0 10px; }
+    .postjob .rte__area blockquote{
+        margin:10px 0; padding:10px 12px; border-left:3px solid var(--lp-grad1);
+        background:linear-gradient(180deg,#f9fbff,#fff);
+        border-radius:8px;
+    }
+
+    /* ---------- „prose” — wspólny wygląd renderowanego opisu ---------- */
+    .prose h2{font-weight:800;font-size:1.05rem;margin:.5rem 0}
+    .prose h3{font-weight:800;font-size:1rem;margin:.5rem 0}
+    .prose p{margin:.4rem 0;line-height:1.55}
+    .prose ul{margin:.4rem 0 .6rem 1.2rem}
+    .prose li{margin:.2rem 0}
+    .prose blockquote{
+        margin:.6rem 0;padding:.6rem .8rem;border-left:3px solid #dbe4ff;
+        background:linear-gradient(180deg,rgba(246,248,255,.55),rgba(246,248,255,.3));
+        border-radius:8px
+    }
+    .prose a{color:#5b7fff;text-decoration:underline;text-underline-offset:2px}
+}
+.preview__desc{
+    margin-top:8px;
+    font-size:14px;
+    line-height:1.5;
+    color:#0f172a;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    max-height:180px;
+    overflow:auto;
 }

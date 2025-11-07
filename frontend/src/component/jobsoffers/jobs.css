@@ -262,3 +262,18 @@
     position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
+.jobs .prose{ font-size:15px; line-height:1.6; color:var(--text); }
+.jobs .prose p{ margin:.4rem 0; }
+.jobs .prose strong, .jobs .prose b{ font-weight:800; }
+.jobs .prose em, .jobs .prose i{ font-style:italic; }
+.jobs .prose u{ text-decoration:underline; }
+.jobs .prose h2{ margin:.6rem 0 .35rem; font-size:1.06rem; font-weight:900; }
+.jobs .prose h3{ margin:.5rem 0 .3rem; font-size:1rem; font-weight:800; }
+.jobs .prose ul, .jobs .prose ol{ margin:.4rem 0 .6rem; padding-left:1.2rem; }
+.jobs .prose li{ margin:.2rem 0; }
+.jobs .prose blockquote{
+    margin:.6rem 0; padding:.6rem .8rem; border-left:3px solid var(--acc1);
+    background:linear-gradient(180deg, rgba(246,248,255,.55), rgba(246,248,255,.3));
+    border-radius:8px;
+}
+.jobs .prose a{ color:var(--acc1); text-decoration:underline; text-underline-offset:2px; }

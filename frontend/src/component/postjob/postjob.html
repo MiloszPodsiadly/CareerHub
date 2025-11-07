@@ -1,49 +1,59 @@
 <section class="postjob" aria-labelledby="pj-title">
     <header class="postjob__hero">
-        <h1 id="pj-title">
-            Post a <span class="grad">job</span>
-        </h1>
-        <p>Fill in the details — your listing will be visible immediately after publishing.</p>
+        <h1 id="pj-title">Post a <span class="grad">job</span></h1>
+        <p class="muted">Fill in the details — your listing will be visible immediately after publishing.</p>
     </header>
 
     <div class="postjob__grid">
-        <!-- LEFT: FORM -->
         <form id="postjob-form" novalidate>
             <fieldset class="card">
-                <legend>Source</legend>
-                <div class="field two">
-                    <label>
-                        <span>Source *</span>
-                        <input name="source" required placeholder="platform | manual | ats" value="platform" />
-                    </label>
-                    <label>
-                        <span>External ID</span>
-                        <input name="externalId" placeholder="optional" />
-                    </label>
-                </div>
-                <small class="help">We’ll generate the public job URL on our platform.</small>
-            </fieldset>
-
-            <fieldset class="card">
                 <legend>Listing content</legend>
+
                 <label class="field">
                     <span>Job title *</span>
                     <input name="title" required placeholder="e.g. Senior Java Developer" />
                 </label>
+
                 <label class="field">
                     <span>Description</span>
-                    <textarea name="description" rows="10" placeholder="Briefly describe responsibilities, requirements, benefits…"></textarea>
+
+                    <div class="rte" aria-label="Job description editor">
+                        <div class="rte__toolbar" role="toolbar" aria-label="Formatting">
+                            <button type="button" class="rte__btn" data-cmd="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                            <button type="button" class="rte__btn" data-cmd="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+                            <button type="button" class="rte__btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                            <span class="rte__sep"></span>
+                            <button type="button" class="rte__btn" data-block="h2" title="Heading">H2</button>
+                            <button type="button" class="rte__btn" data-block="h3" title="Subheading">H3</button>
+                            <button type="button" class="rte__btn" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+                            <button type="button" class="rte__btn" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+                            <button type="button" class="rte__btn" data-block="blockquote" title="Quote">“”</button>
+                            <span class="rte__sep"></span>
+                            <button type="button" class="rte__btn" data-link="add" title="Insert link">Link</button>
+                            <button type="button" class="rte__btn" data-link="remove" title="Remove link">Unlink</button>
+                            <span class="rte__sep"></span>
+                            <button type="button" class="rte__btn" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+                        </div>
+
+                        <div id="rte-desc" class="rte__area" contenteditable="true"
+                             data-placeholder="Briefly describe responsibilities, requirements, benefits…"></div>
+                    </div>
+
+                    <textarea name="description" id="desc-raw" hidden></textarea>
+
                     <div class="muted count"><span id="desc-count">0</span> chars</div>
                 </label>
             </fieldset>
 
             <fieldset class="card">
                 <legend>Company & location</legend>
+
                 <div class="field two">
                     <label>
                         <span>Company name *</span>
                         <input name="companyName" required placeholder="Employer / software house" />
                     </label>
+
                     <label>
                         <span>City</span>
                         <input name="cityName" placeholder="Warsaw" />
@@ -103,9 +113,7 @@
                     <label>
                         <span>Currency</span>
                         <select name="currency">
-                            <option>PLN</option>
-                            <option>EUR</option>
-                            <option>USD</option>
+                            <option>PLN</option><option>EUR</option><option>USD</option>
                         </select>
                     </label>
                 </div>
@@ -120,27 +128,6 @@
                 </div>
             </fieldset>
 
-            <fieldset class="card">
-                <legend>Tech stack & requirements</legend>
-                <div id="skills-list" class="skills"></div>
-                <button type="button" class="btn btn--ghost" id="add-skill">+ Add skill</button>
-            </fieldset>
-
-            <fieldset class="card">
-                <legend>Publication</legend>
-                <div class="field two">
-                    <label>
-                        <span>Published at</span>
-                        <input name="publishedAt" type="datetime-local" />
-                    </label>
-                    <label class="switch">
-                        <input type="checkbox" name="active" checked />
-                        <span>Active listing</span>
-                    </label>
-                </div>
-                <small class="help">Listings automatically deactivate after 14 days on our platform.</small>
-            </fieldset>
-
             <div class="actions">
                 <button class="btn" type="button" id="save-draft">Save draft</button>
                 <button class="btn btn--primary" id="submit-btn" type="submit">Publish job</button>
@@ -148,7 +135,6 @@
             </div>
         </form>
 
-        <!-- RIGHT: LIVE PREVIEW -->
         <aside class="preview card" aria-label="Preview">
             <div class="preview__header">
                 <h3 id="pv-title">Job title</h3>
@@ -160,6 +146,7 @@
                 <span id="pv-remote" class="pill">On-site</span>
             </div>
             <div class="preview__salary" id="pv-salary">—</div>
+            <div id="pv-desc" class="preview__desc"></div>
             <div class="preview__tags" id="pv-tags"></div>
             <p class="muted tiny">Preview updates live while you type.</p>
         </aside>
