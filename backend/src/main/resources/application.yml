@@ -23,6 +23,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  app:
+    platform:
+      base-url: http://localhost:3000
+
   rabbitmq:
     host: rabbitmq
     port: 5672
