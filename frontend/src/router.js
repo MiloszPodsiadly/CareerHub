@@ -1,5 +1,7 @@
 import { bootstrapAuth } from './shared/api.js';
 import { clearView } from './shared/mount.js';
+import {mountJobExactlyOffer} from "./component/jobexaclyoffer/loader.jobexaclyoffer.js";
+import {mountMyApplications} from "./component/myapplications/loader.myapplications.js";
 
 const routes = {
     '/':     () => import('./component/landing-page/loader.landing.js').then(m => m.mountLanding()),
@@ -12,6 +14,8 @@ const routes = {
     '/favorite': () => import('./component/favorite/loader.favorite.js').then(m => m.mountFavorite()),
     '/post-job': () => import('./component/postjob/loader.postjob.js').then(m => m.mountPostJob()),
     '/my-offers': () => import('./component/myoffers/loader.myoffers.js').then(m => m.mountMyOffers()),
+    '/jobexaclyoffer': () => import('./component/jobexaclyoffer/loader.jobexaclyoffer.js').then(m => m.mountJobExactlyOffer()),
+    '/my-applications': () => import('./component/myapplications/loader.myapplications.js').then(m => m.mountMyApplications()),
 };
 
 const FALLBACK = '/';
