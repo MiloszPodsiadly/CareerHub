@@ -1,0 +1,43 @@
+<section class="apps" id="my-apps-root">
+    <header class="apps__hero">
+        <h1>My applications</h1>
+        <p class="muted">Track jobs you applied for — and applications sent to your own offers.</p>
+
+        <nav class="apps__tabs" role="tablist" aria-label="Applications tabs">
+            <button class="tab js-tab" role="tab" aria-selected="true"  data-tab="mine">Applied by me</button>
+            <button class="tab js-tab" role="tab" aria-selected="false" data-tab="owned">To my offers</button>
+        </nav>
+
+        <div class="apps__toolbar" aria-label="Filters">
+            <div class="apps__search">
+                <input id="apps-search" type="search" placeholder="Search by title, company, city…" autocomplete="off">
+            </div>
+            <div class="apps__controls">
+                <label class="apps__select">
+                    <span>Sort</span>
+                    <select id="apps-sort">
+                        <option value="created_desc">Newest first</option>
+                        <option value="created_asc">Oldest first</option>
+                        <option value="title_asc">Title A → Z</option>
+                        <option value="company_asc">Company A → Z</option>
+                        <option value="city_asc">City A → Z</option>
+                    </select>
+                </label>
+                <div class="apps__toggles">
+                    <button type="button" id="apps-expand">Expand all</button>
+                    <button type="button" id="apps-collapse">Collapse all</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="apps__panel" id="panel-mine">
+        <ul id="apps-mine" class="apps__groups" aria-live="polite"></ul>
+        <div class="apps__pager" id="pager-mine" hidden></div>
+    </div>
+
+    <div class="apps__panel" id="panel-owned" hidden>
+        <ul id="apps-owned" class="apps__groups" aria-live="polite"></ul>
+        <div class="apps__pager" id="pager-owned" hidden></div>
+    </div>
+</section>
