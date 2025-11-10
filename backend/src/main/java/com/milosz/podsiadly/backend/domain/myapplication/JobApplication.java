@@ -23,7 +23,7 @@ public class JobApplication {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = true, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "offer_id", nullable = true)
     private JobOffer offer;
 
