@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.job.service;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.User;
+import com.milosz.podsiadly.backend.domain.myapplication.JobApplicationRepository;
 import com.milosz.podsiadly.backend.job.domain.*;
 import com.milosz.podsiadly.backend.job.dto.*;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
@@ -25,6 +26,7 @@ public class JobOfferCommandService {
     private final JobOfferOwnerRepository owners;
     private final PasswordEncoder passwordEncoder;
     private final OfferArchiveService archiveService;
+    private final JobApplicationRepository applications;
 
     private static final int PUBLISH_DAYS = 14;
 
@@ -42,18 +44,19 @@ public class JobOfferCommandService {
         Company company = upsertCompany(req.companyName());
         City city       = upsertCity(req.cityName());
 
-        JobLevel level                 = parseEnum(req.level(), JobLevel.class);
-        ContractType mainContract      = parseEnum(req.contract(), ContractType.class);
-        Set<ContractType> contractSet  = parseContractSet(req.contracts());
-        Instant published              = (req.publishedAt() != null) ? req.publishedAt() : Instant.now();
+        JobLevel level            = parseEnum(req.level(), JobLevel.class);
+        ContractType mainContract = parseEnum(req.contract(), ContractType.class);
+        Set<ContractType> contractSet = parseContractSet(req.contracts());
+        Instant published         = (req.publishedAt() != null) ? req.publishedAt() : Instant.now();
 
         String base = platformBaseUrl.endsWith("/") ? platformBaseUrl : platformBaseUrl + "/";
-        String tempUrl = base + "jobs/ext/" + externalId;
+        String tempUrl = base + "jobexaclyoffer?ext=" + externalId;
 
         JobOffer e = JobOffer.builder()
                 .source(source)
                 .externalId(externalId)
                 .url(tempUrl)
+                .applyUrl( (req.url() == null || req.url().isBlank()) ? null : req.url().trim() )
                 .title(Objects.requireNonNullElse(req.title(), "Untitled"))
                 .description(req.description())
                 .company(company)
@@ -74,8 +77,7 @@ public class JobOfferCommandService {
         JobOfferMapper.applySkills(e, req.techStack());
 
         e = offers.save(e);
-
-        e.setUrl(base + "jobs/" + e.getId());
+        e.setUrl(base + "jobexaclyoffer?id=" + e.getId());
         e = offers.save(e);
 
         JobOfferOwner rel = owners.save(JobOfferOwner.builder()
@@ -89,6 +91,7 @@ public class JobOfferCommandService {
 
         return JobOfferMapper.toDetailDto(e);
     }
+
 
     @Transactional
     public JobOfferDetailDto updateOwned(User currentUser, Long offerId, JobOfferUpdateRequest req) {
@@ -131,8 +134,6 @@ public class JobOfferCommandService {
         return JobOfferMapper.toDetailDto(e);
     }
 
-    // JobOfferCommandService
-
     @Transactional
     public void deleteOwned(User currentUser, Long offerId, String plainPassword) {
         log.info("[job.delete] userId={} offerId={} start", currentUser.getId(), offerId);
@@ -146,13 +147,11 @@ public class JobOfferCommandService {
         }
 
         var offer = owner.getJobOffer();
-        log.info("[job.delete] ownerId={} company={} city={} active={}",
-                owner.getId(),
-                offer.getCompany() != null ? offer.getCompany().getName() : null,
-                offer.getCity() != null ? offer.getCity().getName() : null,
-                offer.getActive());
 
         archiveService.archiveSingle(offer, ArchiveReason.MANUAL);
+
+        int detached = applications.detachOfferById(offerId);
+        log.info("[job.delete] applications detached (offer set null) = {} for offerId={}", detached, offerId);
 
         offer.setOwner(null);
         offers.saveAndFlush(offer);
@@ -164,7 +163,6 @@ public class JobOfferCommandService {
         offers.delete(offer);
         log.info("[job.delete] offer deleted ok (offerId={})", offerId);
     }
-
 
     @Transactional
     public int deactivateExpired() {
