@@ -28,6 +28,9 @@ public class JobOffer {
     @Column(nullable = false, columnDefinition = "text")
     private String url;
 
+    @Column(name = "apply_url", columnDefinition = "text")
+    private String applyUrl;
+
     @Column(nullable = false) private String title;
     @Column(columnDefinition = "text") private String description;
 

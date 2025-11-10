@@ -133,7 +133,7 @@ export function initPostJob() {
     function toggleBlock(tag) {
         document.execCommand('formatBlock', false, tag.toUpperCase());
         syncDescriptionFields();
-        updatePreview();           // <- ważne
+        updatePreview();
         rteArea.focus();
     }
     function addLink() {
@@ -190,7 +190,8 @@ export function initPostJob() {
             salaryMin:   form.salaryMin.value ? Number(form.salaryMin.value) : null,
             salaryMax:   form.salaryMax.value ? Number(form.salaryMax.value) : null,
             currency:    form.currency.value || 'PLN',
-            techTags:    [...state.tags]
+            techTags:    [...state.tags],
+            url:         form.applyUrl?.value?.trim() || null
         };
     }
 
@@ -260,8 +261,8 @@ export function initPostJob() {
         }
     });
 
-    ['title','companyName','cityName','salaryMin','salaryMax','currency','level','contract','remote']
-        .forEach(n => form[n].addEventListener('input', () => { updatePreview(); scheduleSave(); }));
+    ['title','companyName','cityName','salaryMin','salaryMax','currency','level','contract','remote','applyUrl']
+        .forEach(n => form[n]?.addEventListener('input', () => { updatePreview(); scheduleSave(); }));
 
     function setError(el, message) {
         const field = el.closest('.field') || el;
@@ -330,6 +331,8 @@ export function initPostJob() {
             form.salaryMax.value = d.salaryMax ?? '';
             form.currency.value  = d.currency || 'PLN';
 
+            if (form.applyUrl) form.applyUrl.value = d.url || '';
+
             state.tags = d.techTags || [];
             renderTags();
 
@@ -361,7 +364,7 @@ export function initPostJob() {
         }).catch(()=>{});
     }
     function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveDraftNow, 500); }
-    $('#save-draft').addEventListener('click', async () => { await saveDraftNow(); msg.textContent = 'Draft saved.'; });
+    $('#save-draft')?.addEventListener('click', async () => { await saveDraftNow(); msg.textContent = 'Draft saved.'; });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault(); msg.textContent = '';
@@ -373,9 +376,10 @@ export function initPostJob() {
             const res = await fetch(api(`/api/job-drafts/${DRAFT_ID}/publish`), {
                 method:'POST', headers:{Accept:'application/json', ...auth()}, credentials:'include'
             });
-            if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+            if (!res.ok) throw new Error(await res.text().catch(()=>null) || `HTTP ${res.status}`);
+            const created = await res.json();
             msg.textContent = 'Job published 🎉';
-            await navigate('/jobs');
+            await navigate(`/jobexaclyoffer?id=${created.id}`);
         } catch (err) {
             console.error(err);
             msg.textContent = 'Publishing failed. Please verify the data and try again.';

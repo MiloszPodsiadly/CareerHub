@@ -2,7 +2,9 @@ package com.milosz.podsiadly.backend.security;
 
 import com.milosz.podsiadly.backend.security.jwt.JwtFilter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,11 +14,14 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(JwtProperties.class)
@@ -49,7 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/salary/calculate").permitAll()
-                        .requestMatchers(HttpMethod.GET,  "/api/salary/report/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/salary/report/**").permitAll()
                         .requestMatchers("/api/ingest/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/favorites/*/*/status").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/mine").authenticated()
@@ -57,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/applications").authenticated()
+                        .requestMatchers("/api/applications/**").authenticated()
                         .requestMatchers("/api/job-drafts/**").authenticated()
                         .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/api/favorites/**").authenticated()
@@ -65,6 +72,7 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
+        log.info("✅ SecurityConfig initialized (JWT filter active)");
         return http.build();
     }
 

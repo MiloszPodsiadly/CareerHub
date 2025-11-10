@@ -77,6 +77,7 @@ public class JobOfferHistoryMapper {
                 o.getSource(),
                 o.getExternalId(),
                 o.getUrl(),
+                o.getApplyUrl(),
                 o.getTitle(),
                 o.getDescription(),
                 o.getCompany() != null ? o.getCompany().getName() : null,
@@ -90,7 +91,11 @@ public class JobOfferHistoryMapper {
                 o.getCurrency(),
                 o.getTechTags(),
                 o.getTechStack().stream()
-                        .map(s -> new JobOfferSkillDto(s.getName(), s.getLevelLabel(), s.getLevelValue(), s.getSource()))
+                        .map(s -> new JobOfferSkillDto(
+                                s.getName(),
+                                s.getLevelLabel(),
+                                s.getLevelValue(),
+                                s.getSource()))
                         .toList(),
                 o.getPublishedAt(),
                 o.getActive()
@@ -101,6 +106,7 @@ public class JobOfferHistoryMapper {
             return "{\"id\":" + o.getId() + ",\"title\":\"" + escape(o.getTitle()) + "\"}";
         }
     }
+
 
     private static String escape(String s) {
         return s == null ? "" : s.replace("\"", "\\\"");

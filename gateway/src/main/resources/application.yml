@@ -56,4 +56,11 @@ auth:
     - /api/favorites/**
     - /api/job-drafts
     - /api/job-drafts/**
+    - /api/applications
+    - /api/applications/**
     - /actuator/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG

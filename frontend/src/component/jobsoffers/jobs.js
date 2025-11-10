@@ -1,4 +1,5 @@
 import { getAccess } from '../../shared/api.js';
+import { navigate } from '../../router.js';
 
 const FAV = (() => {
     const api = (p) => `${p}`;
@@ -75,24 +76,34 @@ function mdSanitize(html){
 function mdToHtml(md){
     if (!md) return '';
     let html = String(md).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     html = html.replace(/^\s*###\s+(.*)$/gm,'<h3>$1</h3>')
-        .replace(/^\s*##\s+(.*)$/gm, '<h2>$1</h2>');
-    html = html.replace(/(^|\n)>\s?(.*)/g, (m, lead, line) => `${lead}<blockquote>${line}</blockquote>`);
-    html = html.replace(/(^|\n)[\*\-]\s+(.*)/g, (m, lead, item) => `${lead}<ul><li>${item}</li></ul>`);
+        .replace(/^\s*##\s+(.*)$/gm,'<h2>$1</h2>');
+    html = html.replace(/(^|\n)>\s?(.*)/g,(m,lead,line)=>`${lead}<blockquote>${line}</blockquote>`);
+    html = html.replace(/(^|\n)[\*\-]\s+(.*)/g,(m,lead,item)=>`${lead}<ul><li>${item}</li></ul>`);
     html = html.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g,   '<em>$1</em>')
-        .replace(/__(.*?)__/g,   '<u>$1</u>');
-    html = html.split(/\n{2,}/).map(block=>{
-        const t = block.trim();
-        if (!t) return '';
-        if (/^<h[23]|^<ul>|^<blockquote>/.test(t)) return t;
+        .replace(/\*(.*?)\*/g,'<em>$1</em>')
+        .replace(/__(.*?)__/g,'<u>$1</u>');
+    html = html.split(/\n{2,}/).map(b=>{
+        const t=b.trim(); if(!t) return '';
+        if(/^<h[23]|^<ul>|^<blockquote>/.test(t)) return t;
         return `<p>${t.replace(/\n/g,'<br>')}</p>`;
     }).join('').replace(/<\/ul>\s*<ul>/g,'');
-
     return mdSanitize(html);
+}
+
+function platformRouteFromUrl(url, id) {
+    if (!url) return null;
+    try {
+        if (url.startsWith('/jobexaclyoffer')) return url;
+        const u = new URL(url, location.origin);
+        const path = u.pathname.replace(/\/+$/,'');
+        if (path === '/jobexaclyoffer') {
+            const qid = u.searchParams.get('id') || id;
+            return qid ? `/jobexaclyoffer?id=${encodeURIComponent(qid)}` : '/jobexaclyoffer';
+        }
+    } catch { }
+    return null;
 }
 
 export function initJobs(opts = {}){
@@ -250,6 +261,11 @@ export function initJobs(opts = {}){
         const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
         const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
 
+        const internal = platformRouteFromUrl(job.url, job.id);
+        const applyBtn = internal
+            ? `<a class="chip" href="${internal}" data-link>Apply ↗</a>`
+            : (job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : '');
+
         el.innerHTML = `
       <div class="card__title">${escapeHtml(job.title || '')}</div>
       <div class="meta">
@@ -262,25 +278,33 @@ export function initJobs(opts = {}){
         ${(job.keywords || []).slice(0,6).map(k=>`<span class="badge">${escapeHtml(k)}</span>`).join('')}
       </div>
       <div class="actions">
-      <div class="money">${formatSalary(job.salary)}</div>
-      <div class="actions__btns">
+        <div class="money">${formatSalary(job.salary)}</div>
+        <div class="actions__btns">
           <button class="chip" data-open="1">Preview</button>
-          ${job.url ? `<a class="chip" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+          ${applyBtn}
         </div>
       </div>`;
 
         if (FAV.loggedIn()){
             const btns = el.querySelector('.actions__btns');
-                if (btns){
-                    const favBtn = document.createElement('button');
-                    btns.prepend(favBtn);
-                    FAV.mountButton(favBtn, { type:'JOB', id: job.id });
-                 }
-              }
+            if (btns){
+                const favBtn = document.createElement('button');
+                btns.prepend(favBtn);
+                FAV.mountButton(favBtn, { type:'JOB', id: job.id });
+            }
+        }
+
+        el.querySelectorAll('a[data-link]').forEach(a=>{
+            a.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                navigate(a.getAttribute('href'));
+            });
+        });
 
         el.querySelector('[data-open]')?.addEventListener('click', async () => {
             const detail = await fetchJobDetail(job.id); openModal(detail ?? job);
         });
+
         return el;
     }
 
@@ -351,6 +375,11 @@ export function initJobs(opts = {}){
         const levelBadge  = job.level  ? `<span class="badge">${escapeHtml(prettyLevel(job.level))}</span>` : '';
         const remoteBadge = job.remote ? `<span class="badge">Remote</span>` : '';
 
+        const internal = platformRouteFromUrl(job.url, job.id);
+        const applyCta = internal
+            ? `<a class="chip chip--apply" href="${internal}" data-link>Apply ↗</a>`
+            : (job.url ? `<a class="chip chip--apply" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : '');
+
         $modalBody.innerHTML = `
       <header class="modal__header">
         <h3>${escapeHtml(job.title || '')}</h3>
@@ -371,31 +400,21 @@ export function initJobs(opts = {}){
         <aside class="aside">
           <h4>Tags</h4>
           <div class="badges">${(job.keywords || []).map(k => `<span class="badge">${escapeHtml(k)}</span>`).join('') || '—'}</div>
-          <div class="cta">
-           ${job.url ? `<a class="chip chip--apply" href="${job.url}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
-          </div>
+          <div class="cta">${applyCta}</div>
         </aside>
       </section>`;
+
+        $modalBody.querySelectorAll('a[data-link]').forEach(a=>{
+            a.addEventListener('click', (e)=>{
+                e.preventDefault(); e.stopPropagation();
+                $modal.close();
+                navigate(a.getAttribute('href'));
+            });
+        });
+
         if (!$modal.open) $modal.showModal();
     }
     document.querySelector('.modal__x .icon-btn')?.addEventListener('click', () => $modal.close());
-
-    function formatDescription(raw){
-        const text = String(raw).replace(/\r\n?/g, '\n').trim();
-        if (!text) return '<p class="muted">—</p>';
-        const blocks = text.split(/\n{2,}/);
-        const html = blocks.map(block => {
-            const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-            const listLike = lines.length>1 && lines.every(l => /^[\-\*\u2022]|\d{1,2}[.)]\s/.test(l));
-            if (listLike){
-                const items = lines.map(l => l.replace(/^[\-\*\u2022]\s?|\d{1,2}[.)]\s/, ''))
-                    .map(escapeHtml).map(i => `<li>${i}</li>`).join('');
-                return `<ul>${items}</ul>`;
-            }
-            return `<p>${escapeHtml(lines.join(' '))}</p>`;
-        }).join('');
-        return html;
-    }
 
     let t; const deb = fn => { clearTimeout(t); t=setTimeout(fn, 250); };
     $q?.addEventListener('input', e => { state.filters.q=e.target.value.trim(); deb(()=>gotoPage(1)); });
@@ -441,7 +460,6 @@ export function initJobs(opts = {}){
         $group && ($group.textContent='Group by: city'); $group?.setAttribute('aria-pressed','false');
         specChecks.forEach(x => x.checked=false);
         techChecks.forEach(x => x.checked=false);
-
         gotoPage(1);
     });
 
@@ -449,12 +467,8 @@ export function initJobs(opts = {}){
         const tag = document.activeElement?.tagName;
         if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); byId('q')?.focus(); }
     });
-    try {
-        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    } catch {}
-    window.addEventListener('pageshow', (e) => {
-        if (e.persisted) window.scrollTo(0, 0);
-    });
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch {}
+    window.addEventListener('pageshow', (e) => { if (e.persisted) window.scrollTo(0, 0); });
 
     requestAnimationFrame(() => window.scrollTo(0, 0));
     gotoPage(1, { scroll: false });

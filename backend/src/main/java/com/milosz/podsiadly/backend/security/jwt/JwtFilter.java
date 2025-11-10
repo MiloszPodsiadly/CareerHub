@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,7 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -29,11 +30,21 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 Claims c = jwt.parse(token).getBody();
-                var u = users.loadUserByUsername((String)c.get("username"));
-                var auth = new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (Exception ignored) {}
+                String username = (String) c.get("username");
+                if (username == null || username.isBlank()) {
+                    username = c.getSubject();
+                }
+
+                if (username != null && !username.isBlank()) {
+                    var u = users.loadUserByUsername(username);
+                    var auth = new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (Exception ex) {
+                log.debug("JWT parse/auth failed: {}", ex.toString());
+                SecurityContextHolder.clearContext();
+            }
         }
         chain.doFilter(req, res);
     }
@@ -57,6 +68,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (uri.startsWith("/api/public/")) {
             return true;
+        }
+
+        if (uri.startsWith("/api/applications")) {
+            return false;
         }
 
         if (uri.equals("/api/ingest") || uri.startsWith("/api/ingest/")) {
