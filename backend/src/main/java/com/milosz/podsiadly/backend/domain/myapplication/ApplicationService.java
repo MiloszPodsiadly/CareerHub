@@ -91,17 +91,20 @@ public class ApplicationService {
 
     private ApplicationDto toListDto(JobApplication a) {
         var o = a.getOffer();
-        String company = o.getCompany()!=null ? o.getCompany().getName() : null;
-        String city    = o.getCity()!=null ? o.getCity().getName() : null;
+
+        Long   offerId    = (o != null) ? o.getId() : null;
+        String title      = (o != null && o.getTitle() != null) ? o.getTitle() : "(Offer removed)";
+        String company    = (o != null && o.getCompany() != null) ? o.getCompany().getName() : null;
+        String city       = (o != null && o.getCity() != null) ? o.getCity().getName() : null;
 
         return new ApplicationDto(
                 a.getId(),
-                o.getId(),
-                o.getTitle(),
+                offerId,
+                title,
                 company,
                 city,
-                a.getStatus()!=null ? a.getStatus().name() : null,
-                a.getCvFileId()!=null ? ("/api/applications/" + a.getId() + "/cv") : null,
+                a.getStatus() != null ? a.getStatus().name() : null,
+                a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null,
                 a.getCreatedAt()
         );
     }
@@ -109,10 +112,15 @@ public class ApplicationService {
     private ApplicationDetailDto toDetailDto(JobApplication a) {
         var o = a.getOffer();
 
-        String ownerName = owners.findByJobOffer_Id(o.getId())
+        Long   offerId   = (o != null) ? o.getId() : null;
+        String title     = (o != null && o.getTitle() != null) ? o.getTitle() : "(Offer removed)";
+
+        String ownerName = (o != null)
+                ? owners.findByJobOffer_Id(o.getId())
                 .map(JobOfferOwner::getUser)
                 .map(User::getUsername)
-                .orElse(null);
+                .orElse(null)
+                : null;
 
         var applicant = a.getApplicant();
         var applicantProfile = profiles.findByUserId(applicant.getId()).orElse(null);
@@ -120,15 +128,15 @@ public class ApplicationService {
 
         return new ApplicationDetailDto(
                 a.getId(),
-                o.getId(),
-                o.getTitle(),
+                offerId,
+                title,
                 ownerName,
                 applicant.getUsername(),
                 applicantEmail,
                 a.getNote(),
-                a.getStatus()!=null ? a.getStatus().name() : null,
+                a.getStatus() != null ? a.getStatus().name() : null,
                 a.getApplyUrl(),
-                a.getCvFileId()!=null ? ("/api/applications/" + a.getId() + "/cv") : null,
+                a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null,
                 a.getCreatedAt()
         );
     }
