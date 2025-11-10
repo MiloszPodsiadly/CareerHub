@@ -81,8 +81,10 @@ export function initMyOffers() {
             listRoot.innerHTML = `
         <div class="empty">
           You haven’t published anything yet.
-          <a class="btn" href="/post-job">Post a job</a>
+          <a class="btn" href="/post-job" data-link>Post a job</a>
         </div>`;
+            const a = listRoot.querySelector('[data-link]');
+            a?.addEventListener('click', (e) => { e.preventDefault(); navigate('/post-job'); });
             return;
         }
 
@@ -100,12 +102,13 @@ export function initMyOffers() {
 
             const previewEl = el.querySelector('.js-preview') || el.querySelector('.js-view');
             if (previewEl) {
-                const url = `/jobs/${o.id}`;
+                const url = `/jobexaclyoffer?id=${encodeURIComponent(o.id)}`;
                 previewEl.setAttribute('href', url);
+                previewEl.setAttribute('data-link', '');
                 previewEl.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    window.location.assign(url);
+                    navigate(url);
                 });
             }
 
