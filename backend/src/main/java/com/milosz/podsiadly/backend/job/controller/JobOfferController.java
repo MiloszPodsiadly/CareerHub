@@ -8,6 +8,7 @@ import com.milosz.podsiadly.backend.job.service.JobOfferCommandService;
 import com.milosz.podsiadly.backend.job.service.JobOfferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/jobs")
@@ -25,6 +27,9 @@ public class JobOfferController {
 
     private final JobOfferService service;
     private final JobOfferCommandService commands;
+
+    @Value("${app.platform.base-url:http://localhost:3000}")
+    private String platformBaseUrl;
 
     @GetMapping
     public Page<JobOfferListDto> search(
@@ -107,10 +112,8 @@ public class JobOfferController {
             @RequestBody JobOfferCreateRequest req
     ) {
         if (user == null) throw new IllegalStateException("Must be authenticated to publish a job.");
-        String baseUrl = "http://localhost:3000";
-        return commands.create(user, req, baseUrl);
+        return commands.create(user, req, platformBaseUrl);
     }
-
 
     @PutMapping("/{id}")
     public JobOfferDetailDto update(
@@ -141,7 +144,6 @@ public class JobOfferController {
 
         commands.deleteOwned(user, id, pwd);
     }
-
 
     @GetMapping("/mine")
     public List<JobOfferListDto> mine(@AuthenticationPrincipal User user) {

@@ -1,9 +1,12 @@
 package com.milosz.podsiadly.backend.job.controller;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.User;
-import com.milosz.podsiadly.backend.job.dto.*;
+import com.milosz.podsiadly.backend.job.dto.JobDraftDto;
+import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
+import com.milosz.podsiadly.backend.job.dto.JobDraftUpsertRequest;
 import com.milosz.podsiadly.backend.job.service.JobDraftService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,9 @@ import java.util.List;
 public class JobDraftController {
 
     private final JobDraftService drafts;
+
+    @Value("${app.platform.base-url:http://localhost:3000}")
+    private String platformBaseUrl;
 
     @PostMapping
     public JobDraftDto createEmpty(@AuthenticationPrincipal User user) {
@@ -49,10 +55,8 @@ public class JobDraftController {
     public ResponseEntity<JobOfferDetailDto> publish(@AuthenticationPrincipal User user,
                                                      @PathVariable Long id) {
         if (user == null) throw new IllegalStateException("Unauthorized");
-        String baseUrl = "https://twoja-domena.pl"; // albo z configu
-        JobOfferDetailDto dto = drafts.publish(user, id, baseUrl);
-        return ResponseEntity.created(URI.create("/api/jobs/" + dto.id()))
-                .body(dto);
+        JobOfferDetailDto dto = drafts.publish(user, id, platformBaseUrl);
+        return ResponseEntity.created(URI.create("/api/jobs/" + dto.id())).body(dto);
     }
 
     @DeleteMapping("/{id}")
