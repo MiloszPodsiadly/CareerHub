@@ -35,6 +35,7 @@ public final class JobOfferMapper {
                 e.getSource(),
                 e.getExternalId(),
                 e.getUrl(),
+                e.getApplyUrl(),
                 e.getTitle(),
                 e.getDescription(),
                 e.getCompany() != null ? e.getCompany().getName() : null,
