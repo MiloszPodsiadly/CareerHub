@@ -8,6 +8,7 @@ public record JobOfferDetailDto(
         String source,
         String externalId,
         String url,
+        String applyUrl,
         String title,
         String description,
         String companyName,
