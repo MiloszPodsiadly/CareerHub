@@ -28,6 +28,23 @@ public class FileStorageService {
         }
     }
 
+    @Transactional
+    public FileObject saveRaw(String userId, String filename, String contentType, byte[] data) {
+        if (data == null || data.length == 0) {
+            throw new IllegalArgumentException("Empty file data");
+        }
+        var fo = FileObject.builder()
+                .userId(userId)
+                .filename((filename != null && !filename.isBlank()) ? filename : "file")
+                .contentType((contentType != null && !contentType.isBlank())
+                        ? contentType
+                        : MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .size((long) data.length)
+                .data(data)
+                .build();
+        return repo.save(fo);
+    }
+
     @Transactional(readOnly = true)
     public FileObject getForOwner(String fileId, String userId) {
         var fo = repo.findById(fileId).orElseThrow();
