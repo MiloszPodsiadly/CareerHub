@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.domain.myapplication;
 
+import com.milosz.podsiadly.backend.domain.file.FileStorageService;
 import com.milosz.podsiadly.backend.domain.loginandregister.User;
 import com.milosz.podsiadly.backend.domain.profile.ProfileRepository;
 import com.milosz.podsiadly.backend.domain.myapplication.dto.ApplicationCreateRequest;
@@ -24,6 +25,7 @@ public class ApplicationService {
     private final JobOfferRepository offers;
     private final JobOfferOwnerRepository owners;
     private final ProfileRepository profiles;
+    private final FileStorageService files;
 
     @Transactional
     public ApplicationDetailDto apply(User user, ApplicationCreateRequest req) {
@@ -35,12 +37,29 @@ public class ApplicationService {
         }
 
         var profile = profiles.findByUserId(user.getId()).orElse(null);
-        String cvId = profile != null ? profile.getCvFileId() : null;
+        String profileCvId = profile != null ? profile.getCvFileId() : null;
+        String snapshotCvId = null;
+
+        if (profileCvId != null && !profileCvId.isBlank()) {
+            try {
+                var src = files.getForOwner(profileCvId, user.getId());
+                String fname = "cv-application-offer-" + offer.getId() + "-" +
+                        (src.getFilename() != null ? src.getFilename() : "cv.pdf");
+                snapshotCvId = files.saveRaw(
+                        user.getId(),
+                        fname,
+                        src.getContentType(),
+                        src.getData()
+                ).getId();
+            } catch (Exception ignore) {
+                snapshotCvId = null;
+            }
+        }
 
         var app = JobApplication.builder()
                 .offer(offer)
                 .applicant(user)
-                .cvFileId(cvId)
+                .cvFileId(snapshotCvId)
                 .applyUrl(offer.getApplyUrl() != null ? offer.getApplyUrl() : offer.getUrl())
                 .note(req.note())
                 .status(ApplicationStatus.APPLIED)
