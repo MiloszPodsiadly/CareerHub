@@ -83,7 +83,7 @@ The platform emphasizes:
 ### Start App
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 Application services run at:
