@@ -16,5 +16,4 @@ createRoot(document.getElementById('root')).render(
     </StrictMode>
 );
 
-// router odpala bootstrap + pierwszy render
 import('./router.js');

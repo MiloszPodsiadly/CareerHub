@@ -46,7 +46,15 @@ document.addEventListener('click', async (e) => {
     }
 });
 
-window.addEventListener('popstate', () => { render(); });
+window.addEventListener('popstate', () => {
+    render();
+});
 
-await bootstrapAuth();
-render();
+async function main() {
+    await bootstrapAuth();
+    await render();
+}
+
+main().catch((err) => {
+    console.error('Failed to bootstrap app:', err);
+});

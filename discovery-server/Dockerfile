@@ -1,28 +1,21 @@
-FROM gradle:8.8-jdk21 AS builder
+FROM gradle:8.8-jdk21 AS build
 WORKDIR /workspace
-
-
 COPY . .
-
 RUN gradle --no-daemon -x test bootJar
 
 FROM eclipse-temurin:21-jre-alpine
-
-RUN apk add --no-cache wget curl \
- && addgroup -S app && adduser -S app -G app
-
-USER app
+RUN apk add --no-cache curl \
+    && addgroup -S app \
+    && adduser -S app -G app
 WORKDIR /app
-
+COPY --from=build /workspace/build/libs/*.jar app.jar
+RUN chown -R app:app /app
+USER app
 ENV PORT=8761
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+HeapDumpOnOutOfMemoryError"
 ENV SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.cloud.config.server.config.ConfigServerAutoConfiguration
-
-COPY --from=builder /workspace/build/libs/*.jar /app/app.jar
-
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+HeapDumpOnOutOfMemoryError"
 EXPOSE 8761
-
 HEALTHCHECK --interval=20s --timeout=3s --start-period=20s --retries=5 \
-  CMD wget -q --spider "http://127.0.0.1:${PORT}/actuator/health" || exit 1
+  CMD curl -fsS "http://127.0.0.1:${PORT}/actuator/health" >/dev/null || exit 1
 
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
