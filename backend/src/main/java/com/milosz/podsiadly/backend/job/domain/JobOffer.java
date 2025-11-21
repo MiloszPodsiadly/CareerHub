@@ -22,7 +22,10 @@ public class JobOffer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false) private String source;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private JobSource source;
+
     @Column(name="external_id", nullable = false) private String externalId;
 
     @Column(nullable = false, columnDefinition = "text")
@@ -47,7 +50,7 @@ public class JobOffer {
     @Enumerated(EnumType.STRING) private ContractType contract;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "job_offer_contract", joinColumns = @JoinColumn(name = "job_offer_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "contract", nullable = false, length = 16)
@@ -58,13 +61,13 @@ public class JobOffer {
     private String currency;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "job_offer_tags", joinColumns = @JoinColumn(name = "job_offer_id"))
     @Column(name = "tag", length = 64)
     private List<String> techTags = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "jobOffer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "jobOffer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<JobOfferSkill> techStack = new ArrayList<>();
 
     private Instant publishedAt;
@@ -72,21 +75,25 @@ public class JobOffer {
     private Boolean active;
 
     public void setTechTags(List<String> tags) {
-        this.techTags.clear();
-        if (tags != null) this.techTags.addAll(tags);
+        this.techTags = (tags != null)
+                ? new ArrayList<>(tags)
+                : new ArrayList<>();
     }
 
     public void setTechStack(List<JobOfferSkill> stack) {
-        this.techStack.forEach(s -> s.setJobOffer(null));
         this.techStack.clear();
+
         if (stack != null) {
-            stack.forEach(s -> s.setJobOffer(this));
-            this.techStack.addAll(stack);
+            for (JobOfferSkill s : stack) {
+                s.setJobOffer(this);
+                this.techStack.add(s);
+            }
         }
     }
 
     public void setContracts(Set<ContractType> set) {
-        this.contracts.clear();
-        if (set != null) this.contracts.addAll(set);
+        this.contracts = (set != null)
+                ? new HashSet<>(set)
+                : new HashSet<>();
     }
 }
