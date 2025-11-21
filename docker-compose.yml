@@ -44,6 +44,28 @@ services:
       timeout: 5s
       retries: 15
 
+  agent-crawler:
+    build:
+      context: .
+      dockerfile: agent-crawler/Dockerfile
+    image: agent-crawler:local
+    container_name: agent-crawler
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      discovery-server:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: agent-crawler
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
