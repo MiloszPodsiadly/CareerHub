@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.job.repository;
 
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
+import com.milosz.podsiadly.backend.job.domain.JobSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,8 +15,8 @@ import java.util.Optional;
 public interface JobOfferRepository
         extends JpaRepository<JobOffer, Long>, JpaSpecificationExecutor<JobOffer> {
 
-    boolean existsBySourceAndExternalId(String source, String externalId);
-    Optional<JobOffer> findBySourceAndExternalId(String source, String externalId);
+    boolean existsBySourceAndExternalId(JobSource source, String externalId);
+    Optional<JobOffer> findBySourceAndExternalId(JobSource source, String externalId);
 
     @EntityGraph(attributePaths = {"company", "city"})
     Page<JobOffer> findAll(Specification<JobOffer> spec, Pageable pageable);
@@ -44,8 +45,9 @@ public interface JobOfferRepository
       join o.user u
       left join fetch j.company
       left join fetch j.city
-      where u.id = :userId and j.source = 'platform'
+      where u.id = :userId and j.source = :source
       order by j.publishedAt desc, j.id desc
     """)
-    List<JobOffer> findPlatformOwnedByUserId(@Param("userId") String userId);
+    List<JobOffer> findOwnedByUserIdAndSource(@Param("userId") String userId,
+                                              @Param("source") JobSource source);
 }
