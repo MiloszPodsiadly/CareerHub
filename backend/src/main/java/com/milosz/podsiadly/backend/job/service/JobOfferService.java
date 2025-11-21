@@ -1,9 +1,6 @@
 package com.milosz.podsiadly.backend.job.service;
 
-import com.milosz.podsiadly.backend.job.domain.ContractType;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.JobOffer;
-import com.milosz.podsiadly.backend.job.domain.JobOfferOwner;
+import com.milosz.podsiadly.backend.job.domain.*;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferListDto;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
@@ -125,13 +122,10 @@ public class JobOfferService {
                 .toList();
     }
 
-    // Jeśli chcesz wyświetlać tylko „platformowe”:
     @Transactional(readOnly = true)
     public List<JobOfferListDto> listOwnedPlatformOnly(String userId) {
-        return repo.findPlatformOwnedByUserId(userId).stream()
+        return repo.findOwnedByUserIdAndSource(userId, JobSource.PLATFORM).stream()
                 .map(JobOfferMapper::toListDto)
                 .toList();
     }
-
-
 }
