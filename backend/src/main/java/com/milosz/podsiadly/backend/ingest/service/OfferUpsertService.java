@@ -24,6 +24,12 @@ public class OfferUpsertService {
 
     @Transactional
     public void upsert(JustJoinParser.ParsedOffer p) {
+
+        String srcName = (p.source() != null && !p.source().isBlank())
+                ? p.source()
+                : JobSource.JUSTJOIN.name();
+        JobSource src = JobSource.valueOf(srcName);
+
         Company company = null;
         if (notBlank(p.companyName())) {
             String name = normalizeName(p.companyName());
@@ -41,14 +47,15 @@ public class OfferUpsertService {
                             .build()));
         }
 
-        JobOffer e = offers.findBySourceAndExternalId(p.source(), p.externalId())
+        JobOffer e = offers.findBySourceAndExternalId(src, p.externalId())
                 .orElseGet(() -> {
                     JobOffer ne = new JobOffer();
+                    ne.setSource(src);
                     ne.setTechStack(new ArrayList<>());
                     return ne;
                 });
 
-        e.setSource(p.source());
+        e.setSource(src);
         e.setExternalId(p.externalId());
         e.setUrl(p.url());
         e.setTitle(p.title());
@@ -89,6 +96,7 @@ public class OfferUpsertService {
     }
 
     private static boolean notBlank(String s) { return s != null && !s.isBlank(); }
+
     private static String normalizeName(String s) {
         if (s == null) return null;
         return s.trim().replaceAll("\\s{2,}", " ");
