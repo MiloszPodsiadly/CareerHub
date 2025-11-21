@@ -32,7 +32,7 @@ public final class JobOfferMapper {
     public static JobOfferDetailDto toDetailDto(JobOffer e) {
         return new JobOfferDetailDto(
                 e.getId(),
-                e.getSource(),
+                e.getSource() != null ? e.getSource().name() : null,
                 e.getExternalId(),
                 e.getUrl(),
                 e.getApplyUrl(),
