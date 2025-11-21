@@ -1,0 +1,55 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: agent-crawler
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: app
+    password: app
+    template:
+      mandatory: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: "always"
+
+agent:
+  nfj:
+    start-url: "https://nofluffjobs.com/pl/it?device=mobile"
+    initial-delay-ms: 180000
+    interval-ms: 3600000
+
+jobs:
+  ingest:
+    exchange: ingest.jobs
+    routing:
+      urls: job-url
+    queue:
+      urls: ingest.jobs.url
+    sourceDefault: NOFLUFFJOBS
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://discovery-server:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    preferIpAddress: true
+    leaseRenewalIntervalInSeconds: 30
+    leaseExpirationDurationInSeconds: 90
+
+logging:
+  level:
+    root: INFO
+    com.milosz.podsiadly: DEBUG
+    org.springframework.amqp: INFO
