@@ -26,7 +26,7 @@ public class JobOfferHistoryMapper {
                 : (o.getContract() != null ? List.of(o.getContract().name()) : List.of());
 
         return JobOfferHistory.builder()
-                .source(o.getSource())
+                .source(o.getSource() != null ? o.getSource().name() : null)
                 .externalId(o.getExternalId())
                 .url(o.getUrl() != null ? o.getUrl() : "")
                 .title(o.getTitle() != null ? o.getTitle() : "(no title)")
@@ -74,7 +74,7 @@ public class JobOfferHistoryMapper {
     private String buildSnapshot(JobOffer o, List<String> contracts) {
         var detail = new JobOfferDetailDto(
                 o.getId(),
-                o.getSource(),
+                o.getSource() != null ? o.getSource().name() : null,
                 o.getExternalId(),
                 o.getUrl(),
                 o.getApplyUrl(),

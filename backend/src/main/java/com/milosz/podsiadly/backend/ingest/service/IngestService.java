@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.ingest.service;
 
+import com.milosz.podsiadly.backend.job.domain.JobSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -7,9 +8,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IngestService {
 
     private static final String BROWSER_UA =
@@ -18,11 +19,20 @@ public class IngestService {
 
     private final IngestPublisher publisher;
 
-    public long ingestSitemap(String sitemapUrl, String source) throws Exception {
-        return ingestSitemapRecursive(sitemapUrl, source);
+    public long ingestSitemap(String sitemapUrl, JobSource source) throws Exception {
+        return switch (source) {
+            case JUSTJOIN -> ingestXmlSitemapRecursive(sitemapUrl, source);
+
+            case NOFLUFFJOBS -> {
+                log.info("[ingest] NFJ sitemap ingest is handled by agent-crawler – backend returns 0 (url={})", sitemapUrl);
+                yield 0L;
+            }
+
+            default -> ingestXmlSitemapRecursive(sitemapUrl, source);
+        };
     }
 
-    private long ingestSitemapRecursive(String url, String source) throws Exception {
+    private long ingestXmlSitemapRecursive(String url, JobSource source) throws Exception {
         Document doc = Jsoup.connect(url)
                 .userAgent(BROWSER_UA)
                 .ignoreContentType(true)
@@ -34,7 +44,7 @@ public class IngestService {
             for (Element loc : doc.select("sitemap > loc")) {
                 String child = loc.text().trim();
                 if (!child.isBlank()) {
-                    total += ingestSitemapRecursive(child, source);
+                    total += ingestXmlSitemapRecursive(child, source);
                 }
             }
             return total;
