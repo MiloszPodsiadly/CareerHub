@@ -33,11 +33,7 @@ public class MeetupIcsClient {
                 ResponseEntity<String> resp = rt.exchange(url, HttpMethod.GET, null, String.class);
                 log.info("[meetup.ics] {} fetched (ignored by design)", url);
             } catch (HttpStatusCodeException e) {
-                if (e.getStatusCode().value() == 503 || e.getStatusCode().value() == 429 || e.getStatusCode().is5xxServerError()) {
-                    log.info("[meetup.ics] {} skipped HTTP {}", url, e.getRawStatusCode());
-                } else {
-                    log.info("[meetup.ics] {} skipped HTTP {}", url, e.getRawStatusCode());
-                }
+                log.info("[meetup.ics] {} skipped HTTP {}", url, e.getRawStatusCode());
             } catch (Exception e) {
                 log.info("[meetup.ics] {} skipped {}", url, e.toString());
             }
