@@ -169,7 +169,7 @@ services:
     ports: [ "3000:3000" ]
     depends_on:
       gateway:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     networks: [ devnet ]
     security_opt:
