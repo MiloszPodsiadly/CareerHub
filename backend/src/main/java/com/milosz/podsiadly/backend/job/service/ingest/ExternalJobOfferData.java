@@ -1,4 +1,3 @@
-// job/service/ingest/ExternalJobOfferData.java
 package com.milosz.podsiadly.backend.job.service.ingest;
 
 import com.milosz.podsiadly.backend.job.domain.ContractType;
