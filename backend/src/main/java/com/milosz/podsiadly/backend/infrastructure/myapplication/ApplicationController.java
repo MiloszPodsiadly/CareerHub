@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
-@CrossOrigin
 public class ApplicationController {
 
     private final ApplicationService service;

@@ -1,18 +1,24 @@
 package com.milosz.podsiadly.backend.job.service.ingest;
 
-import com.milosz.podsiadly.backend.job.domain.*;
+import com.milosz.podsiadly.backend.job.domain.City;
+import com.milosz.podsiadly.backend.job.domain.Company;
+import com.milosz.podsiadly.backend.job.domain.JobOffer;
+import com.milosz.podsiadly.backend.job.domain.JobSource;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
 import com.milosz.podsiadly.backend.job.repository.CityRepository;
 import com.milosz.podsiadly.backend.job.repository.CompanyRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExternalJobOfferIngestService {
 
     private final JobOfferRepository offers;
@@ -22,16 +28,23 @@ public class ExternalJobOfferIngestService {
     @Transactional
     public JobOffer ingest(JobSource source, String externalId, ExternalJobOfferData data) {
 
-        JobOffer offer = offers.findBySourceAndExternalId(source, externalId)
-                .orElseGet(() -> JobOffer.builder()
-                        .source(source)
-                        .externalId(externalId)
-                        .build());
+        Optional<JobOffer> existingOpt = offers.findBySourceAndExternalId(source, externalId);
+
+        JobOffer offer = existingOpt.orElseGet(() -> JobOffer.builder()
+                .source(source)
+                .externalId(externalId)
+                .build());
 
         Company company = upsertCompany(data.companyName());
         City city       = upsertCity(data.cityName());
 
-        offer.setTitle(data.title());
+        String title = data.title();
+        if (title == null || title.isBlank()) {
+            title = externalId;
+            log.debug("[ingest] using externalId as fallback title for {}:{}", source, externalId);
+        }
+
+        offer.setTitle(title);
         offer.setDescription(data.description());
         offer.setCompany(company);
         offer.setCity(city);

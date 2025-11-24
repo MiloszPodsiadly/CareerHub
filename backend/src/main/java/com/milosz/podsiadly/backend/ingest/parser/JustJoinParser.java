@@ -21,7 +21,9 @@ import java.util.regex.Pattern;
 public class JustJoinParser {
 
     private static final Pattern SAL_RANGE =
-            Pattern.compile("(\\d[\\d\\s]*)\\s*-\\s*(\\d[\\d\\s]*)\\s*(PLN|EUR|USD)?", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("(\\d[\\d\\s]{0,10})\\s*-\\s*(\\d[\\d\\s]{0,20})\\s*(PLN|EUR|USD)?",
+                    Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS);
+
     private static final Pattern CURR_FALLBACK =
             Pattern.compile("\\b(PLN|EUR|USD)\\b", Pattern.CASE_INSENSITIVE);
 
@@ -42,7 +44,9 @@ public class JustJoinParser {
             "english","polish","german","deutsch","niem","french","francuski","italian","hiszpański","spanish"
     );
 
-    private static final int RX = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
+    private static final int RX =
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS;
+
     private static final String LB = "(?<![\\p{L}\\p{N}])";
     private static final String RB = "(?![\\p{L}\\p{N}])";
 
@@ -618,15 +622,65 @@ public class JustJoinParser {
         else if (t.equals(t.toLowerCase(Locale.ROOT))) t = Character.toUpperCase(t.charAt(0)) + t.substring(1);
         return t;
     }
+
     private boolean isPlausibleTag(String t) {
-        if (t == null || t.isBlank()) return false;
+        if (t == null || t.isBlank()) {
+            return false;
+        }
+
         String lc = t.toLowerCase(Locale.ROOT);
-        if (LANGUAGE_WORDS.contains(lc)) return false;
-        for (String bad : TAG_BLACKLIST) if (lc.contains(bad)) return false;
-        if (t.length() > 30) return false;
-        if (t.matches(".*\\d{3,}.*")) return false;
-        if (t.matches("(?i).*(pln|eur|usd|brutto|netto|gross|net).*")) return false;
-        return t.matches(".*[\\p{L}\\p{Nd}#.+].*");
+
+        // 1) języki
+        if (LANGUAGE_WORDS.contains(lc)) {
+            return false;
+        }
+
+        // 2) blacklist (b2b, junior, itp.)
+        for (String bad : TAG_BLACKLIST) {
+            if (lc.contains(bad)) {
+                return false;
+            }
+        }
+
+        // 3) długość
+        if (t.length() > 30) {
+            return false;
+        }
+
+        // 4) >= 3 cyfr pod rząd (odpowiednik ".*\\d{3,}.*")
+        int digitRun = 0;
+        for (int i = 0; i < t.length(); i++) {
+            char c = t.charAt(i);
+            if (Character.isDigit(c)) {
+                digitRun++;
+                if (digitRun >= 3) {
+                    return false;
+                }
+            } else {
+                digitRun = 0;
+            }
+        }
+
+        // 5) wygląda na info o kasie (odpowiednik "(?i).*(pln|eur|usd|brutto|netto|gross|net).*")
+        if (lc.contains("pln")
+                || lc.contains("eur")
+                || lc.contains("usd")
+                || lc.contains("brutto")
+                || lc.contains("netto")
+                || lc.contains("gross")
+                || lc.equals("net")) {
+            return false;
+        }
+
+        // 6) odpowiednik ".*[\\p{L}\\p{Nd}#.+].*" – musi mieć jakiś sensowny znak
+        for (int i = 0; i < t.length(); i++) {
+            char c = t.charAt(i);
+            if (Character.isLetterOrDigit(c) || c == '#' || c == '.' || c == '+') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private String extractNextFieldArray(String html, String fieldNameQuoted) {

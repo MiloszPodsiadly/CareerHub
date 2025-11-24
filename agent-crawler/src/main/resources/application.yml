@@ -17,14 +17,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
   endpoint:
     health:
-      show-details: "always"
+      show-details: "when_authorized"
+
 
 agent:
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
+    initial-delay-ms: 180000
+    interval-ms: 3600000
+
+  solid:
+    sitemap-url: "https://solid.jobs/sitemap.xml"
     initial-delay-ms: 180000
     interval-ms: 3600000
 

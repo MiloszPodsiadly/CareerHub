@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/ingest")
 @RequiredArgsConstructor
-@CrossOrigin
 public class IngestController {
 
     private final IngestPublisher publisher;

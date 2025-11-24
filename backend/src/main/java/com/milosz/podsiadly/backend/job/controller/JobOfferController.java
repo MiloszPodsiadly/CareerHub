@@ -22,7 +22,6 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@CrossOrigin
 public class JobOfferController {
 
     private final JobOfferService service;

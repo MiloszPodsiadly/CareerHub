@@ -12,7 +12,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/jobs/history")
 @RequiredArgsConstructor
-@CrossOrigin
 public class JobOfferHistoryController {
 
     private final JobOfferHistoryRepository repo;

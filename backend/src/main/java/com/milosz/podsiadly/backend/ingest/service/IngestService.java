@@ -8,6 +8,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,42 +23,62 @@ public class IngestService {
 
     public long ingestSitemap(String sitemapUrl, JobSource source) throws Exception {
         return switch (source) {
-            case JUSTJOIN -> ingestXmlSitemapRecursive(sitemapUrl, source);
+            case JUSTJOIN -> ingestXmlSitemapRecursiveWithCounter(sitemapUrl, source);
 
             case NOFLUFFJOBS -> {
                 log.info("[ingest] NFJ sitemap ingest is handled by agent-crawler – backend returns 0 (url={})", sitemapUrl);
                 yield 0L;
             }
 
-            default -> ingestXmlSitemapRecursive(sitemapUrl, source);
+            case SOLIDJOBS -> {
+                log.info("[ingest] SolidJobs sitemap ingest is handled by agent-crawler – backend returns 0 (url={})", sitemapUrl);
+                yield 0L;
+            }
+
+            default -> ingestXmlSitemapRecursiveWithCounter(sitemapUrl, source);
         };
     }
 
-    private long ingestXmlSitemapRecursive(String url, JobSource source) throws Exception {
+
+    private long ingestXmlSitemapRecursiveWithCounter(String url, JobSource source) throws Exception {
+        AtomicLong counter = new AtomicLong(0);
+        ingestXmlSitemapRecursive(url, source, counter);
+        long total = counter.get();
+        log.info("[ingest] sitemap={} source={} totalUrlsEnqueued={}", url, source, total);
+        return total;
+    }
+
+
+    private void ingestXmlSitemapRecursive(String url, JobSource source, AtomicLong counter) throws Exception {
+        log.debug("[ingest] fetching sitemap url={} source={}", url, source);
+
         Document doc = Jsoup.connect(url)
                 .userAgent(BROWSER_UA)
                 .ignoreContentType(true)
-                .timeout(15000)
+                .timeout(15_000)
                 .get();
 
         if (!doc.select("sitemapindex").isEmpty()) {
-            long total = 0;
             for (Element loc : doc.select("sitemap > loc")) {
                 String child = loc.text().trim();
                 if (!child.isBlank()) {
-                    total += ingestXmlSitemapRecursive(child, source);
+                    ingestXmlSitemapRecursive(child, source, counter);
                 }
             }
-            return total;
+            return;
         }
 
-        long count = 0;
         for (Element loc : doc.select("url > loc, loc")) {
             String jobUrl = loc.text().trim();
-            if (jobUrl.isEmpty()) continue;
+            if (jobUrl.isEmpty()) {
+                continue;
+            }
+
             publisher.publishUrl(jobUrl, source);
-            count++;
+            long current = counter.incrementAndGet();
+            if (current % 1000 == 0) {
+                log.debug("[ingest] {} urls enqueued so far (source={})", current, source);
+            }
         }
-        return count;
     }
 }
