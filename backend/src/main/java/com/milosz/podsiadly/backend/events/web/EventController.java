@@ -16,7 +16,6 @@ import static org.springframework.format.annotation.DateTimeFormat.ISO;
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
-@CrossOrigin
 public class EventController {
 
     private final EventQueryService svc;
