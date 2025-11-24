@@ -39,7 +39,12 @@ public class DevelopersEventsClient {
         return out;
     }
 
-    private static String normCC(String c){ return c==null?null:c.trim().length()==2?c.toUpperCase():c.toUpperCase(); }
+    private static String normCC(String c) {
+        if (c == null) return null;
+        c = c.trim();
+        if (c.length() == 2) return c.toUpperCase(Locale.ROOT);
+        return c.substring(0,1).toUpperCase(Locale.ROOT) + c.substring(1).toLowerCase(Locale.ROOT);
+    }
     private static List<String> mapTags(List<Map<String,String>> tags){
         if (tags==null) return List.of();
         return tags.stream().map(m->m.getOrDefault("value","")).filter(s->!s.isBlank()).toList();
