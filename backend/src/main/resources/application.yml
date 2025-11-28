@@ -11,8 +11,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://postgres:5432/careerhub
-    username: app
-    password: app
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -30,8 +30,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: app
-    password: app
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
     listener:
       type: simple
       simple:
