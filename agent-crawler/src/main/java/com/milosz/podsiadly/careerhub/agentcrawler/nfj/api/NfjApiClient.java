@@ -23,6 +23,10 @@ public class NfjApiClient {
     private final RestTemplate restTemplate;
 
     public Set<String> fetchAllJobUrls(String categorySlug) {
+        return fetchAllJobUrls(categorySlug, new LinkedHashSet<>());
+    }
+
+    public Set<String> fetchAllJobUrls(String categorySlug, Set<String> seenIdsThisRun) {
         Set<String> urls = new LinkedHashSet<>();
 
         int pageTo = 0;
@@ -39,10 +43,21 @@ public class NfjApiClient {
             }
 
             response.getPostings().forEach(p -> {
-                if (p.getUrl() != null && !p.getUrl().isBlank()) {
-                    String abs = "https://nofluffjobs.com/pl/job/" + p.getUrl();
-                    urls.add(abs);
+                String id  = p.getId();
+                String url = p.getUrl();
+
+                if (id == null || url == null || url.isBlank()) {
+                    log.debug("[nfj-api] skip posting with missing id/url (category={})", categorySlug);
+                    return;
                 }
+
+                if (seenIdsThisRun != null && !seenIdsThisRun.add(id)) {
+                    log.debug("[nfj-api] skip duplicate posting id={} (already seen in this run)", id);
+                    return;
+                }
+
+                String abs = "https://nofluffjobs.com/pl/job/" + url;
+                urls.add(abs);
             });
 
             log.info("[nfj-api] page={} collected so far={} (category={})",

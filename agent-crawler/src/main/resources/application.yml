@@ -8,8 +8,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: app
-    password: app
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
     template:
       mandatory: true
 

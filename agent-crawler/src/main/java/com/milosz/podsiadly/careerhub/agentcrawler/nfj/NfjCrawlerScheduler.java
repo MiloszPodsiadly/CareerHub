@@ -56,12 +56,14 @@ public class NfjCrawlerScheduler {
         try {
             Set<String> allUrls = new LinkedHashSet<>();
 
+            Set<String> seenIdsThisRun = new LinkedHashSet<>();
+
             for (String slug : NFJ_CATEGORY_SLUGS) {
                 log.info("[agent-nfj] crawling category slug={} (NFJ /pl/{})", slug, slug);
 
-                Set<String> slice = apiClient.fetchAllJobUrls(slug);
+                Set<String> slice = apiClient.fetchAllJobUrls(slug, seenIdsThisRun);
 
-                log.info("[agent-nfj] slug={} got {} urls (before merge)", slug, slice.size());
+                log.info("[agent-nfj] slug={} got {} urls (after id-dedupe, before merge)", slug, slice.size());
 
                 allUrls.addAll(slice);
             }
@@ -77,8 +79,8 @@ public class NfjCrawlerScheduler {
             long total = totalSentSinceStart.addAndGet(sentThisRun);
 
             log.info("====== NFJ RUN COMPLETE ======");
-            log.info("NFJ offers fetched & sent this run (after merge) = {}", sentThisRun);
-            log.info("NFJ offers sent to queue since start            = {}", total);
+            log.info("NFJ offers fetched & sent this run (after merge+id-dedupe) = {}", sentThisRun);
+            log.info("NFJ offers sent to queue since start                      = {}", total);
             log.info("================================");
 
         } catch (Exception e) {

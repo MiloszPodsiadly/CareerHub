@@ -4,7 +4,6 @@ import com.milosz.podsiadly.backend.job.domain.*;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferListDto;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
-import com.milosz.podsiadly.backend.job.repository.JobOfferOwnerRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -36,9 +35,11 @@ public class JobOfferService {
             e("ai/ml",     List.of("ML","Machine Learning","AI","TensorFlow","PyTorch","LangChain","OpenAI")),
             e("others",    List.of())
     );
+
     private static Map.Entry<String,List<String>> e(String k, List<String> v) {
         return new AbstractMap.SimpleEntry<>(k.toLowerCase(Locale.ROOT), v);
     }
+
     private static List<String> expandSpecs(List<String> spec) {
         if (spec == null || spec.isEmpty()) return List.of();
         return spec.stream()
@@ -75,7 +76,16 @@ public class JobOfferService {
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
-        return repo.findAll(sp, pageable).map(JobOfferMapper::toListDto);
+        Page<JobOffer> page = repo.findAll(sp, pageable);
+
+        List<JobOfferListDto> rawDtos = page.getContent().stream()
+                .map(JobOfferMapper::toListDto)
+                .toList();
+
+        List<JobOfferListDto> deduped = dedupeForListing(rawDtos);
+
+        // totalElements zostawiamy takie jak z bazy – frontend i tak używa głównie contentu
+        return new PageImpl<>(deduped, pageable, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)
@@ -104,9 +114,11 @@ public class JobOfferService {
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
-        return repo.findAll(sp, sort).stream()
+        List<JobOfferListDto> raw = repo.findAll(sp, sort).stream()
                 .map(JobOfferMapper::toListDto)
                 .toList();
+
+        return dedupeForListing(raw);
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +127,7 @@ public class JobOfferService {
                 .map(JobOfferMapper::toDetailDto)
                 .orElseThrow(() -> new IllegalArgumentException("Offer not found: " + id));
     }
+
     @Transactional(readOnly = true)
     public List<JobOfferListDto> listOwned(String userId) {
         return repo.findOwnedByUserId(userId).stream()
@@ -127,5 +140,33 @@ public class JobOfferService {
         return repo.findOwnedByUserIdAndSource(userId, JobSource.PLATFORM).stream()
                 .map(JobOfferMapper::toListDto)
                 .toList();
+    }
+
+    private List<JobOfferListDto> dedupeForListing(List<JobOfferListDto> input) {
+        Map<String, JobOfferListDto> byKey = new LinkedHashMap<>();
+
+        for (JobOfferListDto dto : input) {
+            String key = dedupeKey(dto);
+            byKey.putIfAbsent(key, dto);
+        }
+
+        return new ArrayList<>(byKey.values());
+    }
+
+    private String dedupeKey(JobOfferListDto dto) {
+        String company = nz(dto.companyName());
+        String title   = nz(dto.title());
+        String currency = nz(dto.currency());
+        String remote  = dto.remote() != null ? dto.remote().toString() : "null";
+
+        Integer min = dto.salaryMin() != null ? dto.salaryMin() : 0;
+        Integer max = dto.salaryMax() != null ? dto.salaryMax() : 0;
+
+        return (company + "|" + title + "|" + min + "|" + max + "|" + currency + "|" + remote)
+                .toLowerCase(Locale.ROOT);
+    }
+
+    private static String nz(String s) {
+        return (s == null) ? "" : s.trim();
     }
 }
