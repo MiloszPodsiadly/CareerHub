@@ -22,19 +22,19 @@ public class NfjApiClient {
 
     private final RestTemplate restTemplate;
 
-    public Set<String> fetchAllJobUrls(String keyword) {
+    public Set<String> fetchAllJobUrls(String categorySlug) {
         Set<String> urls = new LinkedHashSet<>();
 
         int pageTo = 0;
         int totalPages = 1;
 
         while (pageTo < totalPages) {
-            NfjSearchResponse response = fetchPage(keyword, pageTo, DEFAULT_PAGE_SIZE);
+            NfjSearchResponse response = fetchPage(categorySlug, pageTo, DEFAULT_PAGE_SIZE);
 
             if (response == null ||
                     response.getPostings() == null ||
                     response.getPostings().isEmpty()) {
-                log.info("[nfj-api] empty page {}, stopping", pageTo);
+                log.info("[nfj-api] empty page {} – stopping (category={})", pageTo, categorySlug);
                 break;
             }
 
@@ -45,7 +45,8 @@ public class NfjApiClient {
                 }
             });
 
-            log.info("[nfj-api] page={} collected so far={}", pageTo, urls.size());
+            log.info("[nfj-api] page={} collected so far={} (category={})",
+                    pageTo, urls.size(), categorySlug);
 
             if (response.getTotalPages() > 0) {
                 totalPages = response.getTotalPages();
@@ -53,12 +54,13 @@ public class NfjApiClient {
             pageTo++;
         }
 
-        log.info("[nfj-api] DONE: total unique urls={}", urls.size());
+        log.info("[nfj-api] DONE: total unique urls={} (category={})", urls.size(), categorySlug);
         return urls;
     }
 
-    private NfjSearchResponse fetchPage(String keyword, int pageTo, int pageSize) {
-        log.info("[nfj-api] fetching pageTo={} pageSize={} keyword={}", pageTo, pageSize, keyword);
+    private NfjSearchResponse fetchPage(String categorySlug, int pageTo, int pageSize) {
+        log.info("[nfj-api] fetching pageTo={} pageSize={} categorySlug={}",
+                pageTo, pageSize, categorySlug);
 
         URI uri = UriComponentsBuilder
                 .fromHttpUrl(BASE_URL + SEARCH_PATH)
@@ -76,7 +78,7 @@ public class NfjApiClient {
         headers.setContentType(MediaType.valueOf("application/infiniteSearch+json"));
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
 
-        NfjSearchRequest body = NfjSearchRequest.forKeyword(keyword, pageSize);
+        NfjSearchRequest body = NfjSearchRequest.forCategorySlug(categorySlug, pageSize);
 
         HttpEntity<NfjSearchRequest> entity = new HttpEntity<>(body, headers);
 
@@ -88,7 +90,8 @@ public class NfjApiClient {
         );
 
         if (!resp.getStatusCode().is2xxSuccessful()) {
-            log.warn("[nfj-api] non-200 status={} for pageTo={}", resp.getStatusCode(), pageTo);
+            log.warn("[nfj-api] non-200 status={} for pageTo={} (category={})",
+                    resp.getStatusCode(), pageTo, categorySlug);
             return null;
         }
 
