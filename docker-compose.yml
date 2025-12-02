@@ -50,6 +50,8 @@ services:
       dockerfile: agent-crawler/Dockerfile
     image: agent-crawler:local
     container_name: agent-crawler
+    env_file:
+      - .env.rabbitmq
     depends_on:
       rabbitmq:
         condition: service_started
