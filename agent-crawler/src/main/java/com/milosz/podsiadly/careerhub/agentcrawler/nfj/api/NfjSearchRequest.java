@@ -22,13 +22,13 @@ public class NfjSearchRequest {
         private String searchParam;
     }
 
-    public static NfjSearchRequest forKeyword(String keyword, int pageSize) {
+    public static NfjSearchRequest forCategorySlug(String slug, int pageSize) {
         return new NfjSearchRequest(
                 "",
-                new Url(keyword),
-                keyword,
+                new Url(slug),
+                slug,
                 pageSize,
-                true
+                false
         );
     }
 }
