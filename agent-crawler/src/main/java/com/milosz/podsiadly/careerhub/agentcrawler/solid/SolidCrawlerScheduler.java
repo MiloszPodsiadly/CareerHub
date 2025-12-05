@@ -19,7 +19,7 @@ public class SolidCrawlerScheduler {
 
     @Scheduled(
             initialDelay = 180_000,
-            fixedDelay   = 3_600_000
+            fixedDelay   = 43_200_000
     )
     public void runPeriodic() {
         log.info("[agent-solid] periodic crawl triggered");

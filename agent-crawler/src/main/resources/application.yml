@@ -32,7 +32,7 @@ agent:
   solid:
     sitemap-url: "https://solid.jobs/sitemap.xml"
     initial-delay-ms: 180000
-    interval-ms: 21600000
+    interval-ms: 43200000
 
 jobs:
   ingest:
