@@ -1,9 +1,16 @@
 package com.milosz.podsiadly.careerhub.agentcrawler.nfj.api;
 
+import com.google.common.util.concurrent.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -19,6 +26,13 @@ public class NfjApiClient {
     private static final String BASE_URL = "https://nofluffjobs.com";
     private static final String SEARCH_PATH = "/api/search/posting";
     private static final int DEFAULT_PAGE_SIZE = 20;
+
+    private static final RateLimiter SEARCH_RATE_LIMITER = RateLimiter.create(0.5d);
+
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long INITIAL_BACKOFF_MS = 2_000L;
+    private static final long MAX_BACKOFF_MS = 30_000L;
+    private static final double BACKOFF_MULTIPLIER = 2.0d;
 
     private final RestTemplate restTemplate;
 
@@ -94,22 +108,71 @@ public class NfjApiClient {
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
 
         NfjSearchRequest body = NfjSearchRequest.forCategorySlug(categorySlug, pageSize);
-
         HttpEntity<NfjSearchRequest> entity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<NfjSearchResponse> resp = restTemplate.exchange(
-                uri,
-                HttpMethod.POST,
-                entity,
-                NfjSearchResponse.class
-        );
+        long backoffMs = INITIAL_BACKOFF_MS;
 
-        if (!resp.getStatusCode().is2xxSuccessful()) {
-            log.warn("[nfj-api] non-200 status={} for pageTo={} (category={})",
-                    resp.getStatusCode(), pageTo, categorySlug);
-            return null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            SEARCH_RATE_LIMITER.acquire();
+
+            try {
+                ResponseEntity<NfjSearchResponse> resp = restTemplate.exchange(
+                        uri,
+                        HttpMethod.POST,
+                        entity,
+                        NfjSearchResponse.class
+                );
+
+                HttpStatusCode status = resp.getStatusCode();
+
+                if (status.is2xxSuccessful()) {
+                    return resp.getBody();
+                }
+
+                int code = status.value();
+                if (code == 429 || status.is5xxServerError()) {
+                    log.warn("[nfj-api] transient HTTP {} for pageTo={} (category={}), attempt {}/{}",
+                            code, pageTo, categorySlug, attempt, MAX_ATTEMPTS);
+
+                    if (attempt == MAX_ATTEMPTS) {
+                        log.warn("[nfj-api] giving up after {} attempts for pageTo={} (category={})",
+                                MAX_ATTEMPTS, pageTo, categorySlug);
+                        return null;
+                    }
+
+                    sleepQuietly(backoffMs);
+                    backoffMs = Math.min((long) (backoffMs * BACKOFF_MULTIPLIER), MAX_BACKOFF_MS);
+                    continue;
+                }
+
+                log.warn("[nfj-api] non-2xx status={} for pageTo={} (category={}), not retrying",
+                        status, pageTo, categorySlug);
+                return null;
+
+            } catch (RestClientException ex) {
+                log.warn("[nfj-api] RestClientException for pageTo={} (category={}), attempt {}/{}: {}",
+                        pageTo, categorySlug, attempt, MAX_ATTEMPTS, ex.toString());
+
+                if (attempt == MAX_ATTEMPTS) {
+                    log.warn("[nfj-api] giving up after {} attempts for pageTo={} (category={})",
+                            MAX_ATTEMPTS, pageTo, categorySlug);
+                    return null;
+                }
+
+                sleepQuietly(backoffMs);
+                backoffMs = Math.min((long) (backoffMs * BACKOFF_MULTIPLIER), MAX_BACKOFF_MS);
+            }
         }
 
-        return resp.getBody();
+        return null;
+    }
+
+    private void sleepQuietly(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            log.warn("[nfj-api] sleep interrupted during backoff");
+        }
     }
 }
