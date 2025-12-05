@@ -26,8 +26,8 @@ management:
 agent:
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
-    initial-delay-ms: 180000
-    interval-ms: 21600000
+    initial-delay-ms: 280000
+    interval-ms: 43200000
 
   solid:
     sitemap-url: "https://solid.jobs/sitemap.xml"
