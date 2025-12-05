@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.ingest.mq;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.milosz.podsiadly.backend.ingest.parser.JustJoinParser;
 import com.milosz.podsiadly.backend.ingest.parser.NofluffParser;
 import com.milosz.podsiadly.backend.ingest.parser.SolidOfferMapper;
@@ -32,6 +33,8 @@ public class JobUrlConsumer {
     private static final String BROWSER_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+
+    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(0.3d);
 
     private final JustJoinParser justJoinParser;
     private final OfferUpsertService upsertService;
@@ -164,6 +167,8 @@ public class JobUrlConsumer {
     private String fetchNofluffJson(String externalId) throws IOException {
         String apiUrl = "https://nofluffjobs.com/api/posting/" + externalId
                 + "?salaryCurrency=PLN&salaryPeriod=month&region=pl&language=pl-PL";
+
+        NFJ_FETCH_LIMITER.acquire();
 
         return Jsoup.connect(apiUrl)
                 .userAgent(BROWSER_UA)
