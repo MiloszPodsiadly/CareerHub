@@ -87,7 +87,7 @@ ingest:
   scheduler:
     enabled: true
     initial-delay: PT3M
-    fixed-delay: PT1H
+    fixed-delay: PT12H
     sources:
       - source: JUSTJOIN
         sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
