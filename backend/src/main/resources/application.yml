@@ -42,6 +42,20 @@ spring:
         default-requeue-rejected: false
     template:
       mandatory: true
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASS}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST}
 
 eureka:
   client:
@@ -94,3 +108,7 @@ ingest:
 logging:
   level:
     root: INFO
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
