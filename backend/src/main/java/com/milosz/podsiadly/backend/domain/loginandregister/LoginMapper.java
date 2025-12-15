@@ -10,12 +10,19 @@ public class LoginMapper {
     public static UserDto toDto(User u) {
         return new UserDto(
                 u.getId(),
-                u.getUsername(),
+                u.getEmail(),
                 u.getRoles().stream().map(Role::getName).collect(Collectors.toSet())
         );
     }
 
-    public static MeDto toMeDto(User u, String name, String email, String avatarUrl, String about, java.time.LocalDate dob) {
+    public static MeDto toMeDto(
+            User u,
+            String name,
+            String email,
+            String avatarUrl,
+            String about,
+            java.time.LocalDate dob
+    ) {
         return new MeDto(
                 u.getId(),
                 u.getUsername(),
