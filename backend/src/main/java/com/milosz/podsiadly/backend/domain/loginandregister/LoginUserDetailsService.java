@@ -12,7 +12,7 @@ public class LoginUserDetailsService implements UserDetailsService {
 
     @Override
     public User loadUserByUsername(String username) throws UsernameNotFoundException {
-        return users.findByUsername(username)
+        return users.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 }
