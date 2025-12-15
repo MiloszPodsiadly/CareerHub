@@ -2,10 +2,11 @@ package com.milosz.podsiadly.backend.infrastructure.loginandregister.controller;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.*;
 import com.milosz.podsiadly.backend.domain.loginandregister.dto.*;
-import com.milosz.podsiadly.backend.domain.profile.ProfileRepository; // <--- DODAJ
+import com.milosz.podsiadly.backend.domain.profile.ProfileRepository;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -19,8 +20,7 @@ import org.springframework.http.HttpStatus;
 import java.time.Duration;
 import java.util.Map;
 
-import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.toDto;
-import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.toMeDto; // <---
+import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.toMeDto;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,16 +34,32 @@ public class TokenController {
     private final UserService userService;
     private final JwtProperties props;
     private final ProfileRepository profiles;
+    private final PasswordResetService passwordResetService;
 
-    public record LoginReq(String username, String password) {}
+    public record LoginReq(String email, String password) {}
     public record TokenRes(String accessToken) {}
 
-    @PostMapping("/register")
-    public ResponseEntity<TokenRes> register(@RequestBody RegisterUserDto dto, HttpServletResponse resp) {
-        UserDto created = userService.register(dto);
-        User u = usersByUsername.loadUserByUsername(created.username());
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        passwordResetService.sendResetLink(req);
+        return ResponseEntity.ok().build();
+    }
 
-        String access  = jwt.issueAccess(u.getId(), u.getUsername(), u.getRoles().stream().map(Role::getName).toList());
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        passwordResetService.resetPassword(req);
+        return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/register")
+    public ResponseEntity<TokenRes> register(@Valid @RequestBody RegisterUserDto dto, HttpServletResponse resp) {
+        UserDto created = userService.register(dto);
+        User u = usersByUsername.loadUserByUsername(created.email());
+
+        String access  = jwt.issueAccess(
+                u.getId(),
+                u.getUsername(),
+                u.getRoles().stream().map(Role::getName).toList()
+        );
         String refresh = jwt.issueRefresh(u.getId());
 
         resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(refresh).toString());
@@ -52,10 +68,16 @@ public class TokenController {
 
     @PostMapping("/login")
     public ResponseEntity<TokenRes> login(@RequestBody LoginReq req, HttpServletResponse resp) {
-        authManager.authenticate(new UsernamePasswordAuthenticationToken(req.username(), req.password()));
-        User u = usersByUsername.loadUserByUsername(req.username());
+        authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.email(), req.password())
+        );
+        User u = usersByUsername.loadUserByUsername(req.email());
 
-        String access  = jwt.issueAccess(u.getId(), u.getUsername(), u.getRoles().stream().map(Role::getName).toList());
+        String access  = jwt.issueAccess(
+                u.getId(),
+                u.getUsername(),
+                u.getRoles().stream().map(Role::getName).toList()
+        );
         String refresh = jwt.issueRefresh(u.getId());
 
         resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(refresh).toString());
