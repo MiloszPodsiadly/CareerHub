@@ -2,7 +2,6 @@ package com.milosz.podsiadly.backend.infrastructure.myapplication;
 
 import com.milosz.podsiadly.backend.domain.file.FileStorageService;
 import com.milosz.podsiadly.backend.domain.loginandregister.User;
-import com.milosz.podsiadly.backend.domain.loginandregister.UserService;
 import com.milosz.podsiadly.backend.domain.myapplication.ApplicationService;
 import com.milosz.podsiadly.backend.domain.myapplication.ApplicationStatus;
 import com.milosz.podsiadly.backend.domain.myapplication.JobApplicationRepository;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/applications")
@@ -25,18 +25,22 @@ public class ApplicationController {
     private final ApplicationService service;
     private final JobApplicationRepository apps;
     private final FileStorageService files;
-    private final UserService userService;
-
 
     private String requireUserId(Authentication auth) {
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
         }
-        String username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) {
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof User u) {
+            return u.getId();
+        }
+
+        String name = auth.getName();
+        if (name == null || name.isBlank() || "anonymousUser".equals(name)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
         }
-        return userService.getByUsername(username).id();
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
     }
 
     private User toDomainUser(String userId) {
@@ -44,7 +48,6 @@ public class ApplicationController {
         u.setId(userId);
         return u;
     }
-
 
     @PostMapping
     public ResponseEntity<ApplicationDetailDto> apply(Authentication auth,

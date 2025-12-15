@@ -137,6 +137,7 @@ services:
     env_file:
       - .env.postgres
       - .env.rabbitmq
+      - .env.mail
     environment:
       SERVER_PORT: 8081
       SPRING_APPLICATION_NAME: backend

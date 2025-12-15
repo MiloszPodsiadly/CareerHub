@@ -5,12 +5,13 @@ import com.milosz.podsiadly.backend.domain.favorite.FavoriteType;
 import com.milosz.podsiadly.backend.domain.favorite.dto.FavoriteDto;
 import com.milosz.podsiadly.backend.domain.favorite.dto.FavoritePageDto;
 import com.milosz.podsiadly.backend.domain.favorite.dto.FavoriteStatusDto;
-import com.milosz.podsiadly.backend.domain.loginandregister.UserService;
+import com.milosz.podsiadly.backend.domain.loginandregister.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,16 +22,22 @@ import org.springframework.web.server.ResponseStatusException;
 public class FavoriteController {
 
     private final FavoriteService service;
-    private final UserService userService;
 
     private @Nullable String userIdOrNull(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()
-                || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return null;
         }
-        var username = auth.getName();
-        if (username == null || username.isBlank() || "anonymousUser".equals(username)) return null;
-        return userService.getByUsername(username).id();
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof User u) {
+            return u.getId();
+        }
+
+        String name = auth.getName();
+        if (name == null || name.isBlank() || "anonymousUser".equals(name)) {
+            return null;
+        }
+        return null;
     }
 
     private String requireUserId(Authentication auth) {
