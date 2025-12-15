@@ -10,7 +10,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "username"))
+@Table(
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(columnNames = "email")
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,8 +25,8 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String username;
+    @Column(nullable = false, unique = true, length = 254)
+    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -36,6 +39,11 @@ public class User implements UserDetails {
     )
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
