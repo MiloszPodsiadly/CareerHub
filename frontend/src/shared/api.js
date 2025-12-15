@@ -87,9 +87,9 @@ export function onAuthChange(fn){ window.addEventListener('auth:change', e => fn
 export function onAuthReady(fn){ window.addEventListener('auth:ready',  e => fn(e.detail)); }
 
 export const authApi = {
-    async login(username, password){
+    async login(email, password){
         const { accessToken: at } = await request('/auth/login',
-            { method:'POST', body: JSON.stringify({ username, password }) }, false);
+            { method:'POST', body: JSON.stringify({ email, password }) }, false);
         saveAccess(at);
         try {
             const me = await request('/auth/me');
@@ -100,9 +100,9 @@ export const authApi = {
         return at;
     },
 
-    async register(username, password){
+    async register(email, password){
         const { accessToken: at } = await request('/auth/register',
-            { method:'POST', body: JSON.stringify({ username, password }) }, false);
+            { method:'POST', body: JSON.stringify({ email, password }) }, false);
         saveAccess(at);
         try {
             const me = await request('/auth/me');
@@ -111,6 +111,19 @@ export const authApi = {
             setUser(userFromToken(at));
         }
         return at;
+    },
+    async forgotPassword(email) {
+        await request('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        }, false);
+    },
+
+    async resetPassword(token, newPassword) {
+        await request('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ token, newPassword }),
+        }, false);
     },
 
     me: () => request('/auth/me'),
