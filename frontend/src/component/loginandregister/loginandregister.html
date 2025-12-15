@@ -11,13 +11,19 @@
 
     <form class="js-form">
         <label>
-            Username
-            <input name="username" autocomplete="username" required />
+            Email
+            <input name="email" type="email" autocomplete="email" required />
         </label>
+
         <label>
             Password
             <input name="password" type="password" autocomplete="current-password" required />
         </label>
+
         <button class="btn js-submit" type="submit">Sign in</button>
+
+        <div class="forgot-wrap">
+            <a href="/auth/forgot" class="forgot-link">Forgot password?</a>
+        </div>
     </form>
 </div>

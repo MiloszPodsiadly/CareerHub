@@ -25,10 +25,8 @@ export function initLoginRegister(mode = 'login') {
         });
     }
 
-    function setup(box, mode) {
+    function setup(box, initialMode) {
         ensureAuthWrapper(box);
-
-        box.querySelector('input[name="username"]')?.focus();
 
         const title     = box.querySelector('.js-title');
         const subtitle  = box.querySelector('.js-subtitle');
@@ -38,7 +36,8 @@ export function initLoginRegister(mode = 'login') {
         const tabLogin  = box.querySelector('.js-tab-login');
         const tabReg    = box.querySelector('.js-tab-register');
 
-        setMode(mode);
+        setMode(initialMode);
+        box.querySelector('input[name="email"]')?.focus();
 
         tabLogin?.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -57,42 +56,64 @@ export function initLoginRegister(mode = 'login') {
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideAlert();
-            submitBtn.disabled = true;
+            if (submitBtn) submitBtn.disabled = true;
 
             const fd = new FormData(form);
-            const username = (fd.get('username') || '').toString().trim();
+            const email = (fd.get('email') || '').toString().trim();
             const password = (fd.get('password') || '').toString().trim();
 
             try {
-                if (!username || !password) {
-                    showError('Please enter username and password.');
+                if (!email || !password) {
+                    showError('Please enter email and password.');
                     return;
                 }
 
+                const isRegister = box.dataset.mode === 'register';
+
+                if (isRegister) {
+                    if (!isValidEmail(email)) {
+                        showError('Please enter a valid e-mail address.');
+                        return;
+                    }
+                    if (password.length < 8) {
+                        showError('Password must be at least 8 characters.');
+                        return;
+                    }
+                }
+
                 if (box.dataset.mode === 'login') {
-                    await authApi.login(username, password);
+                    await authApi.login(email, password);
                     await new Promise(requestAnimationFrame);
                     await navigate('/');
                 } else {
-                    await authApi.register(username, password);
+                    await authApi.register(email, password);
                     showSuccess('Account created. You are now signed in.');
                     setTimeout(() => { navigate('/'); }, 200);
                 }
             } catch (err) {
                 showError(err?.message || 'Something went wrong.');
             } finally {
-                submitBtn.disabled = false;
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
 
         function setMode(m) {
             box.dataset.mode = m;
             const isLogin = m === 'login';
+
             if (title)     title.textContent     = isLogin ? 'Sign in' : 'Create account';
             if (subtitle)  subtitle.textContent  = isLogin ? 'Enter your details to continue.' : 'Create a free account.';
             if (submitBtn) submitBtn.textContent = isLogin ? 'Sign in' : 'Sign up';
+
             tabLogin?.classList.toggle('active', isLogin);
             tabReg?.classList.toggle('active', !isLogin);
+
+            // opcjonalnie: ustaw autocomplete zależnie od trybu
+            const passInput = box.querySelector('input[name="password"]');
+            if (passInput) {
+                passInput.setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+            }
+
             hideAlert();
         }
 
@@ -102,12 +123,14 @@ export function initLoginRegister(mode = 'login') {
             alertBox.className = 'error auth js-alert';
             alertBox.textContent = msg;
         }
+
         function showSuccess(msg) {
             if (!alertBox) return;
             alertBox.style.display = '';
             alertBox.className = 'success auth js-alert';
             alertBox.textContent = msg;
         }
+
         function hideAlert() {
             if (!alertBox) return;
             alertBox.style.display = 'none';
@@ -130,4 +153,8 @@ export function initLoginRegister(mode = 'login') {
         if (!wrapper.style.display) wrapper.style.display = 'grid';
         if (!wrapper.style.justifyContent) wrapper.style.justifyContent = 'center';
     }
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
