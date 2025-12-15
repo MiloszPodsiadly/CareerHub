@@ -1,15 +1,17 @@
 import { bootstrapAuth } from './shared/api.js';
 import { clearView } from './shared/mount.js';
-import {mountJobExactlyOffer} from "./component/jobexaclyoffer/loader.jobexaclyoffer.js";
-import {mountMyApplications} from "./component/myapplications/loader.myapplications.js";
+import { mountJobExactlyOffer } from "./component/jobexaclyoffer/loader.jobexaclyoffer.js";
+import { mountMyApplications } from "./component/myapplications/loader.myapplications.js";
 
 const routes = {
-    '/':     () => import('./component/landing-page/loader.landing.js').then(m => m.mountLanding()),
+    '/': () => import('./component/landing-page/loader.landing.js').then(m => m.mountLanding()),
     '/jobs': () => import('./component/jobsoffers/loader.jobs.js').then(m => m.mountJobs()),
     '/events': () => import('./component/events/loader.events.js').then(m => m.mountEvents()),
     '/salary-calculator': () => import('./component/salary-calculator/loader.salary-calculator.js').then(m => m.mountSalaryCalculator()),
-    '/auth/login':    () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountLogin()),
+    '/auth/login': () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountLogin()),
     '/auth/register': () => import('./component/loginandregister/loader.loginandregister.js').then(m => m.mountRegister()),
+    '/auth/forgot': () => import('./component/forgotpassword/loader.forgotpassword.js').then(m => m.mountForgotPassword()),
+    '/auth/reset-password': () => import('./component/resetpassword/loader.resetpassword.js').then(m => m.mountResetPassword()),
     '/profile': () => import('./component/profile/loader.profile.js').then(m => m.mountProfile()),
     '/favorite': () => import('./component/favorite/loader.favorite.js').then(m => m.mountFavorite()),
     '/post-job': () => import('./component/postjob/loader.postjob.js').then(m => m.mountPostJob()),
@@ -20,29 +22,44 @@ const routes = {
 
 const FALLBACK = '/';
 
+function currentFullPath() {
+    return location.pathname + location.search + location.hash;
+}
+
 export async function render() {
     clearView();
+
     const path = Object.prototype.hasOwnProperty.call(routes, location.pathname)
         ? location.pathname
         : FALLBACK;
+
     await routes[path]();
 }
 
 export async function navigate(path) {
-    if (location.pathname === path) return;
-    history.pushState({}, '', path);
+    const next = new URL(path, location.origin);
+    const nextFull = next.pathname + next.search + next.hash;
+
+    if (currentFullPath() === nextFull) return;
+
+    history.pushState({}, '', nextFull);
     await render();
 }
 
 document.addEventListener('click', async (e) => {
-    const a = e.target.closest('a[href^="/"]');
+    const a = e.target.closest('a[href]');
     if (!a) return;
+
+    const href = a.getAttribute('href');
+    if (!href || !href.startsWith('/')) return;
+
     const url = new URL(a.href);
     const sameOrigin = url.origin === location.origin;
     const handled = Object.prototype.hasOwnProperty.call(routes, url.pathname);
+
     if (sameOrigin && handled) {
         e.preventDefault();
-        await navigate(url.pathname);
+        await navigate(url.pathname + url.search + url.hash);
     }
 });
 
