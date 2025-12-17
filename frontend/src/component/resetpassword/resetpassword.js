@@ -29,16 +29,27 @@ export function initResetPassword() {
         hideAlert();
         submitBtn.disabled = true;
 
-        const fd       = new FormData(form);
-        const password = (fd.get('password') || '').toString().trim();
+        const fd = new FormData(form);
+        const password = (fd.get('password') || '').toString();
+        const confirmPassword = (fd.get('confirmPassword') || '').toString();
 
         try {
-            if (!password) {
-                showError('Please enter a new password.');
+            if (!password || !confirmPassword) {
+                showError('Please enter the new password twice.');
                 return;
             }
 
-            await authApi.resetPassword(token, password);
+            if (password.trim().length < 8) {
+                showError('Password must be at least 8 characters.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match.');
+                return;
+            }
+
+            await authApi.resetPassword(token, password.trim());
 
             showSuccess('Password changed. You can now sign in.');
             setTimeout(() => navigate('/auth/login'), 800);
