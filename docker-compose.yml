@@ -1,8 +1,8 @@
 services:
   discovery-server:
     build:
-      context: ./discovery-server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: discovery-server/Dockerfile
     image: discovery-server:local
     container_name: discovery-server
     ports: [ "8761:8761" ]
