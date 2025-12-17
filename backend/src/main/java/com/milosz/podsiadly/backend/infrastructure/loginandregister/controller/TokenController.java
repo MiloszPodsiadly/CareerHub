@@ -151,7 +151,7 @@ public class TokenController {
     @PostMapping("/resend-verification")
     public ResponseEntity<Void> resendVerification(@RequestBody ResendVerifyReq req) {
         emailVerificationService.resend(req.email(), users);
-        return ResponseEntity.ok().build(); // zawsze 200
+        return ResponseEntity.ok().build();
     }
 
 
