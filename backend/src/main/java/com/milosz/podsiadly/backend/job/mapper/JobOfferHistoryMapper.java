@@ -2,8 +2,8 @@ package com.milosz.podsiadly.backend.job.mapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.domain.ArchiveReason;
+import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.domain.JobOfferHistory;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferHistoryDto;
@@ -21,7 +21,7 @@ public class JobOfferHistoryMapper {
     private final ObjectMapper om;
 
     public JobOfferHistory toHistory(JobOffer o, ArchiveReason reason) {
-        List<String> contracts = (o.getContracts() != null)
+        List<String> contracts = (o.getContracts() != null && !o.getContracts().isEmpty())
                 ? o.getContracts().stream().map(Enum::name).distinct().toList()
                 : (o.getContract() != null ? List.of(o.getContract().name()) : List.of());
 
@@ -72,6 +72,15 @@ public class JobOfferHistoryMapper {
     }
 
     private String buildSnapshot(JobOffer o, List<String> contracts) {
+        var skills = (o.getTechStack() == null ? List.<JobOfferSkillDto>of()
+                : o.getTechStack().stream()
+                .map(s -> new JobOfferSkillDto(
+                        s.getName(),
+                        s.getLevelLabel(),
+                        s.getLevelValue(),
+                        s.getSource()))
+                .toList());
+
         var detail = new JobOfferDetailDto(
                 o.getId(),
                 o.getSource() != null ? o.getSource().name() : null,
@@ -90,23 +99,17 @@ public class JobOfferHistoryMapper {
                 o.getSalaryMax(),
                 o.getCurrency(),
                 o.getTechTags(),
-                o.getTechStack().stream()
-                        .map(s -> new JobOfferSkillDto(
-                                s.getName(),
-                                s.getLevelLabel(),
-                                s.getLevelValue(),
-                                s.getSource()))
-                        .toList(),
+                skills,
                 o.getPublishedAt(),
                 o.getActive()
         );
+
         try {
             return om.writeValueAsString(detail);
         } catch (JsonProcessingException e) {
             return "{\"id\":" + o.getId() + ",\"title\":\"" + escape(o.getTitle()) + "\"}";
         }
     }
-
 
     private static String escape(String s) {
         return s == null ? "" : s.replace("\"", "\\\"");

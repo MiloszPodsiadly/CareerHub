@@ -114,9 +114,18 @@ export async function initJobExactlyOffer(rootEl,{id}){
     ensureStatusNode(scope);
 
     async function fetchOffer(){
-        const r=await fetch(API(`/api/jobs/${encodeURIComponent(id)}`),{headers:{Accept:'application/json'}});
-        if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
+        const raw = String(id ?? '').trim();
+        const isNumericId = /^\d+$/.test(raw);
+
+        const url = isNumericId
+            ? API(`/api/jobs/${encodeURIComponent(raw)}`)
+            : API(`/api/jobs/by-external/${encodeURIComponent(raw)}?source=PLATFORM`);
+
+        const r = await fetch(url, { headers: { Accept: 'application/json' } });
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
     }
+
 
     function render(x){
         $t.textContent=x.title||'Job offer';

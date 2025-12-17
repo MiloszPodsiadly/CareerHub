@@ -3,6 +3,7 @@ package com.milosz.podsiadly.backend.job.controller;
 import com.milosz.podsiadly.backend.domain.loginandregister.User;
 import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
+import com.milosz.podsiadly.backend.job.domain.JobSource;
 import com.milosz.podsiadly.backend.job.dto.*;
 import com.milosz.podsiadly.backend.job.service.JobOfferCommandService;
 import com.milosz.podsiadly.backend.job.service.JobOfferService;
@@ -55,19 +56,21 @@ public class JobOfferController {
         int effSize = (pageSize != null && pageSize > 0) ? pageSize : size;
 
         Sort s = switch (sort.toLowerCase()) {
-            case "salary" -> Sort.by(Sort.Direction.DESC, "salaryMax").and(Sort.by("salaryMin").descending());
+            case "salary" -> Sort.by(Sort.Direction.DESC, "salaryMax")
+                    .and(Sort.by("salaryMin").descending());
             case "date" -> Sort.by(Sort.Direction.DESC, "publishedAt");
             default -> Sort.by(Sort.Direction.DESC, "publishedAt");
         };
 
         Pageable pageable = PageRequest.of(idx, effSize, s);
 
-        return service.search(q, city, remote, effectiveLevel,
-                spec,
-                tech,
+        return service.search(
+                q, city, remote, effectiveLevel,
+                spec, tech,
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
-                withSalary, pageable);
+                withSalary, pageable
+        );
     }
 
     @GetMapping("/all")
@@ -92,15 +95,24 @@ public class JobOfferController {
                 ? Sort.by(Sort.Direction.DESC, "salaryMax").and(Sort.by("salaryMin").descending())
                 : Sort.by(Sort.Direction.DESC, "publishedAt");
 
-        return service.searchAll(q, city, remote, effectiveLevel,
-                spec,
-                tech,
+        return service.searchAll(
+                q, city, remote, effectiveLevel,
+                spec, tech,
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
-                withSalary, s);
+                withSalary, s
+        );
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/by-external/{externalId}")
+    public JobOfferDetailDto getByExternal(
+            @PathVariable String externalId,
+            @RequestParam(defaultValue = "PLATFORM") JobSource source
+    ) {
+        return service.getByExternalId(source, externalId);
+    }
+
+    @GetMapping("/{id:\\d+}")
     public JobOfferDetailDto get(@PathVariable Long id) {
         return service.get(id);
     }
@@ -114,7 +126,7 @@ public class JobOfferController {
         return commands.create(user, req, platformBaseUrl);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     public JobOfferDetailDto update(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
@@ -124,7 +136,7 @@ public class JobOfferController {
         return commands.updateOwned(user, id, req);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(
             @AuthenticationPrincipal User user,
@@ -138,6 +150,7 @@ public class JobOfferController {
         final String pwd = pwdHeader != null ? pwdHeader
                 : (pwdQuery != null ? pwdQuery
                 : (req != null ? req.password() : null));
+
         log.info("[jobs.delete] user={} offer={} hasHeader={} hasQuery={} hasBody={}",
                 user.getUsername(), id, pwdHeader != null, pwdQuery != null, req != null);
 

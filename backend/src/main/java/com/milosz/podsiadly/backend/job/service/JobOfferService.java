@@ -84,7 +84,6 @@ public class JobOfferService {
 
         List<JobOfferListDto> deduped = dedupeForListing(rawDtos);
 
-        // totalElements zostawiamy takie jak z bazy – frontend i tak używa głównie contentu
         return new PageImpl<>(deduped, pageable, page.getTotalElements());
     }
 
@@ -129,6 +128,16 @@ public class JobOfferService {
     }
 
     @Transactional(readOnly = true)
+    public JobOfferDetailDto getByExternalId(JobSource source, String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            throw new IllegalArgumentException("Offer not found: " + externalId);
+        }
+        return repo.findBySourceAndExternalId(source, externalId)
+                .map(JobOfferMapper::toDetailDto)
+                .orElseThrow(() -> new IllegalArgumentException("Offer not found: " + externalId));
+    }
+
+    @Transactional(readOnly = true)
     public List<JobOfferListDto> listOwned(String userId) {
         return repo.findOwnedByUserId(userId).stream()
                 .map(JobOfferMapper::toListDto)
@@ -144,12 +153,10 @@ public class JobOfferService {
 
     private List<JobOfferListDto> dedupeForListing(List<JobOfferListDto> input) {
         Map<String, JobOfferListDto> byKey = new LinkedHashMap<>();
-
         for (JobOfferListDto dto : input) {
             String key = dedupeKey(dto);
             byKey.putIfAbsent(key, dto);
         }
-
         return new ArrayList<>(byKey.values());
     }
 
