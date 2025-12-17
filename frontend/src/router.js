@@ -18,6 +18,8 @@ const routes = {
     '/my-offers': () => import('./component/myoffers/loader.myoffers.js').then(m => m.mountMyOffers()),
     '/jobexaclyoffer': () => import('./component/jobexaclyoffer/loader.jobexaclyoffer.js').then(m => m.mountJobExactlyOffer()),
     '/my-applications': () => import('./component/myapplications/loader.myapplications.js').then(m => m.mountMyApplications()),
+    '/auth/verify': () => import('./component/verify/loader.verify.js').then(m => m.mountVerify()),
+    '/auth/resend-verification': () => import('./component/resendverification/loader.resendverification.js').then(m => m.mountResendVerification()),
 };
 
 const FALLBACK = '/';
