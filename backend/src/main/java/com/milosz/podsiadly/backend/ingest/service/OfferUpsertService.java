@@ -51,7 +51,6 @@ public class OfferUpsertService {
                 .orElseGet(() -> {
                     JobOffer ne = new JobOffer();
                     ne.setSource(src);
-                    ne.setTechStack(new ArrayList<>());
                     return ne;
                 });
 
@@ -74,7 +73,12 @@ public class OfferUpsertService {
         List<String> tags = (p.techTags() != null && !p.techTags().isEmpty())
                 ? p.techTags()
                 : (p.techStack() != null
-                ? p.techStack().stream().map(JustJoinParser.ParsedSkill::name).distinct().limit(24).toList()
+                ? p.techStack().stream()
+                .map(JustJoinParser.ParsedSkill::name)
+                .filter(Objects::nonNull)
+                .distinct()
+                .limit(24)
+                .toList()
                 : Collections.emptyList());
         e.setTechTags(tags);
 
@@ -85,11 +89,13 @@ public class OfferUpsertService {
         List<JobOfferSkillDto> skills = new ArrayList<>();
         if (p.techStack() != null) {
             for (JustJoinParser.ParsedSkill s : p.techStack()) {
+                if (s == null || s.name() == null) continue;
                 skills.add(new JobOfferSkillDto(
                         s.name(), s.levelLabel(), s.levelValue(), toSourceEnum(s.source())
                 ));
             }
         }
+
         JobOfferMapper.applySkills(e, skills);
 
         offers.save(e);
