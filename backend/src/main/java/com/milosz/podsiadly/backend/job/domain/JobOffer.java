@@ -85,7 +85,6 @@ public class JobOffer {
     private Boolean active;
 
     public void setTechTags(List<String> tags) {
-        // this one is OK to replace (ElementCollection), but we can still be consistent
         this.techTags = (tags != null) ? new ArrayList<>(tags) : new ArrayList<>();
     }
 
@@ -93,9 +92,6 @@ public class JobOffer {
         this.contracts = (set != null) ? new HashSet<>(set) : new HashSet<>();
     }
 
-    /**
-     * OrphanRemoval-safe replace: do NOT replace the list reference.
-     */
     public void replaceTechStack(List<JobOfferSkill> stack) {
         if (this.techStack == null) this.techStack = new ArrayList<>();
 
@@ -110,20 +106,10 @@ public class JobOffer {
         }
     }
 
-    /**
-     * Used by mapper safe-guard.
-     */
     public void setTechStackIfNull() {
         if (this.techStack == null) this.techStack = new ArrayList<>();
     }
 
-    /**
-     * IMPORTANT:
-     * Remove/avoid the old setter that replaced reference:
-     * public void setTechStack(List<JobOfferSkill> stack) { this.techStack = fresh; }
-     *
-     * If you *must* keep a setter (for Lombok / frameworks), make it call replaceTechStack.
-     */
     public void setTechStack(List<JobOfferSkill> stack) {
         replaceTechStack(stack);
     }
