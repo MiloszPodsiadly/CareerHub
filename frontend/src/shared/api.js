@@ -140,7 +140,6 @@ export const authApi = {
         return at;
     },
 
-    // ✅ REGISTER: backend może zwracać 204 (bez tokena) bo mail weryfikacyjny
     async register(email, password) {
         const data = await request(
             '/auth/register',
@@ -148,7 +147,6 @@ export const authApi = {
             false
         );
 
-        // jeśli backend kiedyś zwróci token -> obsłużymy
         const at = data?.accessToken ?? null;
 
         if (at) {
@@ -160,7 +158,6 @@ export const authApi = {
                 setUser(userFromToken(at));
             }
         } else {
-            // brak tokena = nie logujemy (konto niezweryfikowane)
             saveAccess(null);
             setUser(null);
         }
@@ -168,7 +165,6 @@ export const authApi = {
         return at;
     },
 
-    // ✅ weryfikacja konta po kliknięciu z maila
     async verifyEmail(token) {
         await request(
             '/auth/verify-email',
