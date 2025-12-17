@@ -13,14 +13,20 @@ export function initLoginRegister(mode = 'login') {
 
         const obs = new MutationObserver(() => {
             const el = root.querySelector('.auth');
-            if (el) { obs.disconnect(); cb(el); }
+            if (el) {
+                obs.disconnect();
+                cb(el);
+            }
         });
         obs.observe(root, { childList: true, subtree: true });
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const el = root.querySelector('.auth');
-                if (el) { obs.disconnect(); cb(el); }
+                if (el) {
+                    obs.disconnect();
+                    cb(el);
+                }
             });
         });
     }
@@ -28,13 +34,13 @@ export function initLoginRegister(mode = 'login') {
     function setup(box, initialMode) {
         ensureAuthWrapper(box);
 
-        const title     = box.querySelector('.js-title');
-        const subtitle  = box.querySelector('.js-subtitle');
-        const alertBox  = box.querySelector('.js-alert');
-        const form      = box.querySelector('.js-form');
+        const title = box.querySelector('.js-title');
+        const subtitle = box.querySelector('.js-subtitle');
+        const alertBox = box.querySelector('.js-alert');
+        const form = box.querySelector('.js-form');
         const submitBtn = box.querySelector('.js-submit');
-        const tabLogin  = box.querySelector('.js-tab-login');
-        const tabReg    = box.querySelector('.js-tab-register');
+        const tabLogin = box.querySelector('.js-tab-login');
+        const tabReg = box.querySelector('.js-tab-register');
 
         setMode(initialMode);
         box.querySelector('input[name="email"]')?.focus();
@@ -86,9 +92,11 @@ export function initLoginRegister(mode = 'login') {
                     await new Promise(requestAnimationFrame);
                     await navigate('/');
                 } else {
+                    // ✅ rejestracja: brak auto-login (mail verification)
                     await authApi.register(email, password);
-                    showSuccess('Account created. You are now signed in.');
-                    setTimeout(() => { navigate('/'); }, 200);
+
+                    showSuccess('Account created. Check your email to verify your account, then sign in.');
+                    setTimeout(() => navigate('/auth/login'), 900);
                 }
             } catch (err) {
                 showError(err?.message || 'Something went wrong.');
@@ -100,15 +108,15 @@ export function initLoginRegister(mode = 'login') {
         function setMode(m) {
             box.dataset.mode = m;
             const isLogin = m === 'login';
-
-            if (title)     title.textContent     = isLogin ? 'Sign in' : 'Create account';
-            if (subtitle)  subtitle.textContent  = isLogin ? 'Enter your details to continue.' : 'Create a free account.';
+            const resendWrap = box.querySelector('.resend-wrap');
+            if (title) title.textContent = isLogin ? 'Sign in' : 'Create account';
+            if (subtitle) subtitle.textContent = isLogin ? 'Enter your details to continue.' : 'Create a free account.';
             if (submitBtn) submitBtn.textContent = isLogin ? 'Sign in' : 'Sign up';
+            if (resendWrap) resendWrap.style.display = (m === 'register') ? '' : 'none';
 
             tabLogin?.classList.toggle('active', isLogin);
             tabReg?.classList.toggle('active', !isLogin);
 
-            // opcjonalnie: ustaw autocomplete zależnie od trybu
             const passInput = box.querySelector('input[name="password"]');
             if (passInput) {
                 passInput.setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
