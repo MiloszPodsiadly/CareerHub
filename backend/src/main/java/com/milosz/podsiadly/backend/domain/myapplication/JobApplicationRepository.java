@@ -3,13 +3,10 @@ package com.milosz.podsiadly.backend.domain.myapplication;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface JobApplicationRepository extends JpaRepository<JobApplication, Long> {
@@ -25,18 +22,24 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
 
     @Query("""
       select a from JobApplication a
-      join a.offer o
-      join com.milosz.podsiadly.backend.job.domain.JobOfferOwner ow on ow.jobOffer = o
-      where ow.user.id = ?1
+      left join a.offer o
+      left join com.milosz.podsiadly.backend.job.domain.JobOfferOwner ow on ow.jobOffer = o
+      where (o is not null and ow.user.id = :ownerId)
+         or (o is null and a.offerOwnerIdSnapshot = :ownerId)
       order by a.createdAt desc
     """)
-    List<JobApplication> findForOwnedOffers(String ownerId);
+    List<JobApplication> findForOwnedOffers(@Param("ownerId") String ownerId);
 
     @Query("""
       select a from JobApplication a
-      join a.offer o
-      join com.milosz.podsiadly.backend.job.domain.JobOfferOwner ow on ow.jobOffer = o
-      where a.id = ?1 and (a.applicant.id = ?2 or ow.user.id = ?2)
+      left join a.offer o
+      left join com.milosz.podsiadly.backend.job.domain.JobOfferOwner ow on ow.jobOffer = o
+      where a.id = :appId
+        and (
+             a.applicant.id = :userId
+             or (o is not null and ow.user.id = :userId)
+             or (o is null and a.offerOwnerIdSnapshot = :userId)
+        )
     """)
-    Optional<JobApplication> findAccessible(Long appId, String userId);
+    Optional<JobApplication> findAccessible(@Param("appId") Long appId, @Param("userId") String userId);
 }
