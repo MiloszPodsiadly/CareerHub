@@ -31,6 +31,14 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
@@ -40,10 +48,7 @@ public class User implements UserDetails {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
-    @Override
-    public String getUsername() {
-        return email;
-    }
+    @Override public String getUsername() { return email; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -55,5 +60,5 @@ public class User implements UserDetails {
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
+    @Override public boolean isEnabled() { return enabled && emailVerified; }
 }
