@@ -13,9 +13,10 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,9 +36,12 @@ public class TokenController {
     private final JwtProperties props;
     private final ProfileRepository profiles;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
     public record LoginReq(String email, String password) {}
     public record TokenRes(String accessToken) {}
+
+    public record VerifyEmailRequest(String token) {}
 
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
@@ -50,20 +54,20 @@ public class TokenController {
         passwordResetService.resetPassword(req);
         return ResponseEntity.noContent().build();
     }
+
     @PostMapping("/register")
-    public ResponseEntity<TokenRes> register(@Valid @RequestBody RegisterUserDto dto, HttpServletResponse resp) {
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterUserDto dto) {
         UserDto created = userService.register(dto);
         User u = usersByUsername.loadUserByUsername(created.email());
 
-        String access  = jwt.issueAccess(
-                u.getId(),
-                u.getUsername(),
-                u.getRoles().stream().map(Role::getName).toList()
-        );
-        String refresh = jwt.issueRefresh(u.getId());
+        emailVerificationService.sendVerificationLink(u);
+        return ResponseEntity.noContent().build();
+    }
 
-        resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(refresh).toString());
-        return ResponseEntity.ok(new TokenRes(access));
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@RequestBody VerifyEmailRequest req) {
+        emailVerificationService.verify(req.token());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
@@ -71,7 +75,12 @@ public class TokenController {
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.email(), req.password())
         );
+
         User u = usersByUsername.loadUserByUsername(req.email());
+
+        if (!u.isEmailVerified()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
+        }
 
         String access  = jwt.issueAccess(
                 u.getId(),
@@ -91,6 +100,11 @@ public class TokenController {
 
         var userId = claims.getSubject();
         User u = users.findById(userId).orElseThrow();
+
+        if (!u.isEmailVerified()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
+        }
+
         String access = jwt.issueAccess(u.getId(), u.getUsername(), u.getRoles().stream().map(Role::getName).toList());
         return ResponseEntity.ok(new TokenRes(access));
     }
@@ -131,6 +145,15 @@ public class TokenController {
                 .maxAge(Duration.ofDays(props.getRefreshDays()))
                 .build();
     }
+
+    public record ResendVerifyReq(String email) {}
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerifyReq req) {
+        emailVerificationService.resend(req.email(), users);
+        return ResponseEntity.ok().build();
+    }
+
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<?> onAuthFailure(AuthenticationException ex) {

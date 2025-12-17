@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: careerhub-config
+  namespace: careerhub
+data:
+  SPRING_PROFILES_ACTIVE: "k8s"
+
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka"
+
+  APP_BASE_URL: "https://careerhub.com"
+  FRONTEND_URL: "https://careerhub.com"
+
+  MAIL_HOST: "smtp.gmail.com"
+  MAIL_PORT: "587"
+  MAIL_USER: "m.podsiadly99@gmail.com"

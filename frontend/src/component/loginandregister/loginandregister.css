@@ -125,6 +125,24 @@
     text-decoration:underline;
 }
 
+.resend-wrap{
+    margin-top: 6px;
+    text-align:center;
+}
+
+.resend-link{
+    font-size:14px;
+    text-decoration:none;
+    color:#5b7fff;
+    opacity:.85;
+    font-weight:600;
+}
+
+.resend-link:hover{
+    opacity:1;
+    text-decoration:underline;
+}
+
 
 @media (max-width: 420px){
     .auth-wrap .js-alert{ width:100%; }

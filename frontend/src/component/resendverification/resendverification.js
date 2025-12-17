@@ -1,7 +1,6 @@
 import { authApi } from '../../shared/api.js';
-import { navigate } from '../../router.js';
 
-export function initResetPassword() {
+export function initResendVerification() {
     const mount = document.getElementById('view-root');
     if (!mount) return;
 
@@ -10,53 +9,37 @@ export function initResetPassword() {
 
     ensureAuthWrapper(box);
 
-    const params  = new URLSearchParams(location.search);
-    const token   = params.get('token');
-    const form    = box.querySelector('.js-form');
-    const alertBox  = box.querySelector('.js-alert');
+    const form = box.querySelector('.js-form');
+    const alertBox = box.querySelector('.js-alert');
     const submitBtn = box.querySelector('.js-submit');
 
-    if (!token) {
-        alert('Missing reset token.');
-        navigate('/auth/login');
-        return;
-    }
-
-    box.querySelector('input[name="password"]')?.focus();
+    box.querySelector('input[name="email"]')?.focus();
 
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         hideAlert();
-        submitBtn.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
 
         const fd = new FormData(form);
-        const password = (fd.get('password') || '').toString();
-        const confirmPassword = (fd.get('confirmPassword') || '').toString();
+        const email = (fd.get('email') || '').toString().trim();
 
         try {
-            if (!password || !confirmPassword) {
-                showError('Please enter the new password twice.');
+            if (!email) {
+                showError('Please enter your e-mail.');
+                return;
+            }
+            if (!isValidEmail(email)) {
+                showError('Please enter a valid e-mail address.');
                 return;
             }
 
-            if (password.trim().length < 8) {
-                showError('Password must be at least 8 characters.');
-                return;
-            }
+            await authApi.resendVerification(email);
 
-            if (password !== confirmPassword) {
-                showError('Passwords do not match.');
-                return;
-            }
-
-            await authApi.resetPassword(token, password.trim());
-
-            showSuccess('Password changed. You can now sign in.');
-            setTimeout(() => navigate('/auth/login'), 800);
+            showSuccess('If this e-mail exists and is not verified, a new link has been sent.');
         } catch (err) {
-            showError(err?.message || 'Invalid or expired reset link.');
+            showError(err?.message || 'Something went wrong.');
         } finally {
-            submitBtn.disabled = false;
+            if (submitBtn) submitBtn.disabled = false;
         }
     });
 
@@ -79,6 +62,10 @@ export function initResetPassword() {
         alertBox.style.display = 'none';
         alertBox.textContent = '';
     }
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function ensureAuthWrapper(box) {
