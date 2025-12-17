@@ -14,7 +14,7 @@ public class EventIngestScheduler {
 
     private final EventIngestService svc;
 
-    @Scheduled(initialDelayString = "PT3M", fixedDelayString = "PT1000000D")
+    @Scheduled(initialDelayString = "PT3M", fixedDelay = 86_400_000_000L)
     public void runOnceAfterStartup() {
         log.info("[events.ingest] startup run");
         svc.runAll();
