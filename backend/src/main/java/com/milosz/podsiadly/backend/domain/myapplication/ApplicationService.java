@@ -30,7 +30,9 @@ public class ApplicationService {
     @Transactional
     public ApplicationDetailDto apply(User user, ApplicationCreateRequest req) {
         var offer = offers.findById(req.offerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Offer not found: " + req.offerId()));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Offer not found: " + req.offerId()
+                ));
 
         if (apps.existsByApplicant_IdAndOffer_Id(user.getId(), offer.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "You have already applied to this offer.");
@@ -38,13 +40,14 @@ public class ApplicationService {
 
         var profile = profiles.findByUserId(user.getId()).orElse(null);
         String profileCvId = profile != null ? profile.getCvFileId() : null;
-        String snapshotCvId = null;
 
+        String snapshotCvId = null;
         if (profileCvId != null && !profileCvId.isBlank()) {
             try {
                 var src = files.getForOwner(profileCvId, user.getId());
                 String fname = "cv-application-offer-" + offer.getId() + "-" +
                         (src.getFilename() != null ? src.getFilename() : "cv.pdf");
+
                 snapshotCvId = files.saveRaw(
                         user.getId(),
                         fname,
@@ -56,13 +59,29 @@ public class ApplicationService {
             }
         }
 
+        String offerTitleSnap = offer.getTitle();
+        String offerCompanySnap = offer.getCompany() != null ? offer.getCompany().getName() : null;
+        String offerCitySnap = offer.getCity() != null ? offer.getCity().getName() : null;
+
+        String applyUrl = offer.getApplyUrl() != null ? offer.getApplyUrl() : offer.getUrl();
+
+        String ownerIdSnap = owners.findByJobOffer_Id(offer.getId())
+                .map(JobOfferOwner::getUser)
+                .map(User::getId)
+                .orElse(null);
+
         var app = JobApplication.builder()
                 .offer(offer)
                 .applicant(user)
                 .cvFileId(snapshotCvId)
-                .applyUrl(offer.getApplyUrl() != null ? offer.getApplyUrl() : offer.getUrl())
+                .applyUrl(applyUrl)
                 .note(req.note())
                 .status(ApplicationStatus.APPLIED)
+                .offerTitleSnapshot(offerTitleSnap)
+                .offerCompanySnapshot(offerCompanySnap)
+                .offerCitySnapshot(offerCitySnap)
+                .offerApplyUrlSnapshot(applyUrl)
+                .offerOwnerIdSnapshot(ownerIdSnap)
                 .build();
 
         try {
@@ -83,13 +102,17 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDto> mine(String userId) {
         return apps.findByApplicant_IdOrderByCreatedAtDesc(userId)
-                .stream().map(this::toListDto).toList();
+                .stream()
+                .map(this::toListDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ApplicationDto> forOwned(String ownerId) {
         return apps.findForOwnedOffers(ownerId)
-                .stream().map(this::toListDto).toList();
+                .stream()
+                .map(this::toListDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -107,14 +130,24 @@ public class ApplicationService {
         return toDetailDto(a);
     }
 
-
     private ApplicationDto toListDto(JobApplication a) {
         var o = a.getOffer();
 
-        Long   offerId    = (o != null) ? o.getId() : null;
-        String title      = (o != null && o.getTitle() != null) ? o.getTitle() : "(Offer removed)";
-        String company    = (o != null && o.getCompany() != null) ? o.getCompany().getName() : null;
-        String city       = (o != null && o.getCity() != null) ? o.getCity().getName() : null;
+        Long offerId = (o != null) ? o.getId() : null;
+
+        String title = (o != null && o.getTitle() != null)
+                ? o.getTitle()
+                : (a.getOfferTitleSnapshot() != null ? a.getOfferTitleSnapshot() : "(Offer removed)");
+
+        String company = (o != null && o.getCompany() != null)
+                ? o.getCompany().getName()
+                : a.getOfferCompanySnapshot();
+
+        String city = (o != null && o.getCity() != null)
+                ? o.getCity().getName()
+                : a.getOfferCitySnapshot();
+
+        String cvUrl = a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null;
 
         return new ApplicationDto(
                 a.getId(),
@@ -123,7 +156,7 @@ public class ApplicationService {
                 company,
                 city,
                 a.getStatus() != null ? a.getStatus().name() : null,
-                a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null,
+                cvUrl,
                 a.getCreatedAt()
         );
     }
@@ -131,8 +164,11 @@ public class ApplicationService {
     private ApplicationDetailDto toDetailDto(JobApplication a) {
         var o = a.getOffer();
 
-        Long   offerId   = (o != null) ? o.getId() : null;
-        String title     = (o != null && o.getTitle() != null) ? o.getTitle() : "(Offer removed)";
+        Long offerId = (o != null) ? o.getId() : null;
+
+        String title = (o != null && o.getTitle() != null)
+                ? o.getTitle()
+                : (a.getOfferTitleSnapshot() != null ? a.getOfferTitleSnapshot() : "(Offer removed)");
 
         String ownerName = (o != null)
                 ? owners.findByJobOffer_Id(o.getId())
@@ -145,6 +181,12 @@ public class ApplicationService {
         var applicantProfile = profiles.findByUserId(applicant.getId()).orElse(null);
         String applicantEmail = applicantProfile != null ? applicantProfile.getEmail() : null;
 
+        String applyUrl = (a.getApplyUrl() != null && !a.getApplyUrl().isBlank())
+                ? a.getApplyUrl()
+                : a.getOfferApplyUrlSnapshot();
+
+        String cvUrl = a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null;
+
         return new ApplicationDetailDto(
                 a.getId(),
                 offerId,
@@ -154,8 +196,8 @@ public class ApplicationService {
                 applicantEmail,
                 a.getNote(),
                 a.getStatus() != null ? a.getStatus().name() : null,
-                a.getApplyUrl(),
-                a.getCvFileId() != null ? ("/api/applications/" + a.getId() + "/cv") : null,
+                applyUrl,
+                cvUrl,
                 a.getCreatedAt()
         );
     }
