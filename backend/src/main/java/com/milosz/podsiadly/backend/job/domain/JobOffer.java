@@ -26,7 +26,8 @@ public class JobOffer {
     @Column(nullable = false, length = 32)
     private JobSource source;
 
-    @Column(name="external_id", nullable = false) private String externalId;
+    @Column(name="external_id", nullable = false)
+    private String externalId;
 
     @Column(nullable = false, columnDefinition = "text")
     private String url;
@@ -34,20 +35,29 @@ public class JobOffer {
     @Column(name = "apply_url", columnDefinition = "text")
     private String applyUrl;
 
-    @Column(nullable = false) private String title;
-    @Column(columnDefinition = "text") private String description;
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "text")
+    private String description;
 
     @JsonIgnore
     @OneToOne(mappedBy = "jobOffer", fetch = FetchType.LAZY)
     private JobOfferOwner owner;
 
-    @ManyToOne(fetch = FetchType.LAZY) private Company company;
-    @ManyToOne(fetch = FetchType.LAZY) private City city;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Company company;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private City city;
 
     private Boolean remote;
 
-    @Enumerated(EnumType.STRING) private JobLevel level;
-    @Enumerated(EnumType.STRING) private ContractType contract;
+    @Enumerated(EnumType.STRING)
+    private JobLevel level;
+
+    @Enumerated(EnumType.STRING)
+    private ContractType contract;
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
@@ -75,25 +85,46 @@ public class JobOffer {
     private Boolean active;
 
     public void setTechTags(List<String> tags) {
-        this.techTags = (tags != null)
-                ? new ArrayList<>(tags)
-                : new ArrayList<>();
-    }
-
-    public void setTechStack(List<JobOfferSkill> stack) {
-        this.techStack.clear();
-
-        if (stack != null) {
-            for (JobOfferSkill s : stack) {
-                s.setJobOffer(this);
-                this.techStack.add(s);
-            }
-        }
+        // this one is OK to replace (ElementCollection), but we can still be consistent
+        this.techTags = (tags != null) ? new ArrayList<>(tags) : new ArrayList<>();
     }
 
     public void setContracts(Set<ContractType> set) {
-        this.contracts = (set != null)
-                ? new HashSet<>(set)
-                : new HashSet<>();
+        this.contracts = (set != null) ? new HashSet<>(set) : new HashSet<>();
+    }
+
+    /**
+     * OrphanRemoval-safe replace: do NOT replace the list reference.
+     */
+    public void replaceTechStack(List<JobOfferSkill> stack) {
+        if (this.techStack == null) this.techStack = new ArrayList<>();
+
+        this.techStack.clear();
+
+        if (stack == null || stack.isEmpty()) return;
+
+        for (JobOfferSkill s : stack) {
+            if (s == null) continue;
+            s.setJobOffer(this);
+            this.techStack.add(s);
+        }
+    }
+
+    /**
+     * Used by mapper safe-guard.
+     */
+    public void setTechStackIfNull() {
+        if (this.techStack == null) this.techStack = new ArrayList<>();
+    }
+
+    /**
+     * IMPORTANT:
+     * Remove/avoid the old setter that replaced reference:
+     * public void setTechStack(List<JobOfferSkill> stack) { this.techStack = fresh; }
+     *
+     * If you *must* keep a setter (for Lombok / frameworks), make it call replaceTechStack.
+     */
+    public void setTechStack(List<JobOfferSkill> stack) {
+        replaceTechStack(stack);
     }
 }
