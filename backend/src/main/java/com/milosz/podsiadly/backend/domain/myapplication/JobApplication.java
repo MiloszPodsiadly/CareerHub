@@ -15,7 +15,8 @@ import java.time.Instant;
         ),
         indexes = {
                 @Index(name="ix_application_applicant_created", columnList="applicant_id, created_at DESC"),
-                @Index(name="ix_application_offer_created",     columnList="offer_id, created_at DESC")
+                @Index(name="ix_application_offer_created",     columnList="offer_id, created_at DESC"),
+                @Index(name="ix_application_owner_snapshot_created", columnList="offer_owner_id_snapshot, created_at DESC")
         })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class JobApplication {
@@ -39,6 +40,21 @@ public class JobApplication {
 
     @Column(name = "apply_url")
     private String applyUrl;
+
+    @Column(name = "offer_title_snapshot")
+    private String offerTitleSnapshot;
+
+    @Column(name = "offer_company_snapshot")
+    private String offerCompanySnapshot;
+
+    @Column(name = "offer_city_snapshot")
+    private String offerCitySnapshot;
+
+    @Column(name = "offer_apply_url_snapshot", columnDefinition = "text")
+    private String offerApplyUrlSnapshot;
+
+    @Column(name = "offer_owner_id_snapshot")
+    private String offerOwnerIdSnapshot;
 
     @Enumerated(EnumType.STRING)
     private ApplicationStatus status;
