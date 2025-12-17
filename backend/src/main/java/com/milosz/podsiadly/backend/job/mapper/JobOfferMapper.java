@@ -3,9 +3,7 @@ package com.milosz.podsiadly.backend.job.mapper;
 import com.milosz.podsiadly.backend.job.domain.*;
 import com.milosz.podsiadly.backend.job.dto.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public final class JobOfferMapper {
 
@@ -56,7 +54,7 @@ public final class JobOfferMapper {
 
     private static List<String> toNames(Set<ContractType> set) {
         if (set == null || set.isEmpty()) return List.of();
-        return set.stream().map(Enum::name).sorted().toList();
+        return set.stream().filter(Objects::nonNull).map(Enum::name).sorted().toList();
     }
 
     private static List<String> safeTags(List<String> tags) {
@@ -79,19 +77,27 @@ public final class JobOfferMapper {
     }
 
     public static void applySkills(JobOffer target, List<JobOfferSkillDto> dtos) {
-        if (dtos == null) {
-            target.setTechStack(new ArrayList<>());
-            return;
+        if (target.getTechStack() == null) {
+            target.setTechStackIfNull();
         }
-        List<JobOfferSkill> out = new ArrayList<>(dtos.size());
+
+        target.getTechStack().clear();
+
+        if (dtos == null || dtos.isEmpty()) return;
+
         for (JobOfferSkillDto d : dtos) {
-            out.add(JobOfferSkill.builder()
+            if (d == null) continue;
+
+            JobOfferSkill skill = JobOfferSkill.builder()
                     .name(d.name())
                     .levelLabel(d.levelLabel())
                     .levelValue(d.levelValue())
                     .source(d.source())
-                    .build());
+                    .build();
+
+            skill.setJobOffer(target);
+
+            target.getTechStack().add(skill);
         }
-        target.setTechStack(out);
     }
 }
