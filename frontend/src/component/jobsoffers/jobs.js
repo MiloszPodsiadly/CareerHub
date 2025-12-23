@@ -216,6 +216,15 @@ export function initJobs(opts = {}) {
     };
     const mapContract = (v) => CONTRACT_MAP[String(v ?? '').trim()] ?? '';
 
+    const SORT_MAP = {
+        date: 'date',
+        newest: 'date',
+        salary: 'salary',
+        relevance: 'date',
+        '': 'date',
+    };
+    const normalizeSort = (v) => SORT_MAP[String(v ?? '').toLowerCase()] ?? 'date';
+
     const state = {
         page: 1,
         size: PAGE_SIZE,
@@ -231,7 +240,7 @@ export function initJobs(opts = {}) {
             contracts: [],
             withSalary: false,
             remote: false,
-            sort: 'relevance',
+            sort: 'date',
             group: 'city',
             specs: [],
             techs: [],
@@ -261,6 +270,66 @@ export function initJobs(opts = {}) {
 
     let lastCtrl = null;
 
+    (function hydrateFromUrl() {
+        const params = new URLSearchParams(location.search);
+
+        const page = parseInt(params.get('page') || '1', 10);
+        if (Number.isFinite(page) && page > 0) state.page = page;
+
+        const q = params.get('q');
+        if (q) state.filters.q = q;
+
+        const city = params.get('city');
+        if (city) state.filters.city = city;
+
+        const seniority = params.get('seniority');
+        if (seniority) state.filters.seniority = seniority;
+
+        const contract = params.get('contract');
+        if (contract) state.filters.contract = contract;
+
+        const sort = params.get('sort');
+        if (sort) state.filters.sort = normalizeSort(sort);
+
+        const withSalary = params.get('withSalary');
+        if (withSalary === 'true') state.filters.withSalary = true;
+
+        const remote = params.get('remote');
+        if (remote === 'true') state.filters.remote = true;
+
+        const specs = params.getAll('spec');
+        if (specs?.length) state.filters.specs = specs;
+
+        const techs = params.getAll('tech');
+        if (techs?.length) state.filters.techs = techs;
+
+        const contracts = params.getAll('contracts');
+        if (contracts?.length) state.filters.contracts = contracts;
+
+        if ($q) $q.value = state.filters.q;
+        if ($city) $city.value = state.filters.city;
+        if ($seniority) $seniority.value = state.filters.seniority || '';
+        if ($contract) $contract.value = state.filters.contract || '';
+        if ($sort) $sort.value = state.filters.sort || 'date';
+
+        if ($withSalary) $withSalary.setAttribute('aria-pressed', String(!!state.filters.withSalary));
+        if ($remote) $remote.setAttribute('aria-pressed', String(!!state.filters.remote));
+        if ($group) {
+            $group.textContent = 'Group by: ' + (state.filters.group === 'company' ? 'company' : 'city');
+            $group.setAttribute('aria-pressed', String(state.filters.group === 'company'));
+        }
+
+        if (state.filters.specs?.length) {
+            specChecks.forEach((x) => (x.checked = state.filters.specs.includes(x.value)));
+        }
+        if (state.filters.techs?.length) {
+            techChecks.forEach((x) => (x.checked = state.filters.techs.includes(x.value)));
+        }
+        if (state.filters.contracts?.length) {
+            contractChecks.forEach((x) => (x.checked = state.filters.contracts.includes(x.value)));
+        }
+    })();
+
     async function fetchJobs(page) {
         if (lastCtrl) lastCtrl.abort();
         lastCtrl = new AbortController();
@@ -284,7 +353,8 @@ export function initJobs(opts = {}) {
         if (state.filters.withSalary) p.append('withSalary', 'true');
         if (state.filters.remote) p.append('remote', 'true');
 
-        p.append('sort', state.filters.sort);
+        p.append('sort', normalizeSort(state.filters.sort));
+
         state.filters.specs.forEach((v) => p.append('spec', v));
         state.filters.techs.forEach((v) => p.append('tech', v));
 
@@ -461,7 +531,10 @@ export function initJobs(opts = {}) {
       </div>
       <div class="badges">
         ${contractsBadges}${levelBadge}${remoteBadge}
-        ${(job.keywords || []).slice(0, 6).map((k) => `<span class="badge">${escapeHtml(k)}</span>`).join('')}
+        ${(job.keywords || [])
+            .slice(0, 6)
+            .map((k) => `<span class="badge">${escapeHtml(k)}</span>`)
+            .join('')}
       </div>
       <div class="actions">
         <div class="money">${formatSalary(job.salary)}</div>
@@ -595,6 +668,10 @@ export function initJobs(opts = {}) {
             params.set('page', state.page);
             for (const [k, v] of Object.entries(state.filters)) {
                 if (!v || (Array.isArray(v) && !v.length)) continue;
+                if (k === 'sort') {
+                    params.set('sort', normalizeSort(v));
+                    continue;
+                }
                 if (Array.isArray(v)) v.forEach((x) => params.append(k, x));
                 else params.set(k, v);
             }
@@ -686,8 +763,9 @@ export function initJobs(opts = {}) {
             gotoPage(1);
         }),
     );
+
     $sort?.addEventListener('change', (e) => {
-        state.filters.sort = e.target.value;
+        state.filters.sort = normalizeSort(e.target.value);
         gotoPage(1);
     });
 
@@ -726,21 +804,27 @@ export function initJobs(opts = {}) {
             contracts: [],
             withSalary: false,
             remote: false,
-            sort: 'relevance',
+            sort: 'date',
             group: 'city',
             specs: [],
             techs: [],
         });
-        [$q, $city, $seniority, $contract, $sort].forEach((el) => {
+
+        [$q, $city, $seniority, $contract].forEach((el) => {
             if (el) el.value = '';
         });
+        if ($sort) $sort.value = 'date';
+
         contractChecks.forEach((x) => (x.checked = false));
-        $withSalary?.setAttribute('aria-pressed', 'false');
-        $remote?.setAttribute('aria-pressed', 'false');
-        $group && ($group.textContent = 'Group by: city');
-        $group?.setAttribute('aria-pressed', 'false');
         specChecks.forEach((x) => (x.checked = false));
         techChecks.forEach((x) => (x.checked = false));
+
+        $withSalary?.setAttribute('aria-pressed', 'false');
+        $remote?.setAttribute('aria-pressed', 'false');
+
+        $group && ($group.textContent = 'Group by: city');
+        $group?.setAttribute('aria-pressed', 'false');
+
         gotoPage(1);
     });
 
@@ -761,7 +845,7 @@ export function initJobs(opts = {}) {
     });
 
     requestAnimationFrame(() => window.scrollTo(0, 0));
-    gotoPage(1, { scroll: false });
+    gotoPage(state.page, { scroll: false }); // ✅ start from hydrated page
 
     function byId(id) {
         return document.getElementById(id);
