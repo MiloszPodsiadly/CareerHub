@@ -84,4 +84,31 @@ public final class JobOfferSpecifications {
         if (with == null || !with) return null;
         return (r, q, cb) -> cb.or(cb.isNotNull(r.get("salaryMin")), cb.isNotNull(r.get("salaryMax")));
     }
+    public static Specification<JobOffer> orderByHighestSalaryNullsLast() {
+        return (root, query, cb) -> {
+            if (query.getResultType() == Long.class || query.getResultType() == long.class) {
+                return cb.conjunction();
+            }
+
+            var noSalaryLast = cb.<Integer>selectCase()
+                    .when(
+                            cb.and(
+                                    cb.isNull(root.get("salaryMin")),
+                                    cb.isNull(root.get("salaryMax"))
+                            ),
+                            1
+                    )
+                    .otherwise(0);
+
+            query.orderBy(
+                    cb.asc(noSalaryLast),
+                    cb.desc(cb.coalesce(root.get("salaryMax"), root.get("salaryMin"))),
+                    cb.desc(root.get("salaryMin")),
+                    cb.desc(root.get("publishedAt")),
+                    cb.desc(root.get("id"))
+            );
+
+            return cb.conjunction();
+        };
+    }
 }
