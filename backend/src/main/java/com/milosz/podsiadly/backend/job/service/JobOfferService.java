@@ -36,7 +36,7 @@ public class JobOfferService {
             e("others",    List.of())
     );
 
-    private static Map.Entry<String,List<String>> e(String k, List<String> v) {
+    private static Map.Entry<String, List<String>> e(String k, List<String> v) {
         return new AbstractMap.SimpleEntry<>(k.toLowerCase(Locale.ROOT), v);
     }
 
@@ -56,7 +56,8 @@ public class JobOfferService {
             List<String> spec, List<String> tech,
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
             Set<ContractType> contracts, Boolean withSalary,
-            Pageable pageable
+            Pageable pageable,
+            String sortKey
     ) {
         List<String> allTech = Stream.concat(
                 tech == null ? Stream.empty() : tech.stream(),
@@ -76,15 +77,23 @@ public class JobOfferService {
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
-        Page<JobOffer> page = repo.findAll(sp, pageable);
+        Pageable effectivePageable = pageable;
+        if ("salary".equalsIgnoreCase(sortKey)) {
+            sp = sp.and(JobOfferSpecifications.orderByHighestSalaryNullsLast());
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        }
 
-        List<JobOfferListDto> rawDtos = page.getContent().stream()
+        Page<JobOffer> page = repo.findAll(sp, effectivePageable);
+
+        List<JobOffer> hydratedInOrder = hydrateInSameOrder(page.getContent());
+
+        List<JobOfferListDto> rawDtos = hydratedInOrder.stream()
                 .map(JobOfferMapper::toListDto)
                 .toList();
 
-        List<JobOfferListDto> deduped = dedupeForListing(rawDtos);
+        List<JobOfferListDto> deduped = dedupeForListing(rawDtos, sortKey);
 
-        return new PageImpl<>(deduped, pageable, page.getTotalElements());
+        return new PageImpl<>(deduped, effectivePageable, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +102,8 @@ public class JobOfferService {
             List<String> spec, List<String> tech,
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
             Set<ContractType> contracts, Boolean withSalary,
-            Sort sort
+            Sort sort,
+            String sortKey
     ) {
         List<String> allTech = Stream.concat(
                 tech == null ? Stream.empty() : tech.stream(),
@@ -113,11 +123,21 @@ public class JobOfferService {
                 JobOfferSpecifications.withSalary(withSalary)
         );
 
-        List<JobOfferListDto> raw = repo.findAll(sp, sort).stream()
+        List<JobOffer> base;
+        if ("salary".equalsIgnoreCase(sortKey)) {
+            sp = sp.and(JobOfferSpecifications.orderByHighestSalaryNullsLast());
+            base = repo.findAll(sp);
+        } else {
+            base = repo.findAll(sp, sort);
+        }
+
+        List<JobOffer> hydratedInOrder = hydrateInSameOrder(base);
+
+        List<JobOfferListDto> rawDtos = hydratedInOrder.stream()
                 .map(JobOfferMapper::toListDto)
                 .toList();
 
-        return dedupeForListing(raw);
+        return dedupeForListing(rawDtos, sortKey);
     }
 
     @Transactional(readOnly = true)
@@ -151,12 +171,49 @@ public class JobOfferService {
                 .toList();
     }
 
-    private List<JobOfferListDto> dedupeForListing(List<JobOfferListDto> input) {
+    private List<JobOffer> hydrateInSameOrder(List<JobOffer> base) {
+        if (base == null || base.isEmpty()) return List.of();
+
+        List<Long> ids = base.stream()
+                .map(JobOffer::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (ids.isEmpty()) return List.of();
+
+        List<JobOffer> hydrated = repo.findAllHydratedByIdIn(ids);
+
+        Map<Long, Integer> pos = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) pos.put(ids.get(i), i);
+
+        hydrated.sort(Comparator.comparingInt(o -> pos.getOrDefault(o.getId(), Integer.MAX_VALUE)));
+
+        return hydrated;
+    }
+
+    private List<JobOfferListDto> dedupeForListing(List<JobOfferListDto> input, String sortKey) {
+        if (input == null || input.isEmpty()) return List.of();
+
+        boolean salarySort = "salary".equalsIgnoreCase(sortKey);
+
         Map<String, JobOfferListDto> byKey = new LinkedHashMap<>();
         for (JobOfferListDto dto : input) {
             String key = dedupeKey(dto);
-            byKey.putIfAbsent(key, dto);
+
+            if (salarySort) {
+                byKey.putIfAbsent(key, dto);
+                continue;
+            }
+
+            byKey.merge(key, dto, (a, b) -> {
+                int aMax = a.salaryMax() != null ? a.salaryMax()
+                        : (a.salaryMin() != null ? a.salaryMin() : -1);
+                int bMax = b.salaryMax() != null ? b.salaryMax()
+                        : (b.salaryMin() != null ? b.salaryMin() : -1);
+                return (bMax > aMax) ? b : a;
+            });
         }
+
         return new ArrayList<>(byKey.values());
     }
 
