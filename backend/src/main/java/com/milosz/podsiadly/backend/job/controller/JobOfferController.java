@@ -56,10 +56,11 @@ public class JobOfferController {
         int effSize = (pageSize != null && pageSize > 0) ? pageSize : size;
 
         Sort s = switch (sort.toLowerCase()) {
-            case "salary" -> Sort.by(Sort.Direction.DESC, "salaryMax")
-                    .and(Sort.by("salaryMin").descending());
-            case "date" -> Sort.by(Sort.Direction.DESC, "publishedAt");
-            default -> Sort.by(Sort.Direction.DESC, "publishedAt");
+            case "salary" -> Sort.unsorted();
+            case "date" -> Sort.by(Sort.Direction.DESC, "publishedAt")
+                    .and(Sort.by(Sort.Direction.DESC, "id"));
+            default -> Sort.by(Sort.Direction.DESC, "publishedAt")
+                    .and(Sort.by(Sort.Direction.DESC, "id"));
         };
 
         Pageable pageable = PageRequest.of(idx, effSize, s);
@@ -69,7 +70,8 @@ public class JobOfferController {
                 spec, tech,
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
-                withSalary, pageable
+                withSalary, pageable,
+                sort
         );
     }
 
@@ -92,16 +94,19 @@ public class JobOfferController {
         JobLevel effectiveLevel = (level != null) ? level : seniorityAlias;
 
         Sort s = "salary".equalsIgnoreCase(sort)
-                ? Sort.by(Sort.Direction.DESC, "salaryMax").and(Sort.by("salaryMin").descending())
-                : Sort.by(Sort.Direction.DESC, "publishedAt");
+                ? Sort.unsorted()
+                : Sort.by(Sort.Direction.DESC, "publishedAt")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
 
         return service.searchAll(
                 q, city, remote, effectiveLevel,
                 spec, tech,
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
-                withSalary, s
+                withSalary, s,
+                sort
         );
+
     }
 
     @GetMapping("/by-external/{externalId}")
