@@ -24,10 +24,34 @@ public interface JobOfferRepository
     @EntityGraph(attributePaths = {"company", "city"})
     Page<JobOffer> findAll(Specification<JobOffer> spec, Pageable pageable);
 
+    @Query("""
+    select distinct o
+    from JobOffer o
+    left join fetch o.company
+    left join fetch o.city
+    left join fetch o.contracts
+    left join fetch o.techTags
+    where o.id in :ids
+    """)
+    List<JobOffer> findAllHydratedByIdIn(@Param("ids") List<Long> ids);
+
+
+
     @EntityGraph(attributePaths = {"company", "city", "techTags"})
     Optional<JobOffer> findById(Long id);
 
     List<JobOffer> findAllByActiveFalseAndLastSeenAtBefore(Instant olderThan);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+    update JobOffer o
+       set o.active = false
+     where o.source = :source
+       and o.active = true
+       and o.lastSeenAt < :cutoff
+    """)
+    int deactivateStale(@Param("source") JobSource source,
+                        @Param("cutoff") Instant cutoff);
 
     @Query("""
       select j
@@ -54,3 +78,4 @@ public interface JobOfferRepository
     List<JobOffer> findOwnedByUserIdAndSource(@Param("userId") String userId,
                                               @Param("source") JobSource source);
 }
+
