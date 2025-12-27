@@ -10,6 +10,6 @@ export function mountLanding() {
         jobsApi: '/api/jobs',
         eventsApi: '/api/events',
         locale: navigator.language || 'pl-PL',
-        citySample: 500,
+        citySample: 100,
     });
 }
