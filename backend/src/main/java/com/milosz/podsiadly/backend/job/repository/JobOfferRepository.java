@@ -35,6 +35,7 @@ public interface JobOfferRepository
     """)
     List<JobOffer> findAllHydratedByIdIn(@Param("ids") List<Long> ids);
 
+    Optional<JobOffer> findFirstBySourceAndUrl(JobSource source, String url);
 
 
     @EntityGraph(attributePaths = {"company", "city", "techTags"})
