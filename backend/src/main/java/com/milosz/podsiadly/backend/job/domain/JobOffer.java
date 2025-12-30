@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+
 import java.time.Instant;
 import java.util.*;
 
@@ -70,10 +71,20 @@ public class JobOffer {
     private Integer salaryMax;
     private String currency;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "salary_period", length = 16)
+    private SalaryPeriod salaryPeriod;
+
+    @Column(name = "salary_norm_month_min")
+    private Integer salaryNormMonthMin;
+
+    @Column(name = "salary_norm_month_max")
+    private Integer salaryNormMonthMax;
+
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "job_offer_tags", joinColumns = @JoinColumn(name = "job_offer_id"))
-    @Column(name = "tag", length = 64)
+    @Column(name = "tag", length = 128)
     private List<String> techTags = new ArrayList<>();
 
     @Builder.Default
