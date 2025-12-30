@@ -2,6 +2,7 @@ package com.milosz.podsiadly.backend.ingest.dto;
 
 import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
+import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
 import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public record NofluffJobDto(
         Integer salaryMin,
         Integer salaryMax,
         String currency,
+        SalaryPeriod salaryPeriod,
         String detailsUrl,
         String applyUrl,
         List<String> techTags,

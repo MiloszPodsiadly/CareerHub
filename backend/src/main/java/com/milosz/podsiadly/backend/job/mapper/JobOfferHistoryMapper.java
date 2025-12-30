@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.milosz.podsiadly.backend.job.domain.ArchiveReason;
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.domain.JobOfferHistory;
+import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferHistoryDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
@@ -95,20 +96,26 @@ public class JobOfferHistoryMapper {
                 o.getLevel() != null ? o.getLevel().name() : null,
                 o.getContract() != null ? o.getContract().name() : null,
                 contracts,
-                o.getSalaryMin(),
-                o.getSalaryMax(),
+                coalesce(o.getSalaryNormMonthMin(), o.getSalaryMin()),
+                coalesce(o.getSalaryNormMonthMax(), o.getSalaryMax()),
                 o.getCurrency(),
+                SalaryPeriod.MONTH.name(),
                 o.getTechTags(),
                 skills,
                 o.getPublishedAt(),
                 o.getActive()
         );
 
+
         try {
             return om.writeValueAsString(detail);
         } catch (JsonProcessingException e) {
             return "{\"id\":" + o.getId() + ",\"title\":\"" + escape(o.getTitle()) + "\"}";
         }
+    }
+
+    private static Integer coalesce(Integer a, Integer b) {
+        return a != null ? a : b;
     }
 
     private static String escape(String s) {

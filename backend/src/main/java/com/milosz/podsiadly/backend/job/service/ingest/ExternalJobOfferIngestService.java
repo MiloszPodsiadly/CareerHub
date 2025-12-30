@@ -4,10 +4,12 @@ import com.milosz.podsiadly.backend.job.domain.City;
 import com.milosz.podsiadly.backend.job.domain.Company;
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.domain.JobSource;
+import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
 import com.milosz.podsiadly.backend.job.repository.CityRepository;
 import com.milosz.podsiadly.backend.job.repository.CompanyRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
+import com.milosz.podsiadly.backend.job.service.SalaryNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,17 +56,30 @@ public class ExternalJobOfferIngestService {
         offer.setSalaryMin(data.salaryMin());
         offer.setSalaryMax(data.salaryMax());
         offer.setCurrency(data.currency());
+        SalaryPeriod period = data.salaryPeriod() != null ? data.salaryPeriod() : SalaryPeriod.MONTH;
+        offer.setSalaryPeriod(period);
 
+        SalaryNormalizer.Normalized norm = SalaryNormalizer.normalizeToMonth(
+                data.salaryMin(), data.salaryMax(), period
+        );
+        offer.setSalaryNormMonthMin(norm.monthMin());
+        offer.setSalaryNormMonthMax(norm.monthMax());
         offer.setUrl(data.detailsUrl());
         offer.setApplyUrl(data.applyUrl() != null ? data.applyUrl() : data.detailsUrl());
-
         offer.setContracts(data.contracts());
         offer.setTechTags(data.techTags());
         JobOfferMapper.applySkills(offer, data.techStack());
-
         offer.setPublishedAt(data.publishedAt() != null ? data.publishedAt() : Instant.now());
-        offer.setActive(data.active() == null ? true : data.active());
-        offer.setLastSeenAt(Instant.now());
+
+        if (data.active() != null) {
+            offer.setActive(data.active());
+        } else if (offer.getId() == null) {
+            offer.setActive(true);
+        }
+
+        if (!Boolean.FALSE.equals(offer.getActive())) {
+            offer.setLastSeenAt(Instant.now());
+        }
 
         return offers.save(offer);
     }

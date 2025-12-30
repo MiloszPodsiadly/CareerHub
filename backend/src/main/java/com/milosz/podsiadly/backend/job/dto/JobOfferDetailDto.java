@@ -20,6 +20,7 @@ public record JobOfferDetailDto(
         Integer salaryMin,
         Integer salaryMax,
         String currency,
+        String salaryPeriod,
         List<String> techTags,
         List<JobOfferSkillDto> techStack,
         Instant publishedAt,

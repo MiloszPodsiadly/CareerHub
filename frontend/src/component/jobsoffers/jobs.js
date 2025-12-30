@@ -410,10 +410,12 @@ export function initJobs(opts = {}) {
     }
 
     function toSalary(x) {
-        const min = x?.salaryMin ?? x?.salary?.min ?? null;
-        const max = x?.salaryMax ?? x?.salary?.max ?? null;
+        const min = x?.salaryNormMonthMin ?? x?.salaryMin ?? x?.salary?.min ?? null;
+        const max = x?.salaryNormMonthMax ?? x?.salaryMax ?? x?.salary?.max ?? null;
         const currency = x?.currency ?? x?.salary?.currency ?? 'PLN';
-        const period = x?.salary?.period ?? 'MONTH';
+        const period = (x?.salaryNormMonthMin != null || x?.salaryNormMonthMax != null)
+            ? 'MONTH'
+            : (x?.salary?.period ?? x?.salaryPeriod ?? 'MONTH');
         if (min == null && max == null) return null;
         return { min, max, currency, period };
     }
