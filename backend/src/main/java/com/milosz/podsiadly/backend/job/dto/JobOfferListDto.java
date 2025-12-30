@@ -15,6 +15,7 @@ public record JobOfferListDto(
         Integer salaryMin,
         Integer salaryMax,
         String currency,
+        String salaryPeriod,
         List<String> techTags,
         Instant publishedAt
 ) {}
