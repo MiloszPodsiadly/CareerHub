@@ -22,6 +22,7 @@ public final class JobOfferMapper {
                 e.getSalaryMin(),
                 e.getSalaryMax(),
                 e.getCurrency(),
+                e.getSalaryPeriod() != null ? e.getSalaryPeriod().name() : null,
                 safeTags(e.getTechTags()),
                 e.getPublishedAt()
         );
@@ -45,12 +46,14 @@ public final class JobOfferMapper {
                 e.getSalaryMin(),
                 e.getSalaryMax(),
                 e.getCurrency(),
+                e.getSalaryPeriod() != null ? e.getSalaryPeriod().name() : null,
                 safeTags(e.getTechTags()),
                 toSkillDtos(e.getTechStack()),
                 e.getPublishedAt(),
                 e.getActive()
         );
     }
+
 
     private static List<String> toNames(Set<ContractType> set) {
         if (set == null || set.isEmpty()) return List.of();
