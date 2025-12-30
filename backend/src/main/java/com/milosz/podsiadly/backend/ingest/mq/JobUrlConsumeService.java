@@ -1,12 +1,10 @@
 package com.milosz.podsiadly.backend.ingest.mq;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.milosz.podsiadly.backend.ingest.parser.JustJoinParser;
-import com.milosz.podsiadly.backend.ingest.parser.NofluffParser;
-import com.milosz.podsiadly.backend.ingest.parser.SolidOfferMapper;
-import com.milosz.podsiadly.backend.ingest.parser.SolidParser;
+import com.milosz.podsiadly.backend.ingest.parser.*;
 import com.milosz.podsiadly.backend.ingest.service.NofluffJobsIngestService;
 import com.milosz.podsiadly.backend.ingest.service.OfferUpsertService;
+import com.milosz.podsiadly.backend.job.domain.JobOffer;
 import com.milosz.podsiadly.backend.job.domain.JobSource;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import com.milosz.podsiadly.backend.job.service.ingest.ExternalJobOfferIngestService;
@@ -24,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.time.Instant;
+import java.time.LocalDate;
+
 
 @Slf4j
 @Service
@@ -34,13 +34,14 @@ public class JobUrlConsumeService {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
 
-    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(0.5d);
+    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(2.0d);
 
     private final JustJoinParser justJoinParser;
     private final OfferUpsertService upsertService;
 
     private final NofluffParser nofluffParser;
     private final NofluffJobsIngestService nofluffIngest;
+    private final NfjHtmlParser nfjHtmlParser;
 
     private final SolidParser solidParser;
     private final ExternalJobOfferIngestService externalIngest;
@@ -150,6 +151,26 @@ public class JobUrlConsumeService {
 
     private void handleNofluff(String url, JobSource source) throws IOException {
         String externalId = lastPath(url);
+        String html = fetchNofluffHtml(url);
+
+        if (nfjHtmlParser.isExpired(html)) {
+            logGone("[ingest] NFJ expired by banner url={} -> mark inactive", url);
+            deactivateGoneOffer(source, url);
+            return;
+        }
+
+        LocalDate validTo = nfjHtmlParser.extractValidTo(html);
+
+        boolean active = true;
+        if (validTo != null) {
+            active = !validTo.isBefore(java.time.LocalDate.now());
+        }
+
+        if (!active) {
+            logGone("[ingest] NFJ expired by HTML validTo={} url={} -> mark inactive", validTo, url);
+            deactivateGoneOffer(source, url);
+            return;
+        }
 
         String json = fetchNofluffJson(externalId);
         var dto = nofluffParser.parseFromApiJson(externalId, json, url);
@@ -157,6 +178,7 @@ public class JobUrlConsumeService {
         nofluffIngest.importSingle(dto);
         logOk("[ingest] NFJ upsert OK: {}", url);
     }
+
 
     private String fetchNofluffJson(String externalId) throws IOException {
         String apiUrl = "https://nofluffjobs.com/api/posting/" + externalId
@@ -229,16 +251,51 @@ public class JobUrlConsumeService {
         return url.substring(idx + marker.length());
     }
 
-    private void deactivateGoneOffer(JobSource source, String url) {
-        JobSource safeSource = source != null ? source : JobSource.JUSTJOIN;
-        String externalId = lastPath(url);
-
-        offers.findBySourceAndExternalId(safeSource, externalId).ifPresent(e -> {
-            e.setActive(false);
-            e.setLastSeenAt(Instant.now());
-            offers.save(e);
-        });
+    private String fetchNofluffHtml(String url) throws IOException {
+        NFJ_FETCH_LIMITER.acquire();
+        return Jsoup.connect(url)
+                .userAgent(BROWSER_UA)
+                .referrer("https://nofluffjobs.com/")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7")
+                .followRedirects(true)
+                .timeout(15_000)
+                .get()
+                .outerHtml();
     }
+
+    private void deactivateGoneOffer(JobSource source, String url) {
+        JobSource safeSource = (source != null) ? source : JobSource.JUSTJOIN;
+
+        String normUrl = normalizeUrl(url);
+        String externalId = lastPath(normUrl);
+
+        var opt = offers.findBySourceAndExternalId(safeSource, externalId);
+        if (opt.isEmpty()) {
+            opt = offers.findFirstBySourceAndUrl(safeSource, normUrl);
+        }
+
+        if (opt.isEmpty()) {
+            log.warn("[ingest] deactivate: offer not found in DB source={} externalId={} url={}",
+                    safeSource, externalId, normUrl);
+            return;
+        }
+
+        JobOffer e = opt.get();
+        if (Boolean.FALSE.equals(e.getActive())) return;
+
+        e.setActive(false);
+        offers.save(e);
+    }
+
+    private static String normalizeUrl(String url) {
+        if (url == null) return null;
+        int q = url.indexOf('?');
+        if (q >= 0) url = url.substring(0, q);
+        if (url.endsWith("/")) url = url.substring(0, url.length() - 1);
+        return url;
+    }
+
 
     private void logOk(String fmt, Object... args)      { if (quietLogging) log.debug(fmt, args); else log.info(fmt, args); }
     private void logGone(String fmt, Object... args)    { if (quietLogging) log.debug(fmt, args); else log.info(fmt, args); }
