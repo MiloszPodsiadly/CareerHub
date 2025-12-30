@@ -46,17 +46,27 @@ public final class JobOfferSpecifications {
 
     public static Specification<JobOffer> techAny(List<String> tags) {
         if (tags == null || tags.isEmpty()) return null;
+
         return (root, query, cb) -> {
-            query.distinct(true);
-            Join<JobOffer, String> tagJoin = root.join("techTags", JoinType.LEFT);
-            return tagJoin.in(tags);
+            var sq = query.subquery(Integer.class);
+            var sqRoot = sq.correlate(root);
+            Join<JobOffer, String> tagJoin = sqRoot.join("techTags", JoinType.INNER);
+
+            sq.select(cb.literal(1))
+                    .where(tagJoin.in(tags));
+
+            return cb.exists(sq);
         };
     }
 
     public static Specification<JobOffer> salaryBetween(Integer min, Integer max) {
         return (r, q, cb) -> cb.and(
-                min != null ? cb.greaterThanOrEqualTo(r.get("salaryMax"), min) : cb.conjunction(),
-                max != null ? cb.lessThanOrEqualTo(r.get("salaryMin"), max) : cb.conjunction()
+                min != null
+                        ? cb.greaterThanOrEqualTo(cb.coalesce(r.get("salaryNormMonthMax"), r.get("salaryNormMonthMin")), min)
+                        : cb.conjunction(),
+                max != null
+                        ? cb.lessThanOrEqualTo(cb.coalesce(r.get("salaryNormMonthMin"), r.get("salaryNormMonthMax")), max)
+                        : cb.conjunction()
         );
     }
 
@@ -67,14 +77,23 @@ public final class JobOfferSpecifications {
 
     public static Specification<JobOffer> contractAny(Collection<ContractType> wanted) {
         if (wanted == null || wanted.isEmpty()) return null;
+
         return (root, query, cb) -> {
-            query.distinct(true);
             var inSingle = root.get("contract").in(wanted);
-            Join<JobOffer, ContractType> j = root.join("contracts", JoinType.LEFT);
-            var inMany = j.in(wanted);
+            var sq = query.subquery(Integer.class);
+            var sqRoot = sq.correlate(root);
+            Join<JobOffer, ContractType> j = sqRoot.join("contracts", JoinType.INNER);
+
+            sq.select(cb.literal(1))
+                    .where(j.in(wanted));
+
+            var inMany = cb.exists(sq);
+
             return cb.or(inSingle, inMany);
         };
     }
+
+
 
     public static Specification<JobOffer> contract(ContractType c) {
         return (c == null) ? null : contractAny(Set.of(c));
@@ -93,17 +112,19 @@ public final class JobOfferSpecifications {
             var noSalaryLast = cb.<Integer>selectCase()
                     .when(
                             cb.and(
-                                    cb.isNull(root.get("salaryMin")),
-                                    cb.isNull(root.get("salaryMax"))
+                                    cb.isNull(root.get("salaryNormMonthMin")),
+                                    cb.isNull(root.get("salaryNormMonthMax"))
                             ),
                             1
                     )
                     .otherwise(0);
 
+            var bestSalary = cb.coalesce(root.get("salaryNormMonthMax"), root.get("salaryNormMonthMin"));
+
             query.orderBy(
                     cb.asc(noSalaryLast),
-                    cb.desc(cb.coalesce(root.get("salaryMax"), root.get("salaryMin"))),
-                    cb.desc(root.get("salaryMin")),
+                    cb.desc(bestSalary),
+                    cb.desc(root.get("salaryNormMonthMin")),
                     cb.desc(root.get("publishedAt")),
                     cb.desc(root.get("id"))
             );
