@@ -7,6 +7,7 @@ import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
 import com.milosz.podsiadly.backend.job.repository.CityRepository;
 import com.milosz.podsiadly.backend.job.repository.CompanyRepository;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
+import com.milosz.podsiadly.backend.job.service.SalaryNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,7 @@ public class OfferUpsertService {
                 ? p.source()
                 : JobSource.JUSTJOIN.name();
         JobSource src = JobSource.valueOf(srcName);
-
+        String normUrl = normalizeUrl(p.url());
         Company company = null;
         if (notBlank(p.companyName())) {
             String name = normalizeName(p.companyName());
@@ -46,17 +47,23 @@ public class OfferUpsertService {
                             .countryCode("PL")
                             .build()));
         }
+        Optional<JobOffer> opt = offers.findBySourceAndExternalId(src, p.externalId());
+        if (opt.isEmpty() && normUrl != null) {
+            opt = offers.findFirstBySourceAndUrl(src, normUrl);
+        }
 
-        JobOffer e = offers.findBySourceAndExternalId(src, p.externalId())
-                .orElseGet(() -> {
-                    JobOffer ne = new JobOffer();
-                    ne.setSource(src);
-                    return ne;
-                });
-
+        JobOffer e = opt.orElseGet(() -> {
+            JobOffer ne = new JobOffer();
+            ne.setSource(src);
+            return ne;
+        });
         e.setSource(src);
-        e.setExternalId(p.externalId());
-        e.setUrl(p.url());
+        if (notBlank(p.externalId()) && !Objects.equals(e.getExternalId(), p.externalId())) {
+            e.setExternalId(p.externalId());
+        } else if (e.getExternalId() == null) {
+            e.setExternalId(p.externalId());
+        }
+        e.setUrl(normUrl);
         e.setTitle(p.title());
         e.setDescription(p.description());
         e.setCompany(company);
@@ -65,10 +72,16 @@ public class OfferUpsertService {
         e.setLevel(p.level());
         e.setContract(mapContract(p.contract()));
         e.setContracts(mapContracts(p.contracts()));
-
         e.setSalaryMin(p.min());
         e.setSalaryMax(p.max());
         e.setCurrency(p.currency());
+
+        SalaryPeriod period = (p.salaryPeriod() != null) ? p.salaryPeriod() : SalaryPeriod.MONTH;
+        e.setSalaryPeriod(period);
+
+        SalaryNormalizer.Normalized norm = SalaryNormalizer.normalizeToMonth(p.min(), p.max(), period);
+        e.setSalaryNormMonthMin(norm.monthMin());
+        e.setSalaryNormMonthMax(norm.monthMax());
 
         List<String> tags = (p.techTags() != null && !p.techTags().isEmpty())
                 ? p.techTags()
@@ -80,6 +93,7 @@ public class OfferUpsertService {
                 .limit(24)
                 .toList()
                 : Collections.emptyList());
+
         e.setTechTags(tags);
 
         e.setPublishedAt(p.publishedAt() != null ? p.publishedAt() : Instant.now());
@@ -91,11 +105,13 @@ public class OfferUpsertService {
             for (JustJoinParser.ParsedSkill s : p.techStack()) {
                 if (s == null || s.name() == null) continue;
                 skills.add(new JobOfferSkillDto(
-                        s.name(), s.levelLabel(), s.levelValue(), toSourceEnum(s.source())
+                        s.name(),
+                        s.levelLabel(),
+                        s.levelValue(),
+                        toSourceEnum(s.source())
                 ));
             }
         }
-
         JobOfferMapper.applySkills(e, skills);
 
         offers.save(e);
@@ -106,6 +122,14 @@ public class OfferUpsertService {
     private static String normalizeName(String s) {
         if (s == null) return null;
         return s.trim().replaceAll("\\s{2,}", " ");
+    }
+
+    private static String normalizeUrl(String url) {
+        if (url == null) return null;
+        int q = url.indexOf('?');
+        if (q >= 0) url = url.substring(0, q);
+        if (url.endsWith("/")) url = url.substring(0, url.length() - 1);
+        return url;
     }
 
     private static ContractType mapContract(String s) {
