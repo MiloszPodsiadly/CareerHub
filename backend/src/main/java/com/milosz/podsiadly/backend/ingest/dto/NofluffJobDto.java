@@ -27,5 +27,7 @@ public record NofluffJobDto(
         String applyUrl,
         List<String> techTags,
         List<JobOfferSkillDto> techStack,
-        Instant publishedAt
+        Instant publishedAt,
+        Boolean active
 ) {}
+
