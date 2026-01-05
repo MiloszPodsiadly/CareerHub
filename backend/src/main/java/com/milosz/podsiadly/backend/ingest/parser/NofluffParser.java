@@ -82,7 +82,8 @@ public class NofluffParser {
                     applyUrl,
                     techTags,
                     skills.stack,
-                    publishedAt
+                    publishedAt,
+                    true
             );
         } catch (Exception e) {
             throw new IllegalStateException("NFJ JSON parse error for " + externalId, e);
