@@ -108,6 +108,10 @@ ingest:
 logging:
   level:
     root: INFO
+    com.milosz.podsiadly.backend.ingest.mq: DEBUG
+    com.milosz.podsiadly.backend.ingest.parser: DEBUG
+    com.milosz.podsiadly.backend.ingest.config: DEBUG
+    org.springframework.amqp: INFO
 
 app:
   frontend:
