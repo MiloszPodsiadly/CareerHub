@@ -4,5 +4,6 @@ public enum JobSource {
     PLATFORM,
     JUSTJOIN,
     NOFLUFFJOBS,
-    SOLIDJOBS
+    SOLIDJOBS,
+    THEPROTOCOL
 }
