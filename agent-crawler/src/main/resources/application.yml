@@ -36,17 +36,25 @@ agent:
 
   theprotocol:
     sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
+    initial-delay-ms: 1240000
+    interval-ms: 43200000
+
+  pracuj:
     initial-delay-ms: 240000
     interval-ms: 43200000
+
+  playwright:
+    headless: true
 
 jobs:
   ingest:
     exchange: ingest.jobs
     routing:
       urls: job-url
+      externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
-    sourceDefault: NOFLUFFJOBS
+      externalOffers: ingest.jobs.external-offers
 
 eureka:
   client:
