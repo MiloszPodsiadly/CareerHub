@@ -55,8 +55,22 @@ public class RabbitConfig {
         configurer.configure(f, connectionFactory);
         f.setMessageConverter(rabbitJsonConverter);
         f.setDefaultRequeueRejected(false);
-        f.setAutoStartup(false);
+        f.setAutoStartup(true);
         f.setErrorHandler(amqpErrorHandler);
         return f;
     }
+
+    @Bean
+    Queue externalOffersQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getExternalOffers()).build();
+    }
+
+    @Bean
+    Binding externalOffersBinding(Queue externalOffersQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder
+                .bind(externalOffersQueue)
+                .to(jobsExchange)
+                .with(p.getRouting().getExternalOffers());
+    }
+
 }

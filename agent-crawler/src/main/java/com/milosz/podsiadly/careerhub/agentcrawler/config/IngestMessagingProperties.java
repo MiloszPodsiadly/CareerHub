@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-
 @Getter
 @Setter
 @Component
@@ -19,11 +18,12 @@ public class IngestMessagingProperties {
     @Getter @Setter
     public static class Routing {
         private String urls;
+        private String externalOffers;
     }
 
     @Getter @Setter
     public static class QueueNames {
         private String urls;
+        private String externalOffers;
     }
 }
-

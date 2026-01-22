@@ -52,4 +52,19 @@ public class RabbitConfig {
         tpl.setExchange(jobsExchange.getName());
         return tpl;
     }
+    @Bean
+    public Queue externalOffersQueue(IngestMessagingProperties props) {
+        return QueueBuilder.durable(props.getQueue().getExternalOffers()).build();
+    }
+
+    @Bean
+    public Binding externalOffersBinding(Queue externalOffersQueue,
+                                         DirectExchange jobsExchange,
+                                         IngestMessagingProperties props) {
+        return BindingBuilder
+                .bind(externalOffersQueue)
+                .to(jobsExchange)
+                .with(props.getRouting().getExternalOffers());
+    }
+
 }
