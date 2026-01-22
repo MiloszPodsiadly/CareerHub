@@ -86,8 +86,10 @@ jobs:
     exchange: ingest.jobs
     routing:
       urls: job-url
+      externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
+      externalOffers: ingest.jobs.external-offers
     source-default: JUSTJOIN
 
 events:
