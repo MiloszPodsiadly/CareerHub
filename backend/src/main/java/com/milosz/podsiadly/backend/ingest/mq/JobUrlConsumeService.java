@@ -37,8 +37,7 @@ public class JobUrlConsumeService {
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
 
     private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(2.0d);
-
-    private static final RateLimiter TP_FETCH_LIMITER = RateLimiter.create(1.0d); //2.0d trigger sometimes 429
+    private static final RateLimiter TP_FETCH_LIMITER  = RateLimiter.create(1.0d); // 2.0d triggers 429 sometimes
 
     private static final Pattern TP_OFFER_ID = Pattern.compile(
             "(?:,oferta,|%2Coferta%2C)([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
@@ -53,8 +52,8 @@ public class JobUrlConsumeService {
 
     private final TheProtocolParser theProtocolParser;
     private final SolidParser solidParser;
-    private final ExternalJobOfferIngestService externalIngest;
 
+    private final ExternalJobOfferIngestService externalIngest;
     private final JobOfferRepository offers;
 
     @Value("${ingest.logging.quiet:true}")
@@ -86,8 +85,6 @@ public class JobUrlConsumeService {
     }
 
     private void dispatchBySource(String url, JobSource source) throws Exception {
-        log.debug("[ingest] dispatch source={} url={}", source, url);
-
         if (source == JobSource.JUSTJOIN) {
             String html = fetchJustjoinHtml(url);
             handleJustJoin(url, html, source);
@@ -107,6 +104,11 @@ public class JobUrlConsumeService {
         if (source == JobSource.THEPROTOCOL) {
             handleTheProtocol(url, source);
             return;
+        }
+
+        if (source == JobSource.PRACUJ) {
+            logDrop("[ingest] PRACUJ URL message ignored (handled by agent via externalOffers). url={}", url);
+            throw new AmqpRejectAndDontRequeueException("PRACUJ URL messages are not processed by backend");
         }
 
         logDrop("[ingest] unsupported source {} for url {}, drop", source, url);
@@ -283,19 +285,7 @@ public class JobUrlConsumeService {
                 .body()
                 .text();
 
-        log.debug("[theprotocol] fetched api bytes={} offerId={}", json != null ? json.length() : -1, offerId);
-
-        final TheProtocolParser.Parsed p;
-        try {
-            p = theProtocolParser.parseFromApiJson(url, offerId, json);
-            log.info("[theprotocol] parsed ok offerId={} title={} company={}",
-                    offerId, p.title(), p.companyName());
-        } catch (Exception e) {
-            log.warn("[theprotocol] parse failed offerId={} url={} err={}", offerId, url, e.toString());
-            throw e;
-        }
-
-        String externalId = offerId;
+        final TheProtocolParser.Parsed p = theProtocolParser.parseFromApiJson(url, offerId, json);
 
         var data = new com.milosz.podsiadly.backend.job.service.ingest.ExternalJobOfferData(
                 p.title(),
@@ -318,7 +308,7 @@ public class JobUrlConsumeService {
                 p.active()
         );
 
-        externalIngest.ingest(source, externalId, data);
+        externalIngest.ingest(source, offerId, data);
         logOk("[ingest] THEPROTOCOL upsert OK: {}", url);
     }
 
