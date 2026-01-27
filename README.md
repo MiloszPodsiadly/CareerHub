@@ -3,7 +3,8 @@
 CareerHub is a full-stack educational project built with **React, Spring Boot, RabbitMQ, and PostgreSQL**.  
 It demonstrates **asynchronous communication**, **scalable data flow**, and a **modular, microservices architecture**.  
 The entire system is containerized with **Docker** and ready for deployment to cloud environments.
-
+---
+Trial version is available at: http://career-hub.duckdns.org/
 ---
 
 ## 🧭 Executive Summary
