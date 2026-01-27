@@ -1,0 +1,192 @@
+services:
+  discovery-server:
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
+    image: discovery-server:local
+    container_name: discovery-server
+    environment:
+      PORT: 8761
+      SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.cloud.config.server.config.ConfigServerAutoConfiguration"
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m -XX:+UseG1GC"
+    restart: unless-stopped
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  postgres:
+    build:
+      context: ./backend/postgres
+      dockerfile: Dockerfile
+    image: postgres-hardened:local
+    container_name: postgres
+    env_file:
+      - .env.postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [ devnet ]
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U app -d careerhub" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    env_file:
+      - .env.rabbitmq
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks: [ devnet ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: [ "redis-server", "--appendonly", "yes" ]
+    expose: [ "6379" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [ devnet ]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: backend:local
+    container_name: backend
+    expose: [ "8081" ]
+    env_file:
+      - .env.postgres
+      - .env.rabbitmq
+      - .env.mail
+    environment:
+      SERVER_PORT: 8081
+      SPRING_APPLICATION_NAME: backend
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    depends_on:
+      redis:
+        condition: service_started
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health/liveness | grep -q '\"status\":\"UP\"'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    image: gateway:local
+    container_name: gateway
+    expose: [ "8080" ]
+    environment:
+      SERVER_PORT: 8080
+      SPRING_APPLICATION_NAME: gateway
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    depends_on:
+      discovery-server:
+        condition: service_started
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness | grep -q '\"status\":\"UP\"'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  agent-crawler:
+    build:
+      context: .
+      dockerfile: agent-crawler/Dockerfile
+    image: agent-crawler:local
+    container_name: agent-crawler
+    env_file:
+      - .env.rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      discovery-server:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: agent-crawler
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    image: frontend:local
+    container_name: frontend
+    ports:
+      - "80:3000"
+    depends_on:
+      gateway:
+        condition: service_started
+    restart: unless-stopped
+    networks: [ devnet ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ "ALL" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:3000/ > /dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+networks:
+  devnet:
+    driver: bridge
+
+volumes:
+  pgdata:
+  rabbitmq_data:
