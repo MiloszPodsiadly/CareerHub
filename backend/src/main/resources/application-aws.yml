@@ -1,0 +1,119 @@
+server:
+  error:
+    include-message: ALWAYS
+    include-binding-errors: ALWAYS
+    include-stacktrace: NEVER
+  port: 8081
+
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/careerhub
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
+    listener:
+      type: simple
+      simple:
+        concurrency: 4
+        max-concurrency: 8
+        prefetch: 50
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+    template:
+      mandatory: true
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASS}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST}
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-server:8761/eureka}
+  instance:
+    preferIpAddress: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
+  endpoint:
+    health:
+      show-details: "when_authorized"
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:careerhub-backend}
+    access-minutes: ${JWT_ACCESS_MINUTES:60}
+    refresh-days: ${JWT_REFRESH_DAYS:7}
+
+jobs:
+  ingest:
+    exchange: ingest.jobs
+    routing:
+      urls: job-url
+      externalOffers: external-offer
+    queue:
+      urls: ingest.jobs.url
+      externalOffers: ingest.jobs.external-offers
+    source-default: JUSTJOIN
+
+events:
+  meetup:
+    groups:
+      - warsawjs
+      - pykonik
+      - wrocnet
+
+ingest:
+  scheduler:
+    enabled: true
+    initial-delay: PT3M
+    fixed-delay: PT12H
+    sources:
+      - source: JUSTJOIN
+        sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
+  logging:
+    quiet: true
+
+logging:
+  level:
+    root: INFO
+    com.milosz.podsiadly.backend.ingest: INFO
+    org.springframework.amqp: INFO
+
+app:
+  platform:
+    base-url: ${APP_BASE_URL:https://careerhub.com}
+  frontend:
+    url: ${FRONTEND_URL:https://careerhub.com}

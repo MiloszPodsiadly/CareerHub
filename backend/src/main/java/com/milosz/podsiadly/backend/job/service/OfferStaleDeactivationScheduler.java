@@ -28,6 +28,7 @@ public class OfferStaleDeactivationScheduler {
         deactivateFor(JobSource.PLATFORM, DEFAULT_STALE_CUTOFF);
         deactivateFor(JobSource.NOFLUFFJOBS, NFJ_STALE_CUTOFF);
         deactivateFor(JobSource.THEPROTOCOL, DEFAULT_STALE_CUTOFF);
+        deactivateFor(JobSource.PRACUJ, DEFAULT_STALE_CUTOFF);
     }
 
     private void deactivateFor(JobSource src, Duration cutoffDur) {

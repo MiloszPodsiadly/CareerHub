@@ -1,0 +1,73 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: agent-crawler
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_DEFAULT_USER}
+    password: ${RABBITMQ_DEFAULT_PASS}
+    template:
+      mandatory: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
+  endpoint:
+    health:
+      show-details: "when_authorized"
+
+agent:
+  nfj:
+    start-url: "https://nofluffjobs.com/pl/it?device=mobile"
+    initial-delay-ms: 280000
+    interval-ms: 43200000
+
+  solid:
+    sitemap-url: "https://solid.jobs/sitemap.xml"
+    initial-delay-ms: 180000
+    interval-ms: 43200000
+
+  theprotocol:
+    sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
+    initial-delay-ms: 1240000
+    interval-ms: 43200000
+
+  pracuj:
+    initial-delay-ms: 300000
+    interval-ms: 43200000
+
+  playwright:
+    headless: true
+
+jobs:
+  ingest:
+    exchange: ingest.jobs
+    routing:
+      urls: job-url
+      externalOffers: external-offer
+    queue:
+      urls: ingest.jobs.url
+      externalOffers: ingest.jobs.external-offers
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-server:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    preferIpAddress: true
+    leaseRenewalIntervalInSeconds: 30
+    leaseExpirationDurationInSeconds: 90
+
+logging:
+  level:
+    root: INFO
+    com.milosz.podsiadly: INFO
+    org.springframework.amqp: INFO
