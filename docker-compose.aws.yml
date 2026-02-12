@@ -8,7 +8,13 @@ services:
     environment:
       PORT: 8761
       SPRING_AUTOCONFIGURE_EXCLUDE: "org.springframework.cloud.config.server.config.ConfigServerAutoConfiguration"
+      SPRING_PROFILES_ACTIVE: aws
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m -XX:+UseG1GC"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     restart: unless-stopped
     networks: [ devnet ]
     security_opt:
@@ -42,7 +48,7 @@ services:
       retries: 15
 
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:3.13-alpine
     container_name: rabbitmq
     env_file:
       - .env.rabbitmq
@@ -50,6 +56,8 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks: [ devnet ]
     restart: unless-stopped
+    environment:
+      RABBITMQ_DISK_FREE_LIMIT: 1GB
     healthcheck:
       test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
       interval: 10s
@@ -83,9 +91,15 @@ services:
     environment:
       SERVER_PORT: 8081
       SPRING_APPLICATION_NAME: backend
+      SPRING_PROFILES_ACTIVE: aws
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     depends_on:
       redis:
         condition: service_started
@@ -116,9 +130,15 @@ services:
     environment:
       SERVER_PORT: 8080
       SPRING_APPLICATION_NAME: gateway
+      SPRING_PROFILES_ACTIVE: aws
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     depends_on:
       discovery-server:
         condition: service_started
@@ -149,10 +169,15 @@ services:
       discovery-server:
         condition: service_started
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: aws
       SPRING_APPLICATION_NAME: agent-crawler
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx384m -XX:+UseG1GC"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks: [ devnet ]
     security_opt:
       - no-new-privileges:true
