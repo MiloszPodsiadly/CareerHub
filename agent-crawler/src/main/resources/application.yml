@@ -26,7 +26,7 @@ management:
 agent:
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
-    initial-delay-ms: 240000
+    initial-delay-ms: 250000
     interval-ms: 43200000
 
   solid:
@@ -36,7 +36,7 @@ agent:
 
   theprotocol:
     sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
-    initial-delay-ms: 1240000
+    initial-delay-ms: 240000
     interval-ms: 43200000
 
   pracuj:
