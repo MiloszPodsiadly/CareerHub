@@ -2,6 +2,8 @@ package com.milosz.podsiadly.backend.domain.loginandregister;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.dto.ForgotPasswordRequest;
 import com.milosz.podsiadly.backend.domain.loginandregister.dto.ResetPasswordRequest;
+import com.milosz.podsiadly.backend.domain.loginandregister.mail.MailQueuePublisher;
+import com.milosz.podsiadly.backend.domain.loginandregister.mail.MailRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,10 +23,8 @@ public class PasswordResetService {
     private final LoginRepository users;
     private final PasswordResetTokenRepository tokens;
     private final PasswordEncoder passwordEncoder;
-    private final MailService mailService;
-
-    @Value("${app.frontend.url:http://localhost:3000}")
-    private String frontendUrl;
+    private final MailQueuePublisher mailQueuePublisher;
+    private final MailRateLimiter mailRateLimiter;
 
     @Value("${app.password-reset.exp-hours:1}")
     private long tokenExpHours;
@@ -44,6 +44,9 @@ public class PasswordResetService {
         }
 
         var user = userOpt.get();
+        if (!mailRateLimiter.allowReset(user.getId())) {
+            return;
+        }
 
         String tokenValue = generateToken();
 
@@ -57,8 +60,7 @@ public class PasswordResetService {
 
         tokens.save(token);
 
-        String link = frontendUrl + "/auth/reset-password?token=" + tokenValue;
-        mailService.sendPasswordResetEmail(user.getEmail(), link);
+        mailQueuePublisher.enqueuePasswordReset(tokenValue);
     }
 
     @Transactional

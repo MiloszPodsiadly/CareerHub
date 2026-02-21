@@ -1,4 +1,4 @@
-package com.milosz.podsiadly.backend.domain.loginandregister;
+package com.milosz.podsiadly.backend.domain.loginandregister.mail;
 
 public interface MailService {
     void sendPasswordResetEmail(String to, String resetLink);

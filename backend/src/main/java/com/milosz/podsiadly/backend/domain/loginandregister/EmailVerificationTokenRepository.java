@@ -9,7 +9,17 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface EmailVerificationTokenRepository extends JpaRepository<EmailVerificationToken, Long> {
-    Optional<EmailVerificationToken> findByToken(String token);
+    @Query("""
+    select t
+      from EmailVerificationToken t
+      join fetch t.user
+     where t.token = :token
+""")
+    Optional<EmailVerificationToken> findByToken(@Param("token") String token);
+
+    Optional<EmailVerificationToken> findTopByUserIdOrderByCreatedAtDesc(String userId);
+
+    long countByUserIdAndCreatedAtAfter(String userId, LocalDateTime after);
     @Modifying
     @Query("""
     update EmailVerificationToken t

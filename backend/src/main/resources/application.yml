@@ -42,21 +42,6 @@ spring:
         default-requeue-rejected: false
     template:
       mandatory: true
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USER}
-    password: ${MAIL_PASS}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          ssl:
-            trust: ${MAIL_HOST}
-
 eureka:
   client:
     serviceUrl:
@@ -118,3 +103,35 @@ logging:
 app:
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
+  mailer:
+    enabled: false
+    exchange: mailer.exchange
+    routing:
+      send: mail.send
+      retry1: mail.retry.1m
+      retry5: mail.retry.5m
+      retry30: mail.retry.30m
+      dlq: mail.dlq
+    queue:
+      send: mail.send
+      retry1: mail.retry.1m
+      retry5: mail.retry.5m
+      retry30: mail.retry.30m
+      dlq: mail.dlq
+    retry:
+      after1: PT1M
+      after5: PT5M
+      after30: PT30M
+    listener:
+      prefetch: 5
+      concurrency: 1
+    aws:
+      region: us-east-1
+      from: ${SES_FROM}
+    rate-limit:
+      verification:
+        min-interval: PT1M
+        max-per-day: 5
+      reset:
+        min-interval: PT1M
+        max-per-day: 5

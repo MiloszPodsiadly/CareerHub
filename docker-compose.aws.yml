@@ -193,7 +193,11 @@ services:
     image: frontend:local
     container_name: frontend
     ports:
-      - "80:3000"
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./frontend/nginx.aws.conf:/etc/nginx/nginx.conf:ro
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       gateway:
         condition: service_started
@@ -203,7 +207,7 @@ services:
       - no-new-privileges:true
     cap_drop: [ "ALL" ]
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:3000/ > /dev/null || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/ > /dev/null || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 15
