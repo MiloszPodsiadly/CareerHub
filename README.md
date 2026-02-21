@@ -3,8 +3,11 @@
 CareerHub is a full-stack educational project built with **React, Spring Boot, RabbitMQ, and PostgreSQL**.  
 It demonstrates **asynchronous communication**, **scalable data flow**, and a **modular, microservices architecture**.  
 The entire system is containerized with **Docker** and ready for deployment to cloud environments.
+
 ---
-Trial version is available at: http://career-hub.duckdns.org/
+
+Actual version is available at: https://careerhub-it.com
+
 ---
 
 ## 🧭 Executive Summary
@@ -36,7 +39,7 @@ The platform emphasizes:
 
 | Service      | Responsibility | Tech Highlights |
 |--------------|----------------|-----------------|
-| **Frontend** | React frontend for real-time event visualization | WebSocket, REST API, responsive UI |
+| **Frontend** | React frontend for real-time event visualization | REST API, responsive UI |
 | **Backend**  | API and business logic built with Spring Boot | REST, Spring Security, RabbitMQ Integration |
 | **Gateway**  | API Gateway for routing and communication between services | REST Proxy, Authentication, Load Balancing |
 | **Database** | Persistent storage for user and event data | PostgreSQL, Spring Data JPA |
@@ -46,14 +49,14 @@ The platform emphasizes:
 
 ## 🧰 Technology Stack
 
-| Layer | Technology             |
-|-------|------------------------|
-| **Frontend** | React, JavaScript      |
-| **Backend** | Java, Spring Boot, Gradle |
-| **Messaging** | RabbitMQ               |
+| Layer | Technology                 |
+|-------|----------------------------|
+| **Frontend** | React, TypeScript          |
+| **Backend** | Java, Spring Boot, Gradle  |
+| **Messaging** | RabbitMQ                   |
 | **Database** | PostgreSQL (containerized) |
-| **Auth** | Spring Security, JWT   |
-| **DevOps** | Docker, Docker Compose |
+| **Auth** | Spring Security, JWT       |
+| **DevOps** | Docker, Docker Compose     |
 
 ---
 
@@ -65,7 +68,7 @@ The platform emphasizes:
 2. Spring Security issues and manages authentication tokens.  
 3. Backend publishes event messages to RabbitMQ.  
 4. Other services subscribe to message queues.  
-5. React frontend consumes updates via WebSocket or REST endpoints.  
+5. React frontend consumes and updates REST endpoints.  
 6. Data is persisted and versioned in PostgreSQL for analysis and recovery.
 
 ---
@@ -73,8 +76,7 @@ The platform emphasizes:
 ## 🔒 Security Design
 
 - **JWT Authentication** – stateless authorization flow.  
-- **Spring Security** – session and privilege management.  
-- **Role-Based Access Control (RBAC)** – user roles define access scope.  
+- **Spring Security** – session and privilege management.
 - **Encrypted Communication** – HTTPS and secured API endpoints.  
 
 ---
