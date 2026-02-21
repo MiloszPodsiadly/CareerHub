@@ -23,6 +23,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  app:
+    platform:
+      base-url: https://careerhib-it.com
   rabbitmq:
     host: rabbitmq
     port: 5672
@@ -39,25 +42,10 @@ spring:
     template:
       mandatory: true
 
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USER}
-    password: ${MAIL_PASS}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          ssl:
-            trust: ${MAIL_HOST}
-
 eureka:
   client:
     serviceUrl:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discovery-server:8761/eureka}
+      defaultZone: http://discovery-server:8761/eureka
   instance:
     preferIpAddress: true
 
@@ -65,17 +53,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
+        include: "health,info"
   endpoint:
     health:
       show-details: "when_authorized"
 
 auth:
   jwt:
-    secret: ${JWT_SECRET}
-    issuer: ${JWT_ISSUER:careerhub-backend}
-    access-minutes: ${JWT_ACCESS_MINUTES:60}
-    refresh-days: ${JWT_REFRESH_DAYS:7}
+    secret: "Yy8k2QJb4V7tRkZ1mP9hS3fX6cD0nW2aL8eT4uI9rC5oB7pM1xG6zH0vN3qJ5d"
+    issuer: "careerhub-backend"
+    access-minutes: 60
+    refresh-days: 7
 
 jobs:
   ingest:
@@ -103,17 +91,50 @@ ingest:
     sources:
       - source: JUSTJOIN
         sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
-  logging:
-    quiet: true
 
 logging:
   level:
     root: INFO
-    com.milosz.podsiadly.backend.ingest: INFO
+    com.milosz.podsiadly.backend.ingest.mq: DEBUG
+    com.milosz.podsiadly.backend.ingest.parser: DEBUG
+    com.milosz.podsiadly.backend.ingest.config: DEBUG
     org.springframework.amqp: INFO
 
 app:
-  platform:
-    base-url: ${APP_BASE_URL:https://careerhub.com}
   frontend:
-    url: ${FRONTEND_URL:https://careerhub.com}
+    url: ${FRONTEND_URL:https://careerhub-it.com}
+
+  mailer:
+    enabled: ${MAILER_ENABLED:true}
+    exchange: mailer.exchange
+    routing:
+      send: mail.send
+      retry1: mail.retry.1m
+      retry5: mail.retry.5m
+      retry30: mail.retry.30m
+      dlq: mail.dlq
+    queue:
+      send: mail.send
+      retry1: mail.retry.1m
+      retry5: mail.retry.5m
+      retry30: mail.retry.30m
+      dlq: mail.dlq
+    retry:
+      after1: PT1M
+      after5: PT5M
+      after30: PT30M
+    listener:
+      prefetch: 5
+      concurrency: 1
+
+    aws:
+      region: ${AWS_REGION:us-east-1}
+      from: ${SES_FROM}
+
+    rate-limit:
+      verification:
+        min-interval: PT1M
+        max-per-day: 5
+      reset:
+        min-interval: PT1M
+        max-per-day: 5
