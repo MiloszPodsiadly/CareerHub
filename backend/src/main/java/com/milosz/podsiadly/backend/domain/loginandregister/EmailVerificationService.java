@@ -1,5 +1,7 @@
 package com.milosz.podsiadly.backend.domain.loginandregister;
 
+import com.milosz.podsiadly.backend.domain.loginandregister.mail.MailQueuePublisher;
+import com.milosz.podsiadly.backend.domain.loginandregister.mail.MailRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -15,10 +17,8 @@ import java.time.LocalDateTime;
 public class EmailVerificationService {
 
     private final EmailVerificationTokenRepository tokens;
-    private final MailService mailService;
-
-    @Value("${app.frontend.url:http://localhost:3000}")
-    private String frontendUrl;
+    private final MailQueuePublisher mailQueuePublisher;
+    private final MailRateLimiter mailRateLimiter;
 
     @Value("${app.email-verify.exp-hours:24}")
     private long expHours;
@@ -41,8 +41,7 @@ public class EmailVerificationService {
 
         tokens.save(token);
 
-        String link = frontendUrl + "/auth/verify?token=" + tokenValue;
-        mailService.sendEmailVerification(user.getEmail(), link);
+        mailQueuePublisher.enqueueVerification(tokenValue);
     }
 
     @Transactional
@@ -80,6 +79,7 @@ public class EmailVerificationService {
 
         User user = userOpt.get();
         if (user.isEmailVerified()) return;
+        if (!mailRateLimiter.allowVerification(user.getId())) return;
         tokens.invalidateAllActiveForUser(user.getId(), LocalDateTime.now());
 
         sendVerificationLink(user);
