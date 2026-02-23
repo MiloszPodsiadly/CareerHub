@@ -122,3 +122,42 @@
     box-sizing:border-box;
 }
 .dd__item:hover{ background:rgba(91,127,255,.08); }
+
+@media (max-width: 900px) {
+    .hdr__inner {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "brand actions"
+            "nav nav";
+        gap: 10px;
+        padding: 10px 12px;
+    }
+
+    .brand { grid-area: brand; }
+    .hdr__actions { grid-area: actions; justify-self: end; gap: 8px; }
+    .nav {
+        grid-area: nav;
+        margin-left: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding-bottom: 2px;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+
+    .userarea > .nav__link { display: none; }
+}
+
+@media (max-width: 560px) {
+    .btn {
+        height: 36px;
+        padding: 0 10px;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+
+    .brand__badge { width: 30px; height: 30px; border-radius: 8px; }
+    .brand__text { font-size: 15px; }
+    .nav__link { padding: 7px 10px; border-radius: 9px; }
+    .avatar { width: 36px; height: 36px; }
+}

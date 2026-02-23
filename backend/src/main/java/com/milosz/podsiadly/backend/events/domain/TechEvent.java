@@ -13,6 +13,7 @@ import java.util.List;
         indexes = {
                 @Index(name="ix_start",       columnList = "startAt"),
                 @Index(name="ix_country_city",columnList = "country,city"),
+                @Index(name="ix_country_city_start", columnList = "country,city,startAt"),
                 @Index(name="ix_fingerprint", columnList = "fingerprint")
         })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

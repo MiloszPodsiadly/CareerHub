@@ -3,8 +3,10 @@ package com.milosz.podsiadly.backend.job.service;
 import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
 import com.milosz.podsiadly.backend.job.domain.JobOffer;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
@@ -20,12 +22,21 @@ public final class JobOfferSpecifications {
     }
 
     public static Specification<JobOffer> text(String q) {
+        return text(q, true);
+    }
+
+    public static Specification<JobOffer> text(String q, boolean includeDescription) {
         if (q == null || q.isBlank()) return null;
         String like = "%" + q.toLowerCase() + "%";
-        return (r, qry, cb) -> cb.or(
-                cb.like(cb.lower(r.get("title")), like),
-                cb.like(cb.lower(r.get("description")), like)
-        );
+        return (r, qry, cb) -> {
+            if (includeDescription) {
+                return cb.or(
+                        cb.like(cb.lower(r.get("title")), like),
+                        cb.like(cb.lower(r.get("description")), like)
+                );
+            }
+            return cb.like(cb.lower(r.get("title")), like);
+        };
     }
 
     public static Specification<JobOffer> byCity(String city) {
@@ -62,10 +73,10 @@ public final class JobOfferSpecifications {
     public static Specification<JobOffer> salaryBetween(Integer min, Integer max) {
         return (r, q, cb) -> cb.and(
                 min != null
-                        ? cb.greaterThanOrEqualTo(cb.coalesce(r.get("salaryNormMonthMax"), r.get("salaryNormMonthMin")), min)
+                        ? cb.greaterThanOrEqualTo(upperSalary(r, cb), min)
                         : cb.conjunction(),
                 max != null
-                        ? cb.lessThanOrEqualTo(cb.coalesce(r.get("salaryNormMonthMin"), r.get("salaryNormMonthMax")), max)
+                        ? cb.lessThanOrEqualTo(lowerSalary(r, cb), max)
                         : cb.conjunction()
         );
     }
@@ -112,6 +123,8 @@ public final class JobOfferSpecifications {
             var noSalaryLast = cb.<Integer>selectCase()
                     .when(
                             cb.and(
+                                    cb.isNull(root.get("salaryMin")),
+                                    cb.isNull(root.get("salaryMax")),
                                     cb.isNull(root.get("salaryNormMonthMin")),
                                     cb.isNull(root.get("salaryNormMonthMax"))
                             ),
@@ -119,17 +132,36 @@ public final class JobOfferSpecifications {
                     )
                     .otherwise(0);
 
-            var bestSalary = cb.coalesce(root.get("salaryNormMonthMax"), root.get("salaryNormMonthMin"));
+            var bestSalary = upperSalary(root, cb);
+            var floorSalary = lowerSalary(root, cb);
 
             query.orderBy(
                     cb.asc(noSalaryLast),
                     cb.desc(bestSalary),
-                    cb.desc(root.get("salaryNormMonthMin")),
+                    cb.desc(floorSalary),
                     cb.desc(root.get("publishedAt")),
                     cb.desc(root.get("id"))
             );
 
             return cb.conjunction();
         };
+    }
+
+    private static Expression<Integer> upperSalary(Root<JobOffer> root, jakarta.persistence.criteria.CriteriaBuilder cb) {
+        var c = cb.<Integer>coalesce();
+        c.value(root.get("salaryMax"));
+        c.value(root.get("salaryMin"));
+        c.value(root.get("salaryNormMonthMax"));
+        c.value(root.get("salaryNormMonthMin"));
+        return c;
+    }
+
+    private static Expression<Integer> lowerSalary(Root<JobOffer> root, jakarta.persistence.criteria.CriteriaBuilder cb) {
+        var c = cb.<Integer>coalesce();
+        c.value(root.get("salaryMin"));
+        c.value(root.get("salaryMax"));
+        c.value(root.get("salaryNormMonthMin"));
+        c.value(root.get("salaryNormMonthMax"));
+        return c;
     }
 }

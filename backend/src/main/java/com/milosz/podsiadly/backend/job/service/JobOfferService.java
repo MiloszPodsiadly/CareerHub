@@ -3,6 +3,7 @@ package com.milosz.podsiadly.backend.job.service;
 import com.milosz.podsiadly.backend.job.domain.*;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferListDto;
+import com.milosz.podsiadly.backend.job.dto.JobOfferSliceDto;
 import com.milosz.podsiadly.backend.job.mapper.JobOfferMapper;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import lombok.RequiredArgsConstructor;
@@ -57,24 +58,11 @@ public class JobOfferService {
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
             Set<ContractType> contracts, Boolean withSalary,
             Pageable pageable,
-            String sortKey
+            String sortKey,
+            boolean includeDescription
     ) {
-        List<String> allTech = Stream.concat(
-                tech == null ? Stream.empty() : tech.stream(),
-                expandSpecs(spec).stream()
-        ).distinct().collect(Collectors.toList());
-
-        Specification<JobOffer> sp = Specification.allOf(
-                JobOfferSpecifications.active(),
-                JobOfferSpecifications.text(q),
-                JobOfferSpecifications.byCity(city),
-                JobOfferSpecifications.remote(remote),
-                JobOfferSpecifications.level(level),
-                JobOfferSpecifications.techAny(allTech),
-                JobOfferSpecifications.salaryBetween(salaryMin, salaryMax),
-                JobOfferSpecifications.postedAfter(postedAfter),
-                JobOfferSpecifications.contractAny(contracts),
-                JobOfferSpecifications.withSalary(withSalary)
+        Specification<JobOffer> sp = buildSearchSpecification(
+                q, city, remote, level, spec, tech, salaryMin, salaryMax, postedAfter, contracts, withSalary, includeDescription
         );
 
         Pageable effectivePageable = pageable;
@@ -103,24 +91,11 @@ public class JobOfferService {
             Integer salaryMin, Integer salaryMax, Instant postedAfter,
             Set<ContractType> contracts, Boolean withSalary,
             Sort sort,
-            String sortKey
+            String sortKey,
+            boolean includeDescription
     ) {
-        List<String> allTech = Stream.concat(
-                tech == null ? Stream.empty() : tech.stream(),
-                expandSpecs(spec).stream()
-        ).distinct().collect(Collectors.toList());
-
-        Specification<JobOffer> sp = Specification.allOf(
-                JobOfferSpecifications.active(),
-                JobOfferSpecifications.text(q),
-                JobOfferSpecifications.byCity(city),
-                JobOfferSpecifications.remote(remote),
-                JobOfferSpecifications.level(level),
-                JobOfferSpecifications.techAny(allTech),
-                JobOfferSpecifications.salaryBetween(salaryMin, salaryMax),
-                JobOfferSpecifications.postedAfter(postedAfter),
-                JobOfferSpecifications.contractAny(contracts),
-                JobOfferSpecifications.withSalary(withSalary)
+        Specification<JobOffer> sp = buildSearchSpecification(
+                q, city, remote, level, spec, tech, salaryMin, salaryMax, postedAfter, contracts, withSalary, includeDescription
         );
 
         List<JobOffer> base;
@@ -138,6 +113,53 @@ public class JobOfferService {
                 .toList();
 
         return dedupeForListing(rawDtos, sortKey);
+    }
+
+    @Transactional(readOnly = true)
+    public JobOfferSliceDto searchFast(
+            String q, String city, Boolean remote, JobLevel level,
+            List<String> spec, List<String> tech,
+            Integer salaryMin, Integer salaryMax, Instant postedAfter,
+            Set<ContractType> contracts, Boolean withSalary,
+            Pageable pageable,
+            String sortKey,
+            boolean includeDescription
+    ) {
+        Specification<JobOffer> sp = buildSearchSpecification(
+                q, city, remote, level, spec, tech, salaryMin, salaryMax, postedAfter, contracts, withSalary, includeDescription
+        );
+
+        Pageable effectivePageable = pageable;
+        if ("salary".equalsIgnoreCase(sortKey)) {
+            sp = sp.and(JobOfferSpecifications.orderByHighestSalaryNullsLast());
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        }
+
+        final Pageable queryPageable = effectivePageable;
+        Slice<JobOffer> slice = repo.findBy(sp, qf -> qf.sortBy(queryPageable.getSort()).slice(queryPageable));
+        List<JobOffer> hydratedInOrder = hydrateInSameOrder(slice.getContent());
+        List<JobOfferListDto> deduped = dedupeForListing(hydratedInOrder.stream().map(JobOfferMapper::toListDto).toList(), sortKey);
+
+        return new JobOfferSliceDto(
+                deduped,
+                queryPageable.getPageNumber() + 1,
+                queryPageable.getPageSize(),
+                slice.hasNext()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public long count(
+            String q, String city, Boolean remote, JobLevel level,
+            List<String> spec, List<String> tech,
+            Integer salaryMin, Integer salaryMax, Instant postedAfter,
+            Set<ContractType> contracts, Boolean withSalary,
+            boolean includeDescription
+    ) {
+        Specification<JobOffer> sp = buildSearchSpecification(
+                q, city, remote, level, spec, tech, salaryMin, salaryMax, postedAfter, contracts, withSalary, includeDescription
+        );
+        return repo.count(sp);
     }
 
     @Transactional(readOnly = true)
@@ -232,5 +254,31 @@ public class JobOfferService {
 
     private static String nz(String s) {
         return (s == null) ? "" : s.trim();
+    }
+
+    private Specification<JobOffer> buildSearchSpecification(
+            String q, String city, Boolean remote, JobLevel level,
+            List<String> spec, List<String> tech,
+            Integer salaryMin, Integer salaryMax, Instant postedAfter,
+            Set<ContractType> contracts, Boolean withSalary,
+            boolean includeDescription
+    ) {
+        List<String> allTech = Stream.concat(
+                tech == null ? Stream.empty() : tech.stream(),
+                expandSpecs(spec).stream()
+        ).distinct().collect(Collectors.toList());
+
+        return Specification.allOf(
+                JobOfferSpecifications.active(),
+                JobOfferSpecifications.text(q, includeDescription),
+                JobOfferSpecifications.byCity(city),
+                JobOfferSpecifications.remote(remote),
+                JobOfferSpecifications.level(level),
+                JobOfferSpecifications.techAny(allTech),
+                JobOfferSpecifications.salaryBetween(salaryMin, salaryMax),
+                JobOfferSpecifications.postedAfter(postedAfter),
+                JobOfferSpecifications.contractAny(contracts),
+                JobOfferSpecifications.withSalary(withSalary)
+        );
     }
 }

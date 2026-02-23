@@ -1,11 +1,12 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import styles from './AuthPage.module.css';
 import { authApi } from '../../shared/api';
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [alert, setAlert] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
@@ -22,7 +23,9 @@ export default function LoginPage() {
             }
             await authApi.login(email.trim(), password.trim());
             await new Promise(requestAnimationFrame);
-            navigate('/');
+            const next = searchParams.get('next') || '/';
+            const safeNext = next.startsWith('/') ? next : '/';
+            navigate(safeNext);
         } catch (err: any) {
             setAlert({ type: 'error', text: err?.message || 'Something went wrong.' });
         } finally {

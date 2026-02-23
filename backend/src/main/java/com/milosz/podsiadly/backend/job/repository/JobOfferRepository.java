@@ -18,7 +18,7 @@ public interface JobOfferRepository
     boolean existsBySourceAndExternalId(JobSource source, String externalId);
 
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD,
-            attributePaths = {"company", "city", "techTags"})
+            attributePaths = {"company", "city", "techStack"})
     Optional<JobOffer> findBySourceAndExternalId(JobSource source, String externalId);
 
     @EntityGraph(attributePaths = {"company", "city"})

@@ -409,12 +409,15 @@ export default function JobsPage() {
     const [loadedOnce, setLoadedOnce] = useState(false);
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [hasNext, setHasNext] = useState(false);
+    const [totalPending, setTotalPending] = useState(false);
     const [page, setPage] = useState(1);
     const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
     const modalRef = useRef<HTMLDialogElement | null>(null);
     const modalBodyRef = useRef<HTMLElement | null>(null);
     const lastCtrl = useRef<AbortController | null>(null);
+    const countCtrl = useRef<AbortController | null>(null);
     const loadingRef = useRef(false);
 
     useEffect(() => {
@@ -467,36 +470,62 @@ export default function JobsPage() {
         if (normContract) p.append('contract', normContract);
         if (filters.withSalary) p.append('withSalary', 'true');
         if (filters.remote) p.append('remote', 'true');
+        p.append('searchInDescription', 'false');
         p.append('sort', normalizeSort(filters.sort));
         filters.specs.forEach((v) => p.append('spec', v));
         filters.techs.forEach((v) => p.append('tech', v));
 
-        const res = await fetch(`/api/jobs?${p.toString()}`, {
+        const res = await fetch(`/api/jobs/fast?${p.toString()}`, {
             headers: { Accept: 'application/json' },
             signal: lastCtrl.current.signal,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        let rawItems: JobApiItem[] = [],
-            total = 0,
-            pages = 0;
+        let rawItems: JobApiItem[] = [];
+        let sliceHasNext = false;
 
         if (Array.isArray(json?.content)) {
             rawItems = json.content;
-            total = json.totalElements ?? rawItems.length;
-            pages = json.totalPages ?? Math.ceil(total / PAGE_SIZE);
+            sliceHasNext = !!json?.hasNext;
         } else if (Array.isArray(json?.items)) {
             rawItems = json.items;
-            total = json.total ?? rawItems.length;
-            pages = Math.ceil(total / PAGE_SIZE);
         } else if (Array.isArray(json)) {
             rawItems = json;
-            total = json.length;
-            pages = Math.ceil(total / PAGE_SIZE);
         }
 
-        return { items: rawItems.map(toUiListItem), total, pages };
+        return { items: rawItems.map(toUiListItem), hasNext: sliceHasNext };
+    }, [filters]);
+
+    const fetchTotalCount = useCallback(async (nextPage: number) => {
+        if (countCtrl.current) countCtrl.current.abort();
+        countCtrl.current = new AbortController();
+
+        const p = new URLSearchParams();
+        if (filters.q) p.append('q', filters.q);
+        if (filters.city) p.append('city', filters.city);
+        const lvl = mapLevel(filters.seniority);
+        if (lvl) p.append('level', lvl);
+        const normContract = mapContract(filters.contract);
+        if (normContract) p.append('contract', normContract);
+        if (filters.withSalary) p.append('withSalary', 'true');
+        if (filters.remote) p.append('remote', 'true');
+        p.append('searchInDescription', 'false');
+        filters.specs.forEach((v) => p.append('spec', v));
+        filters.techs.forEach((v) => p.append('tech', v));
+
+        const res = await fetch(`/api/jobs/count?${p.toString()}`, {
+            headers: { Accept: 'application/json' },
+            signal: countCtrl.current.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const count = Number(await res.text());
+        if (!Number.isFinite(count)) return;
+        setTotalElements(count);
+        setTotalPages(Math.max(1, Math.ceil(count / PAGE_SIZE)));
+        if (nextPage > Math.max(1, Math.ceil(count / PAGE_SIZE))) {
+            setPage(Math.max(1, Math.ceil(count / PAGE_SIZE)));
+        }
     }, [filters]);
 
     const fetchJobDetail = async (id: JobItem['id']) => {
@@ -514,8 +543,8 @@ export default function JobsPage() {
             const res = await fetchJobs(nextPage);
             setPage(nextPage);
             setItems(res.items);
-            setTotalElements(res.total);
-            setTotalPages(res.pages);
+            setHasNext(res.hasNext);
+            setTotalPending(true);
             setLoadedOnce(true);
 
             if (scroll) document.getElementById('list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -532,12 +561,17 @@ export default function JobsPage() {
                 else params.set(k, String(v));
             });
             history.replaceState(null, '', `?${params.toString()}`);
+            fetchTotalCount(nextPage)
+                .catch(() => {})
+                .finally(() => setTotalPending(false));
         } catch (err: any) {
             const isAbort = err?.name === 'AbortError' || /aborted/i.test(err?.message || '');
             if (isAbort) return;
             setItems([]);
             setTotalElements(0);
             setTotalPages(0);
+            setHasNext(false);
+            setTotalPending(false);
             setError(err?.message || 'Failed to load jobs.');
         } finally {
             setLoading(false);
@@ -725,7 +759,7 @@ export default function JobsPage() {
 
                 <div className={styles['toolbar__meta']}>
                     <span id="count" aria-live="polite">
-                        {totalElements.toLocaleString('en-GB')} jobs • page {page}/{Math.max(totalPages, 1)}
+                        {totalPending ? 'Loading total…' : `${totalElements.toLocaleString('en-GB')} jobs`} • page {page}/{Math.max(totalPages, 1)}
                     </span>
                     <span className={styles.muted} aria-hidden="true">
                         •
@@ -937,7 +971,27 @@ export default function JobsPage() {
                                 »
                             </button>
                         </>
-                    ) : null}
+                    ) : (
+                        <>
+                            <button
+                                className={styles['pager__btn']}
+                                onClick={() => setPage(Math.max(1, page - 1))}
+                                disabled={page === 1}
+                            >
+                                «
+                            </button>
+                            <button className={styles['pager__btn']} aria-current="page" disabled>
+                                {page}
+                            </button>
+                            <button
+                                className={styles['pager__btn']}
+                                onClick={() => setPage(page + 1)}
+                                disabled={!hasNext}
+                            >
+                                »
+                            </button>
+                        </>
+                    )}
                 </nav>
             </section>
 

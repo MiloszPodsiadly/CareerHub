@@ -46,6 +46,10 @@ public class OfferArchiveService {
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void archiveSingle(JobOffer o, ArchiveReason reason) {
-        history.saveAndFlush(mapper.toHistory(o, reason));
+        JobOffer source = o;
+        if (o != null && o.getId() != null) {
+            source = offers.findById(o.getId()).orElse(o);
+        }
+        history.saveAndFlush(mapper.toHistory(source, reason));
     }
 }
