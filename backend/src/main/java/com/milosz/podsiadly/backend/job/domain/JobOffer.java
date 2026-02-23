@@ -93,7 +93,7 @@ public class JobOffer {
     private Integer salaryNormMonthMax;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "job_offer_tags", joinColumns = @JoinColumn(name = "job_offer_id"))
     @Column(name = "tag", length = 128)
     private List<String> techTags = new ArrayList<>();
