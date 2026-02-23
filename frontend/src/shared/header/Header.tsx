@@ -79,6 +79,7 @@ export default function Header() {
         const name = user?.name || user?.username || 'User';
         return name.trim() || 'User';
     }, [user]);
+    const postJobTarget = getAccess?.() ? '/post-job' : `/auth/login?next=${encodeURIComponent('/post-job')}`;
 
 
     useEffect(() => {
@@ -191,7 +192,7 @@ export default function Header() {
                 </nav>
 
                 <div className={styles.hdr__actions}>
-                    <Link className={[styles.btn, styles['btn--primary']].join(' ')} to="/post-job">
+                    <Link className={[styles.btn, styles['btn--primary']].join(' ')} to={postJobTarget}>
                         Post a job
                     </Link>
 
