@@ -36,6 +36,7 @@ public class JobOfferController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) Boolean remote,
+            @RequestParam(defaultValue = "false") boolean searchInDescription,
             @RequestParam(required = false) JobLevel level,
             @RequestParam(required = false, name = "seniority") JobLevel seniorityAlias,
             @RequestParam(required = false) List<String> spec,
@@ -71,7 +72,78 @@ public class JobOfferController {
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
                 withSalary, pageable,
-                sort
+                sort,
+                searchInDescription
+        );
+    }
+
+    @GetMapping("/fast")
+    public JobOfferSliceDto searchFast(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Boolean remote,
+            @RequestParam(defaultValue = "false") boolean searchInDescription,
+            @RequestParam(required = false) JobLevel level,
+            @RequestParam(required = false, name = "seniority") JobLevel seniorityAlias,
+            @RequestParam(required = false) List<String> spec,
+            @RequestParam(required = false) List<String> tech,
+            @RequestParam(required = false) Integer salaryMin,
+            @RequestParam(required = false) Integer salaryMax,
+            @RequestParam(required = false, name = "contract") List<ContractType> contracts,
+            @RequestParam(required = false) Boolean withSalary,
+            @RequestParam(required = false) Instant postedAfter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "relevance") String sort
+    ) {
+        JobLevel effectiveLevel = (level != null) ? level : seniorityAlias;
+
+        int idx = Math.max(0, page - 1);
+        int effSize = (pageSize != null && pageSize > 0) ? pageSize : size;
+
+        Sort s = switch (sort.toLowerCase()) {
+            case "salary" -> Sort.unsorted();
+            case "date" -> Sort.by(Sort.Direction.DESC, "publishedAt")
+                    .and(Sort.by(Sort.Direction.DESC, "id"));
+            default -> Sort.by(Sort.Direction.DESC, "publishedAt")
+                    .and(Sort.by(Sort.Direction.DESC, "id"));
+        };
+
+        Pageable pageable = PageRequest.of(idx, effSize, s);
+        return service.searchFast(
+                q, city, remote, effectiveLevel,
+                spec, tech,
+                salaryMin, salaryMax, postedAfter,
+                contracts != null ? Set.copyOf(contracts) : Set.of(),
+                withSalary, pageable, sort, searchInDescription
+        );
+    }
+
+    @GetMapping("/count")
+    public long count(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Boolean remote,
+            @RequestParam(defaultValue = "false") boolean searchInDescription,
+            @RequestParam(required = false) JobLevel level,
+            @RequestParam(required = false, name = "seniority") JobLevel seniorityAlias,
+            @RequestParam(required = false) List<String> spec,
+            @RequestParam(required = false) List<String> tech,
+            @RequestParam(required = false) Integer salaryMin,
+            @RequestParam(required = false) Integer salaryMax,
+            @RequestParam(required = false, name = "contract") List<ContractType> contracts,
+            @RequestParam(required = false) Boolean withSalary,
+            @RequestParam(required = false) Instant postedAfter
+    ) {
+        JobLevel effectiveLevel = (level != null) ? level : seniorityAlias;
+        return service.count(
+                q, city, remote, effectiveLevel,
+                spec, tech,
+                salaryMin, salaryMax, postedAfter,
+                contracts != null ? Set.copyOf(contracts) : Set.of(),
+                withSalary,
+                searchInDescription
         );
     }
 
@@ -80,6 +152,7 @@ public class JobOfferController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) Boolean remote,
+            @RequestParam(defaultValue = "false") boolean searchInDescription,
             @RequestParam(required = false) JobLevel level,
             @RequestParam(required = false, name = "seniority") JobLevel seniorityAlias,
             @RequestParam(required = false) List<String> spec,
@@ -104,7 +177,8 @@ public class JobOfferController {
                 salaryMin, salaryMax, postedAfter,
                 contracts != null ? Set.copyOf(contracts) : Set.of(),
                 withSalary, s,
-                sort
+                sort,
+                searchInDescription
         );
 
     }
