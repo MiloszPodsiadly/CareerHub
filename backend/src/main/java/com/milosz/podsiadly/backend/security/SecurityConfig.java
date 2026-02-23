@@ -2,7 +2,6 @@ package com.milosz.podsiadly.backend.security;
 
 import com.milosz.podsiadly.backend.security.jwt.JwtFilter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,8 +13,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -55,13 +52,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/salary/calculate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/salary/report/**").permitAll()
-                        .requestMatchers("/api/ingest/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ingest/url").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ingest/sitemap").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/favorites/*/*/status").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/mine").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/fast").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/count").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/by-external/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/jobs/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/applications").authenticated()
                         .requestMatchers("/api/applications/**").authenticated()
                         .requestMatchers("/api/job-drafts/**").authenticated()
