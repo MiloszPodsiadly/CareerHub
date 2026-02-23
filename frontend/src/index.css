@@ -7,7 +7,27 @@ body {
     padding-top: calc(var(--hdr-h) + 20px);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background: #fff;
-    zoom: 0.85;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
 }
 
 a { text-decoration: none; }
+
+@media (max-width: 900px) {
+    :root { --hdr-h: 112px; }
+}
+
+@media (max-width: 560px) {
+    :root { --hdr-h: 124px; }
+    body { padding-top: calc(var(--hdr-h) + 12px); }
+}
+
+@media (min-width: 1024px) {
+    body { zoom: 0.9; }
+}
