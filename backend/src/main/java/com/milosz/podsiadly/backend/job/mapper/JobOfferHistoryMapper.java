@@ -10,6 +10,7 @@ import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferHistoryDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -73,14 +74,7 @@ public class JobOfferHistoryMapper {
     }
 
     private String buildSnapshot(JobOffer o, List<String> contracts) {
-        var skills = (o.getTechStack() == null ? List.<JobOfferSkillDto>of()
-                : o.getTechStack().stream()
-                .map(s -> new JobOfferSkillDto(
-                        s.getName(),
-                        s.getLevelLabel(),
-                        s.getLevelValue(),
-                        s.getSource()))
-                .toList());
+        var skills = mapSkillsSafely(o);
 
         var detail = new JobOfferDetailDto(
                 o.getId(),
@@ -116,6 +110,23 @@ public class JobOfferHistoryMapper {
 
     private static Integer coalesce(Integer a, Integer b) {
         return a != null ? a : b;
+    }
+
+    private static List<JobOfferSkillDto> mapSkillsSafely(JobOffer o) {
+        try {
+            if (o == null || o.getTechStack() == null || !Hibernate.isInitialized(o.getTechStack())) {
+                return List.of();
+            }
+            return o.getTechStack().stream()
+                    .map(s -> new JobOfferSkillDto(
+                            s.getName(),
+                            s.getLevelLabel(),
+                            s.getLevelValue(),
+                            s.getSource()))
+                    .toList();
+        } catch (Exception ignored) {
+            return List.of();
+        }
     }
 
     private static String escape(String s) {
