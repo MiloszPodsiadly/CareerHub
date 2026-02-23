@@ -4,6 +4,7 @@ import com.milosz.podsiadly.backend.job.domain.JobSource;
 import com.milosz.podsiadly.backend.job.repository.JobOfferRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,18 +18,21 @@ public class OfferStaleDeactivationScheduler {
 
     private final JobOfferRepository offers;
 
-    private static final Duration DEFAULT_STALE_CUTOFF = Duration.ofHours(48);
-    private static final Duration NFJ_STALE_CUTOFF = Duration.ofHours(72);
+    @Value("${jobs.stale.default-cutoff:PT48H}")
+    private Duration defaultStaleCutoff;
 
-    @Scheduled(cron = "0 */10 * * * *")
+    @Value("${jobs.stale.nfj-cutoff:PT72H}")
+    private Duration nfjStaleCutoff;
+
+    @Scheduled(cron = "${jobs.stale.cron:0 */10 * * * *}")
     @Transactional
     public void deactivateStale() {
-        deactivateFor(JobSource.JUSTJOIN, DEFAULT_STALE_CUTOFF);
-        deactivateFor(JobSource.SOLIDJOBS, DEFAULT_STALE_CUTOFF);
-        deactivateFor(JobSource.PLATFORM, DEFAULT_STALE_CUTOFF);
-        deactivateFor(JobSource.NOFLUFFJOBS, NFJ_STALE_CUTOFF);
-        deactivateFor(JobSource.THEPROTOCOL, DEFAULT_STALE_CUTOFF);
-        deactivateFor(JobSource.PRACUJ, DEFAULT_STALE_CUTOFF);
+        deactivateFor(JobSource.JUSTJOIN, defaultStaleCutoff);
+        deactivateFor(JobSource.SOLIDJOBS, defaultStaleCutoff);
+        deactivateFor(JobSource.PLATFORM, defaultStaleCutoff);
+        deactivateFor(JobSource.NOFLUFFJOBS, nfjStaleCutoff);
+        deactivateFor(JobSource.THEPROTOCOL, defaultStaleCutoff);
+        deactivateFor(JobSource.PRACUJ, defaultStaleCutoff);
     }
 
     private void deactivateFor(JobSource src, Duration cutoffDur) {
