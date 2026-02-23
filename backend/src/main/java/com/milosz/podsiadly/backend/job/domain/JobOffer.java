@@ -3,6 +3,7 @@ package com.milosz.podsiadly.backend.job.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 
 import java.time.Instant;
@@ -14,7 +15,17 @@ import java.util.*;
         uniqueConstraints = @UniqueConstraint(
                 name = "ux_job_offer_source_external",
                 columnNames = {"source","external_id"}
-        )
+        ),
+        indexes = {
+                @Index(name = "ix_job_offer_active_published", columnList = "active,published_at"),
+                @Index(name = "ix_job_offer_active_last_seen", columnList = "active,last_seen_at"),
+                @Index(name = "ix_job_offer_active_city", columnList = "active,city_id"),
+                @Index(name = "ix_job_offer_active_level", columnList = "active,level"),
+                @Index(name = "ix_job_offer_active_remote", columnList = "active,remote"),
+                @Index(name = "ix_job_offer_salary_max", columnList = "salary_max"),
+                @Index(name = "ix_job_offer_salary_min", columnList = "salary_min"),
+                @Index(name = "ix_job_offer_salary_norm_max", columnList = "salary_norm_month_max")
+        }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class JobOffer {
@@ -88,7 +99,8 @@ public class JobOffer {
     private List<String> techTags = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "jobOffer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "jobOffer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 256)
     private List<JobOfferSkill> techStack = new ArrayList<>();
 
     private Instant publishedAt;
