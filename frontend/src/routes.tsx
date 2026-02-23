@@ -17,6 +17,7 @@ import FavoritesPage from './pages/Favorites/FavoritesPage';
 import MyApplicationsPage from './pages/MyApplications/MyApplicationsPage';
 import MyOffersPage from './pages/MyOffers/MyOffersPage';
 import JobExactlyOfferPage from './pages/JobExactlyOffer/JobExactlyOfferPage';
+import RequireAuth from './shared/auth/RequireAuth';
 
 export const router = createBrowserRouter([
     {
@@ -34,18 +35,37 @@ export const router = createBrowserRouter([
             { path: 'auth/register', element: <RegisterPage /> },
             { path: 'auth/forgot', element: <ForgotPasswordPage /> },
             { path: 'auth/reset-password', element: <ResetPasswordPage /> },
-            { path: 'profile', element: <ProfilePage /> },
+            {
+                path: 'profile',
+                element: (
+                    <RequireAuth>
+                        <ProfilePage />
+                    </RequireAuth>
+                ),
+            },
             {
                 path: 'favorite',
-                element: <FavoritesPage />,
+                element: (
+                    <RequireAuth>
+                        <FavoritesPage />
+                    </RequireAuth>
+                ),
             },
             {
                 path: 'post-job',
-                element: <PostJobPage />,
+                element: (
+                    <RequireAuth>
+                        <PostJobPage />
+                    </RequireAuth>
+                ),
             },
             {
                 path: 'my-offers',
-                element: <MyOffersPage />,
+                element: (
+                    <RequireAuth>
+                        <MyOffersPage />
+                    </RequireAuth>
+                ),
             },
             {
                 path: 'jobexaclyoffer',
@@ -53,7 +73,11 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'my-applications',
-                element: <MyApplicationsPage />,
+                element: (
+                    <RequireAuth>
+                        <MyApplicationsPage />
+                    </RequireAuth>
+                ),
             },
             { path: 'auth/verify', element: <VerifyEmailPage /> },
             { path: 'auth/resend-verification', element: <ResendVerificationPage /> },
