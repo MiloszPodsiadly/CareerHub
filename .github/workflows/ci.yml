@@ -101,8 +101,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          registry-url: https://registry.npmjs.org/
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
+      - name: Force public npm registry and clean cache
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          npm config delete //npm.pkg.github.com/:_authToken || true
+          npm cache clean --force
 
       - run: npm ci
       - run: npm run lint --if-present
