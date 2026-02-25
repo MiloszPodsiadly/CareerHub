@@ -1,3 +1,10 @@
+# --- ENV files ---
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+
 HELP.md
 .gradle
 build/

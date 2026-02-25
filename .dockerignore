@@ -1,5 +1,7 @@
-.env.postgres
-.env.rabbitmq
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 .gradle
 **/.gradle
