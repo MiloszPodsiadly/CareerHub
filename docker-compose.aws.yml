@@ -33,7 +33,7 @@ services:
     image: postgres-hardened:local
     container_name: postgres
     env_file:
-      - .env.postgres
+      - /app/env/.env.postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks: [ devnet ]
@@ -51,7 +51,7 @@ services:
     image: rabbitmq:3.13-alpine
     container_name: rabbitmq
     env_file:
-      - .env.rabbitmq
+      - /app/env/.env.rabbitmq
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks: [ devnet ]
@@ -85,9 +85,10 @@ services:
     container_name: backend
     expose: [ "8081" ]
     env_file:
-      - .env.postgres
-      - .env.rabbitmq
-      - .env.mail
+      - /app/env/.env.postgres
+      - /app/env/.env.rabbitmq
+      - /app/env/.env.mail
+      - /app/env/.env.jwt
     environment:
       SERVER_PORT: 8081
       SPRING_APPLICATION_NAME: backend
@@ -127,6 +128,8 @@ services:
     image: gateway:local
     container_name: gateway
     expose: [ "8080" ]
+    env_file:
+      - /app/env/.env.jwt
     environment:
       SERVER_PORT: 8080
       SPRING_APPLICATION_NAME: gateway
@@ -162,7 +165,7 @@ services:
     image: agent-crawler:local
     container_name: agent-crawler
     env_file:
-      - .env.rabbitmq
+      - /app/env/.env.rabbitmq
     depends_on:
       rabbitmq:
         condition: service_started

@@ -83,6 +83,18 @@ The platform emphasizes:
 
 ## 🧪 Local Development Workflow
 
+### Env Files
+
+Run command below to create env files from example files
+
+```bash
+cp .env.jwt.example .env.jwt
+cp .env.postgres.example .env.postgres
+cp .env.rabbitmq.example .env.rabbitmq
+cp .env.mail.example .env.mail
+```
+
+
 ### Start App
 
 ```bash

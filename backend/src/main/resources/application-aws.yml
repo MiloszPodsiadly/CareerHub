@@ -60,10 +60,10 @@ management:
 
 auth:
   jwt:
-    secret: "Yy8k2QJb4V7tRkZ1mP9hS3fX6cD0nW2aL8eT4uI9rC5oB7pM1xG6zH0vN3qJ5d"
-    issuer: "careerhub-backend"
-    access-minutes: 60
-    refresh-days: 7
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:careerhub-backend}
+    access-minutes: ${JWT_ACCESS_MINUTES:60}
+    refresh-days: ${JWT_REFRESH_DAYS:7}
 
 jobs:
   ingest:

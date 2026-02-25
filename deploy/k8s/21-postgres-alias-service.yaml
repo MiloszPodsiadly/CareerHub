@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: careerhub
-spec:
-  type: ExternalName
-  externalName: postgres-postgresql.careerhub.svc.cluster.local

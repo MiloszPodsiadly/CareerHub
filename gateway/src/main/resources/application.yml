@@ -36,8 +36,9 @@ management:
 
 auth:
   jwt:
-    secret: "Yy8k2QJb4V7tRkZ1mP9hS3fX6cD0nW2aL8eT4uI9rC5oB7pM1xG6zH0vN3qJ5d"
-    issuer: "careerhub-backend"
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:careerhub-backend}
+
   public-paths:
     - /api/auth/**
     - /api/public/**

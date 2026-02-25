@@ -105,6 +105,8 @@ services:
     image: gateway:local
     container_name: gateway
     ports: [ "8080:8080" ]
+    env_file:
+      - .env.jwt
     environment:
       SERVER_PORT: 8080
       SPRING_APPLICATION_NAME: gateway
@@ -138,6 +140,7 @@ services:
       - .env.postgres
       - .env.rabbitmq
       - .env.mail
+      - .env.jwt
     environment:
       SERVER_PORT: 8081
       SPRING_APPLICATION_NAME: backend
