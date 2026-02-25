@@ -38,6 +38,7 @@ auth:
   jwt:
     secret: ${JWT_SECRET}
     issuer: ${JWT_ISSUER:careerhub-backend}
+
   public-paths:
     - /api/auth/**
     - /api/public/**
