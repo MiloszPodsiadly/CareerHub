@@ -1,7 +1,7 @@
 server:
   error:
-    include-message: ALWAYS
-    include-binding-errors: ALWAYS
+    include-message: NEVER
+    include-binding-errors: NEVER
     include-stacktrace: NEVER
   port: 8081
 
