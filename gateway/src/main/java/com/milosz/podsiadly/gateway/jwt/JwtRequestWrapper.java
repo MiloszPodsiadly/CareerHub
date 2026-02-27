@@ -1,6 +1,5 @@
 package com.milosz.podsiadly.gateway.jwt;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import org.springframework.http.HttpHeaders;
@@ -12,12 +11,10 @@ import java.util.List;
 public class JwtRequestWrapper extends HttpServletRequestWrapper {
 
     private final String token;
-    private final Claims claims;
 
-    public JwtRequestWrapper(HttpServletRequest request, String token, Claims claims) {
+    public JwtRequestWrapper(HttpServletRequest request, String token) {
         super(request);
         this.token = token;
-        this.claims = claims;
     }
 
     @Override
@@ -34,9 +31,5 @@ public class JwtRequestWrapper extends HttpServletRequestWrapper {
             return Collections.enumeration(List.of("Bearer " + token));
         }
         return super.getHeaders(name);
-    }
-
-    public Claims getClaims() {
-        return claims;
     }
 }
