@@ -1,10 +1,11 @@
 package com.milosz.podsiadly.backend.security.jwt;
 
-
 import com.milosz.podsiadly.backend.domain.loginandregister.LoginUserDetailsService;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,70 +27,49 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
-        String token = resolve(req);
-        if (token != null) {
-            try {
-                Claims c = jwt.parse(token).getBody();
-                String username = (String) c.get("username");
-                if (username == null || username.isBlank()) {
-                    username = c.getSubject();
-                }
 
-                if (username != null && !username.isBlank()) {
-                    var u = users.loadUserByUsername(username);
-                    var auth = new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
-            } catch (Exception ex) {
-                log.debug("JWT parse/auth failed: {}", ex.toString());
-                SecurityContextHolder.clearContext();
-            }
+        String token = resolveBearer(req);
+        if (token == null) {
+            chain.doFilter(req, res);
+            return;
         }
+
+        try {
+            Claims c = jwt.parse(token).getBody();
+
+            String email = (String) c.get("username");
+            if (email == null || email.isBlank()) {
+                throw new IllegalArgumentException("Missing username(email) claim");
+            }
+
+            var u = users.loadUserByUsername(email);
+
+            if (!u.isEnabled()) {
+                SecurityContextHolder.clearContext();
+                chain.doFilter(req, res);
+                return;
+            }
+
+            var auth = new UsernamePasswordAuthenticationToken(u, null, u.getAuthorities());
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+        } catch (Exception ex) {
+            log.debug("JWT parse/auth failed: {}", ex.toString());
+            SecurityContextHolder.clearContext();
+        }
+
         chain.doFilter(req, res);
     }
 
-    private String resolve(HttpServletRequest req) {
+    private String resolveBearer(HttpServletRequest req) {
         String h = req.getHeader(HttpHeaders.AUTHORIZATION);
         if (h != null && h.startsWith("Bearer ")) return h.substring(7);
-        if (req.getCookies()!=null)
-            return Arrays.stream(req.getCookies()).filter(c -> "ACCESS".equals(c.getName()))
-                    .map(Cookie::getValue).findFirst().orElse(null);
         return null;
     }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
-        String uri = req.getRequestURI();
-        String method = req.getMethod();
-
-        if (uri.startsWith("/api/auth/")) {
-            return !uri.equals("/api/auth/me") && !uri.equals("/api/auth/me/");
-        }
-
-        if (uri.startsWith("/api/public/")) {
-            return true;
-        }
-
-        if (uri.startsWith("/api/applications")) {
-            return false;
-        }
-
-        if (uri.equals("/api/ingest") || uri.startsWith("/api/ingest/")) {
-            return true;
-        }
-        if (uri.equals("/api/salary/calculate") && "POST".equalsIgnoreCase(method)) return true;
-        if (uri.startsWith("/api/salary/report/") && "GET".equalsIgnoreCase(method)) return true;
-        if (uri.startsWith("/api/jobs")) {
-            if (uri.equals("/api/jobs/mine") || uri.startsWith("/api/jobs/mine/")) {
-                return false;
-            }
-            if ("GET".equalsIgnoreCase(method)) {
-                return true;
-            }
-
-            return false;
-        }
         return false;
     }
-
 }

@@ -1,3 +1,10 @@
 package com.milosz.podsiadly.backend.ingest.dto;
 
-public record IngestUrlRequest(String url, String source) {}
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
+
+public record IngestUrlRequest(
+        @NotBlank @URL String url,
+        @Size(max = 50) String source
+) {}
