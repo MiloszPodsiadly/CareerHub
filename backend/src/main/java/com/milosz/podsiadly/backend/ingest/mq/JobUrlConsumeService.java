@@ -36,7 +36,7 @@ public class JobUrlConsumeService {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
 
-    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(2.0d);
+    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(1.0d); // 2.0d also triggers now 429
     private static final RateLimiter TP_FETCH_LIMITER  = RateLimiter.create(1.0d); // 2.0d triggers 429 sometimes
 
     private static final Pattern TP_OFFER_ID = Pattern.compile(
