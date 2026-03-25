@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.backend.security;
 
+import com.milosz.podsiadly.backend.security.cookie.AuthCookieProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtFilter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, AuthCookieProperties.class})
 @EnableMethodSecurity
 public class SecurityConfig {
 

@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ErrorHandler;
 
+import java.util.Map;
+
 @Configuration
 @EnableRabbit
 public class RabbitConfig {
@@ -32,6 +34,31 @@ public class RabbitConfig {
     @Bean
     Binding urlsBinding(Queue urlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
         return BindingBuilder.bind(urlsQueue).to(jobsExchange).with(p.getRouting().getUrls());
+    }
+
+    @Bean
+    Queue urlsRetryQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getUrlsRetry())
+                .withArguments(Map.of(
+                        "x-dead-letter-exchange", p.getExchange(),
+                        "x-dead-letter-routing-key", p.getRouting().getUrls()
+                ))
+                .build();
+    }
+
+    @Bean
+    Binding urlsRetryBinding(Queue urlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(urlsRetryQueue).to(jobsExchange).with(p.getRouting().getUrlsRetry());
+    }
+
+    @Bean
+    Queue urlsDlqQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getUrlsDlq()).build();
+    }
+
+    @Bean
+    Binding urlsDlqBinding(Queue urlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(urlsDlqQueue).to(jobsExchange).with(p.getRouting().getUrlsDlq());
     }
 
     @Bean
@@ -57,6 +84,9 @@ public class RabbitConfig {
         f.setDefaultRequeueRejected(false);
         f.setAutoStartup(true);
         f.setErrorHandler(amqpErrorHandler);
+        f.setPrefetchCount(1);
+        f.setConcurrentConsumers(1);
+        f.setMaxConcurrentConsumers(1);
         return f;
     }
 

@@ -1,9 +1,9 @@
 server:
+  port: 8081
   error:
     include-message: ALWAYS
     include-binding-errors: ALWAYS
     include-stacktrace: NEVER
-  port: 8081
 
 spring:
   application:
@@ -25,7 +25,7 @@ spring:
 
   app:
     platform:
-      base-url: http://localhost:3000
+      base-url: ${PLATFORM_BASE_URL:http://localhost:3000}
 
   rabbitmq:
     host: rabbitmq
@@ -35,13 +35,14 @@ spring:
     listener:
       type: simple
       simple:
-        concurrency: 4
-        max-concurrency: 8
-        prefetch: 50
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
         acknowledge-mode: auto
         default-requeue-rejected: false
     template:
       mandatory: true
+
 eureka:
   client:
     serviceUrl:
@@ -58,7 +59,6 @@ management:
     health:
       show-details: "when_authorized"
 
-
 auth:
   jwt:
     secret: ${JWT_SECRET}
@@ -66,14 +66,24 @@ auth:
     access-minutes: ${JWT_ACCESS_MINUTES:60}
     refresh-days: ${JWT_REFRESH_DAYS:7}
 
+  cookie:
+    refresh-name: REFRESH
+    refresh-path: /api/auth/refresh
+    same-site: Lax
+    secure: false
+
 jobs:
   ingest:
     exchange: ingest.jobs
     routing:
       urls: job-url
+      urlsRetry: job-url.retry
+      urlsDlq: job-url.dlq
       externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
+      urlsRetry: ingest.jobs.url.retry
+      urlsDlq: ingest.jobs.url.dlq
       externalOffers: ingest.jobs.external-offers
     source-default: JUSTJOIN
 
@@ -87,11 +97,12 @@ events:
 ingest:
   scheduler:
     enabled: true
-    initial-delay: PT3M
-    fixed-delay: PT12H
+    initial-delay: PT1M
+    fixed-delay: PT30H
     sources:
       - source: JUSTJOIN
         sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
+
 logging:
   level:
     root: INFO
@@ -103,8 +114,9 @@ logging:
 app:
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
+
   mailer:
-    enabled: false
+    enabled: ${MAILER_ENABLED:false}
     exchange: mailer.exchange
     routing:
       send: mail.send
@@ -126,8 +138,8 @@ app:
       prefetch: 5
       concurrency: 1
     aws:
-      region: us-east-1
-      from: ${SES_FROM}
+      region: ${AWS_REGION:us-east-1}
+      from: ${SES_FROM:}
     rate-limit:
       verification:
         min-interval: PT1M

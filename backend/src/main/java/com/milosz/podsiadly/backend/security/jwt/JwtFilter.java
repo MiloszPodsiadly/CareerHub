@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.security.jwt;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.LoginUserDetailsService;
+import com.milosz.podsiadly.backend.domain.loginandregister.User;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,6 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -21,12 +24,30 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
+
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String CLAIM_TYPE = "type";
+    private static final String TYPE_ACCESS = "access";
+
     private final JwtService jwt;
     private final LoginUserDetailsService users;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest req,
+            @NonNull HttpServletResponse res,
+            @NonNull FilterChain chain
+    ) throws ServletException, IOException {
+
+        if (HttpMethod.OPTIONS.matches(req.getMethod())) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            chain.doFilter(req, res);
+            return;
+        }
 
         String token = resolveBearer(req);
         if (token == null) {
@@ -37,15 +58,20 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             Claims c = jwt.parse(token).getBody();
 
-            String email = (String) c.get("username");
-            if (email == null || email.isBlank()) {
-                throw new IllegalArgumentException("Missing username(email) claim");
+            Object type = c.get(CLAIM_TYPE);
+            if (!(type instanceof String t) || !TYPE_ACCESS.equals(t)) {
+                chain.doFilter(req, res);
+                return;
             }
 
-            var u = users.loadUserByUsername(email);
+            String email = c.getSubject();
+            if (email == null || email.isBlank()) {
+                chain.doFilter(req, res);
+                return;
+            }
 
+            User u = users.loadUserByUsername(email);
             if (!u.isEnabled()) {
-                SecurityContextHolder.clearContext();
                 chain.doFilter(req, res);
                 return;
             }
@@ -55,7 +81,7 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
 
         } catch (Exception ex) {
-            log.debug("JWT parse/auth failed: {}", ex.toString());
+            log.debug("JWT parse/auth failed (soft): {}", ex.toString());
             SecurityContextHolder.clearContext();
         }
 
@@ -64,12 +90,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private String resolveBearer(HttpServletRequest req) {
         String h = req.getHeader(HttpHeaders.AUTHORIZATION);
-        if (h != null && h.startsWith("Bearer ")) return h.substring(7);
-        return null;
+        if (h == null) return null;
+        if (!h.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) return null;
+        String token = h.substring(BEARER_PREFIX.length()).trim();
+        return token.isEmpty() ? null : token;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
-        return false;
+        String p = req.getRequestURI();
+        return p != null && p.startsWith("/api/auth/");
     }
 }

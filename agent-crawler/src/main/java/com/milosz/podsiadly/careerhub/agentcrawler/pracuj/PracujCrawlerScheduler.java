@@ -38,8 +38,8 @@ public class PracujCrawlerScheduler {
     private static final int MAX_PAGES_PER_ITS = 80;
 
     @Scheduled(
-            initialDelayString = "${agent.pracuj.initial-delay-ms:240000}",
-            fixedDelayString   = "${agent.pracuj.interval-ms:43200000}"
+            initialDelayString = "${agent.pracuj.initial-delay-ms:3000000}",
+            fixedDelayString   = "${agent.pracuj.interval-ms:108000000}"
     )
     public void runPeriodic() {
         log.info("[agent-pracuj] periodic crawl triggered");

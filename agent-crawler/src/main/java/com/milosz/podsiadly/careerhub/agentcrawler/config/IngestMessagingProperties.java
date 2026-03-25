@@ -18,12 +18,16 @@ public class IngestMessagingProperties {
     @Getter @Setter
     public static class Routing {
         private String urls;
+        private String urlsRetry;
+        private String urlsDlq;
         private String externalOffers;
     }
 
     @Getter @Setter
     public static class QueueNames {
         private String urls;
+        private String urlsRetry;
+        private String urlsDlq;
         private String externalOffers;
     }
 }

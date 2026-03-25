@@ -44,8 +44,8 @@ public class NfjCrawlerScheduler {
     };
 
     @Scheduled(
-            initialDelayString = "${agent.nfj.initial-delay-ms:280000}",
-            fixedDelayString   = "${agent.nfj.interval-ms:43200000}"
+            initialDelayString = "${agent.nfj.initial-delay-ms:1200000}",
+            fixedDelayString   = "${agent.nfj.interval-ms:108000000}"
     )
     public void runPeriodic() {
         log.info("[agent-nfj] periodic crawl triggered");

@@ -15,9 +15,14 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class JwtService {
+
+    private static final long CLOCK_SKEW_SECONDS = 30; // 30–60s typowo w prod
+
     private final JwtProperties props;
 
-    private byte[] key() { return props.getSecret().getBytes(StandardCharsets.UTF_8); }
+    private byte[] key() {
+        return props.getSecret().getBytes(StandardCharsets.UTF_8);
+    }
 
     public String issueAccess(String userId, String email, List<String> roles) {
         Instant now = Instant.now();
@@ -47,6 +52,7 @@ public class JwtService {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(key()))
                 .requireIssuer(props.getIssuer())
+                .setAllowedClockSkewSeconds(CLOCK_SKEW_SECONDS)
                 .build()
                 .parseClaimsJws(token);
     }

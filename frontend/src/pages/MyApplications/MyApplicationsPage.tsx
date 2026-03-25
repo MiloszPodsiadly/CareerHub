@@ -311,7 +311,7 @@ export default function MyApplicationsPage() {
             const removed = app.offerId == null;
             const title = app.offerTitle || (removed ? 'Offer removed' : '—');
             const applied = app.createdAt ? new Date(app.createdAt).toLocaleString('en-GB') : '—';
-            const link = removed ? null : `/jobexaclyoffer?id=${encodeURIComponent(String(app.offerId))}`;
+            const link = removed ? null : `/job-exactly-offer?id=${encodeURIComponent(String(app.offerId))}`;
 
             return (
                 <li key={String(app.id)} className={styles.apps__item}>
