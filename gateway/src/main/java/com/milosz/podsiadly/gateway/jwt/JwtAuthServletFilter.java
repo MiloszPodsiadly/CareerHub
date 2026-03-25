@@ -32,6 +32,8 @@ import java.util.List;
 @EnableConfigurationProperties(GwJwtProperties.class)
 public class JwtAuthServletFilter implements Filter {
 
+    private static final long CLOCK_SKEW_SECONDS = 30;
+
     private final GwJwtProperties jwtProps;
 
     @Override
@@ -42,46 +44,63 @@ public class JwtAuthServletFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
 
         String token = resolveToken(req);
-        try {
-            if (token == null) {
-                chain.doFilter(req, res);
-                return;
-            }
 
+        if (token == null) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(Keys.hmacShaKeyFor(jwtProps.getSecret().getBytes(StandardCharsets.UTF_8)))
                     .requireIssuer(jwtProps.getIssuer())
+                    .setAllowedClockSkewSeconds(CLOCK_SKEW_SECONDS)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
 
-            List<GrantedAuthority> authorities = new ArrayList<>();
-            Object rolesObj = claims.get("roles");
-            if (rolesObj instanceof List<?> list) {
-                for (Object r : list) {
-                    if (r instanceof String role && !role.isBlank()) {
-                        authorities.add(new SimpleGrantedAuthority(role));
-                    }
-                }
-            }
+            List<GrantedAuthority> authorities = extractAuthorities(claims);
 
             String principal = claims.getSubject();
+
             var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            chain.doFilter(new JwtRequestWrapper(req, token), res);
+            try {
+                chain.doFilter(new JwtRequestWrapper(req, token), res);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+
         } catch (JwtException e) {
             SecurityContextHolder.clearContext();
             unauthorized(res, "Invalid or expired token");
-        } finally {
-            SecurityContextHolder.clearContext();
         }
+    }
+
+    private List<GrantedAuthority> extractAuthorities(Claims claims) {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+
+        Object rolesObj = claims.get("roles");
+        if (rolesObj instanceof List<?> list) {
+            for (Object r : list) {
+                if (r instanceof String role && !role.isBlank()) {
+                    authorities.add(new SimpleGrantedAuthority(role));
+                }
+            }
+        }
+
+        return authorities;
     }
 
     private String resolveToken(HttpServletRequest req) {
         String hdr = req.getHeader(HttpHeaders.AUTHORIZATION);
-        if (hdr != null && hdr.startsWith("Bearer ")) return hdr.substring(7);
+        if (hdr != null && hdr.startsWith("Bearer ")) {
+            String token = hdr.substring(7).trim();
+            return token.isEmpty() ? null : token;
+        }
         return null;
     }
 
