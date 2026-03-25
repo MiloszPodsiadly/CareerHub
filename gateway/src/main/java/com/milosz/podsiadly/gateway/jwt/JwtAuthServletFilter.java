@@ -32,8 +32,6 @@ import java.util.List;
 @EnableConfigurationProperties(GwJwtProperties.class)
 public class JwtAuthServletFilter implements Filter {
 
-    private static final long CLOCK_SKEW_SECONDS = 30;
-
     private final GwJwtProperties jwtProps;
 
     @Override
@@ -54,7 +52,6 @@ public class JwtAuthServletFilter implements Filter {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(Keys.hmacShaKeyFor(jwtProps.getSecret().getBytes(StandardCharsets.UTF_8)))
                     .requireIssuer(jwtProps.getIssuer())
-                    .setAllowedClockSkewSeconds(CLOCK_SKEW_SECONDS)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
