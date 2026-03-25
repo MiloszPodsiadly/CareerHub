@@ -1,9 +1,9 @@
 package com.milosz.podsiadly.backend.ingest.config;
 
+import com.milosz.podsiadly.backend.ingest.mq.DelayedRetryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.util.ErrorHandler;
 
 
@@ -14,8 +14,8 @@ final class SilentAmqpErrorHandler implements ErrorHandler {
     public void handleError(Throwable t) {
         Throwable root = unwrap(t);
 
-        if (root instanceof ImmediateRequeueAmqpException) {
-            log.debug("[amqp] requeue: {}", root.getMessage());
+        if (root instanceof DelayedRetryException) {
+            log.debug("[amqp] delayed retry: {}", root.getMessage());
             return;
         }
         if (root instanceof AmqpRejectAndDontRequeueException) {

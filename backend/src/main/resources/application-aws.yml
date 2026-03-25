@@ -34,9 +34,9 @@ spring:
     listener:
       type: simple
       simple:
-        concurrency: 4
-        max-concurrency: 8
-        prefetch: 50
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
         acknowledge-mode: auto
         default-requeue-rejected: false
     template:
@@ -77,9 +77,13 @@ jobs:
     source-default: JUSTJOIN
 
 events:
+      urlsRetry: job-url.retry
+      urlsDlq: job-url.dlq
   meetup:
     groups:
       - warsawjs
+      urlsRetry: ingest.jobs.url.retry
+      urlsDlq: ingest.jobs.url.dlq
       - pykonik
       - wrocnet
 

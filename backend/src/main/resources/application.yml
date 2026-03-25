@@ -35,9 +35,9 @@ spring:
     listener:
       type: simple
       simple:
-        concurrency: 4
-        max-concurrency: 8
-        prefetch: 50
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
         acknowledge-mode: auto
         default-requeue-rejected: false
     template:
@@ -74,9 +74,13 @@ jobs:
       externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
+      urlsRetry: job-url.retry
+      urlsDlq: job-url.dlq
       externalOffers: ingest.jobs.external-offers
     source-default: JUSTJOIN
 
+      urlsRetry: ingest.jobs.url.retry
+      urlsDlq: ingest.jobs.url.dlq
 events:
   meetup:
     groups:

@@ -50,9 +50,13 @@ jobs:
     exchange: ingest.jobs
     routing:
       urls: job-url
+      urlsRetry: job-url.retry
+      urlsDlq: job-url.dlq
       externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
+      urlsRetry: ingest.jobs.url.retry
+      urlsDlq: ingest.jobs.url.dlq
       externalOffers: ingest.jobs.external-offers
 
 eureka:

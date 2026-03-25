@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.ImmediateRequeueAmqpException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -36,8 +35,8 @@ public class JobUrlConsumeService {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
 
-    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(1.0d); // 2.0d also triggers now 429
-    private static final RateLimiter TP_FETCH_LIMITER  = RateLimiter.create(1.0d); // 2.0d triggers 429 sometimes
+    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(0.5d);
+    private static final RateLimiter TP_FETCH_LIMITER  = RateLimiter.create(1.0d);
 
     private static final Pattern TP_OFFER_ID = Pattern.compile(
             "(?:,oferta,|%2Coferta%2C)([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
@@ -76,7 +75,7 @@ public class JobUrlConsumeService {
             handleIoException(e, url);
         } catch (DataIntegrityViolationException e) {
             handleDataIntegrityViolation(e, url);
-        } catch (ImmediateRequeueAmqpException | AmqpRejectAndDontRequeueException e) {
+        } catch (DelayedRetryException | AmqpRejectAndDontRequeueException e) {
             throw e;
         } catch (Exception e) {
             log.error("[ingest] unexpected error source={} url={}", source, url, e);
@@ -119,14 +118,27 @@ public class JobUrlConsumeService {
         int sc = e.getStatusCode();
 
         if (sc == 404 || sc == 410) {
-            logGone("[ingest] offer gone ({}): {} → mark inactive", sc, url);
+            logGone("[ingest] offer gone ({}): {} -> mark inactive", sc, url);
             deactivateGoneOffer(source, url);
             return;
         }
 
-        if (sc == 408 || sc == 425 || sc == 429 || (sc >= 500 && sc < 600)) {
-            logRequeue("[ingest] transient HTTP {} for {} (source={}), requeue", sc, url, source);
-            throw new ImmediateRequeueAmqpException("HTTP " + sc + " for " + url);
+        if (sc == 429) {
+            long delayMs = delayFor429(source);
+            log.warn("[ingest] HTTP 429 for {} (source={}) -> delayed retry in {} ms", url, source, delayMs);
+            throw new DelayedRetryException("HTTP 429 for " + url, delayMs, e);
+        }
+
+        if (sc == 408 || sc == 425) {
+            long delayMs = 15_000L;
+            log.warn("[ingest] transient HTTP {} for {} (source={}) -> delayed retry in {} ms", sc, url, source, delayMs);
+            throw new DelayedRetryException("HTTP " + sc + " for " + url, delayMs, e);
+        }
+
+        if (sc >= 500 && sc < 600) {
+            long delayMs = 30_000L;
+            log.warn("[ingest] transient HTTP {} for {} (source={}) -> delayed retry in {} ms", sc, url, source, delayMs);
+            throw new DelayedRetryException("HTTP " + sc + " for " + url, delayMs, e);
         }
 
         logDrop("[ingest] non-retryable HTTP {} for {} (source={}), drop", sc, url, source);
@@ -135,7 +147,7 @@ public class JobUrlConsumeService {
 
     private void handleJustJoin(String url, String html, JobSource source) {
         if (justJoinParser.isExpiredPage(url, html)) {
-            logGone("[ingest] JJ expired(200) page: {} → mark inactive", url);
+            logGone("[ingest] JJ expired(200) page: {} -> mark inactive", url);
             deactivateGoneOffer(source, url);
             return;
         }
@@ -145,13 +157,15 @@ public class JobUrlConsumeService {
     }
 
     private void handleInterruptedIo(String url) {
-        logRequeue("[ingest] I/O timeout/interrupted for {}, requeue", url);
-        throw new ImmediateRequeueAmqpException("I/O timeout for " + url);
+        long delayMs = 15_000L;
+        log.warn("[ingest] I/O timeout/interrupted for {}, delayed retry in {} ms", url, delayMs);
+        throw new DelayedRetryException("I/O timeout for " + url, delayMs);
     }
 
     private void handleIoException(IOException e, String url) {
-        logRequeue("[ingest] I/O error for {}, requeue: {}", url, e.toString());
-        throw new ImmediateRequeueAmqpException("I/O error for " + url);
+        long delayMs = 20_000L;
+        log.warn("[ingest] I/O error for {}, delayed retry in {} ms: {}", url, delayMs, e.toString());
+        throw new DelayedRetryException("I/O error for " + url, delayMs, e);
     }
 
     private void handleDataIntegrityViolation(DataIntegrityViolationException e, String url) {
@@ -310,6 +324,16 @@ public class JobUrlConsumeService {
 
         externalIngest.ingest(source, offerId, data);
         logOk("[ingest] THEPROTOCOL upsert OK: {}", url);
+    }
+
+    private long delayFor429(JobSource source) {
+        if (source == JobSource.NOFLUFFJOBS) {
+            return 60_000L;
+        }
+        if (source == JobSource.THEPROTOCOL) {
+            return 30_000L;
+        }
+        return 20_000L;
     }
 
     private static String extractTheProtocolOfferId(String url) {
