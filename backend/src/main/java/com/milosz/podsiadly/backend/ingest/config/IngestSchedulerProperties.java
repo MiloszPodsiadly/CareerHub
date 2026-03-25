@@ -13,8 +13,8 @@ import java.util.List;
 public class IngestSchedulerProperties {
 
     private boolean enabled = true;
-    private Duration initialDelay = Duration.ofMinutes(3);
-    private Duration fixedDelay = Duration.ofHours(1);
+    private Duration initialDelay = Duration.ofMinutes(1);
+    private Duration fixedDelay = Duration.ofHours(30);
     private List<Source> sources = List.of();
 
     @Data
