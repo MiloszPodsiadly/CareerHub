@@ -1,9 +1,9 @@
 server:
+  port: 8081
   error:
     include-message: NEVER
     include-binding-errors: NEVER
     include-stacktrace: NEVER
-  port: 8081
 
 spring:
   application:
@@ -25,7 +25,8 @@ spring:
 
   app:
     platform:
-      base-url: https://careerhub-it.com
+      base-url: ${PLATFORM_BASE_URL:https://careerhub-it.com}
+
   rabbitmq:
     host: rabbitmq
     port: 5672
@@ -70,25 +71,26 @@ auth:
     refresh-path: /api/auth/refresh
     same-site: Lax
     secure: true
+
 jobs:
   ingest:
     exchange: ingest.jobs
     routing:
       urls: job-url
+      urlsRetry: job-url.retry
+      urlsDlq: job-url.dlq
       externalOffers: external-offer
     queue:
       urls: ingest.jobs.url
+      urlsRetry: ingest.jobs.url.retry
+      urlsDlq: ingest.jobs.url.dlq
       externalOffers: ingest.jobs.external-offers
     source-default: JUSTJOIN
 
 events:
-      urlsRetry: job-url.retry
-      urlsDlq: job-url.dlq
   meetup:
     groups:
       - warsawjs
-      urlsRetry: ingest.jobs.url.retry
-      urlsDlq: ingest.jobs.url.dlq
       - pykonik
       - wrocnet
 
@@ -135,11 +137,9 @@ app:
     listener:
       prefetch: 5
       concurrency: 1
-
     aws:
       region: ${AWS_REGION:us-east-1}
       from: ${SES_FROM}
-
     rate-limit:
       verification:
         min-interval: PT1M
