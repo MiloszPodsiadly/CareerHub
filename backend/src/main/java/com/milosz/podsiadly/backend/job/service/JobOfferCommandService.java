@@ -48,7 +48,7 @@
             Instant published         = (req.publishedAt() != null) ? req.publishedAt() : Instant.now();
 
             String base = platformBaseUrl.endsWith("/") ? platformBaseUrl : platformBaseUrl + "/";
-            String detailsUrl = base + "jobexaclyoffer?id=" + externalId;
+            String detailsUrl = base + "job-exactly-offer?id=" + externalId;
 
             JobOffer e = JobOffer.builder()
                     .source(source)
