@@ -7,7 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -54,25 +56,25 @@ public class NfjCrawlerScheduler {
 
     private void runOnce() {
         try {
-            Set<String> allUrls = new LinkedHashSet<>();
+            Map<String, String> allRefs = new LinkedHashMap<>();
 
             Set<String> seenIdsThisRun = new LinkedHashSet<>();
 
             for (String slug : NFJ_CATEGORY_SLUGS) {
                 log.info("[agent-nfj] crawling category slug={} (NFJ /pl/{})", slug, slug);
 
-                Set<String> slice = apiClient.fetchAllJobUrls(slug, seenIdsThisRun);
+                Map<String, String> slice = apiClient.fetchAllJobRefs(slug, seenIdsThisRun);
 
                 log.info("[agent-nfj] slug={} got {} urls (after id-dedupe, before merge)", slug, slice.size());
 
-                allUrls.addAll(slice);
+                allRefs.putAll(slice);
             }
 
-            log.info("[agent-nfj] NFJ merged unique urls across all slugs={}", allUrls.size());
+            log.info("[agent-nfj] NFJ merged unique urls across all slugs={}", allRefs.size());
 
             int sentThisRun = 0;
-            for (String url : allUrls) {
-                publisher.publishUrl(url);
+            for (Map.Entry<String, String> entry : allRefs.entrySet()) {
+                publisher.publishUrl(entry.getValue(), "NOFLUFFJOBS", entry.getKey());
                 sentThisRun++;
             }
 

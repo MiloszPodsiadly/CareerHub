@@ -62,13 +62,14 @@ public class JobUrlConsumeService {
     public void consume(UrlMessage msg) throws Exception {
         final String url = msg.url();
         final JobSource source = (msg.source() != null) ? msg.source() : JobSource.JUSTJOIN;
+        final String externalId = msg.externalId();
 
         log.debug("[ingest] got msg source={} url={}", source, url);
 
         try {
-            dispatchBySource(url, source);
+            dispatchBySource(url, source, externalId);
         } catch (HttpStatusException e) {
-            handleHttpStatusException(e, url, source);
+            handleHttpStatusException(e, url, source, externalId);
         } catch (InterruptedIOException e) {
             handleInterruptedIo(url);
         } catch (IOException e) {
@@ -83,7 +84,7 @@ public class JobUrlConsumeService {
         }
     }
 
-    private void dispatchBySource(String url, JobSource source) throws Exception {
+    private void dispatchBySource(String url, JobSource source, String externalId) throws Exception {
         if (source == JobSource.JUSTJOIN) {
             String html = fetchJustjoinHtml(url);
             handleJustJoin(url, html, source);
@@ -91,7 +92,7 @@ public class JobUrlConsumeService {
         }
 
         if (source == JobSource.NOFLUFFJOBS) {
-            handleNofluff(url, source);
+            handleNofluff(url, source, externalId);
             return;
         }
 
@@ -114,12 +115,12 @@ public class JobUrlConsumeService {
         throw new AmqpRejectAndDontRequeueException("Unsupported source " + source);
     }
 
-    private void handleHttpStatusException(HttpStatusException e, String url, JobSource source) {
+    private void handleHttpStatusException(HttpStatusException e, String url, JobSource source, String externalId) {
         int sc = e.getStatusCode();
 
         if (sc == 404 || sc == 410) {
             logGone("[ingest] offer gone ({}): {} -> mark inactive", sc, url);
-            deactivateGoneOffer(source, url);
+            deactivateGoneOffer(source, url, externalId);
             return;
         }
 
@@ -148,7 +149,7 @@ public class JobUrlConsumeService {
     private void handleJustJoin(String url, String html, JobSource source) {
         if (justJoinParser.isExpiredPage(url, html)) {
             logGone("[ingest] JJ expired(200) page: {} -> mark inactive", url);
-            deactivateGoneOffer(source, url);
+            deactivateGoneOffer(source, url, null);
             return;
         }
         var parsed = justJoinParser.parse(url, html);
@@ -189,31 +190,27 @@ public class JobUrlConsumeService {
                 .outerHtml();
     }
 
-    private void handleNofluff(String url, JobSource source) throws IOException {
-        String externalId = lastPath(url);
+    private void handleNofluff(String url, JobSource source, String messageExternalId) throws IOException {
+        String externalId = normalizeNofluffExternalId(messageExternalId, url);
         String html = fetchNofluffHtml(url);
 
         if (nfjHtmlParser.isExpired(html)) {
             logGone("[ingest] NFJ expired by banner url={} -> mark inactive", url);
-            deactivateGoneOffer(source, url);
+            deactivateGoneOffer(source, url, externalId);
             return;
         }
 
         LocalDate validTo = nfjHtmlParser.extractValidTo(html);
-
-        boolean active = true;
-        if (validTo != null) {
-            active = !validTo.isBefore(LocalDate.now());
-        }
+        boolean active = validTo == null || !validTo.isBefore(LocalDate.now());
 
         if (!active) {
             logGone("[ingest] NFJ expired by HTML validTo={} url={} -> mark inactive", validTo, url);
-            deactivateGoneOffer(source, url);
+            deactivateGoneOffer(source, url, externalId);
             return;
         }
 
         String json = fetchNofluffJson(externalId);
-        var dto = nofluffParser.parseFromApiJson(externalId, json, url);
+        var dto = nofluffParser.parseFromApiJson(externalId, json, canonicalNofluffUrl(url, externalId));
 
         nofluffIngest.importSingle(dto);
         logOk("[ingest] NFJ upsert OK: {}", url);
@@ -234,6 +231,19 @@ public class JobUrlConsumeService {
                 .get()
                 .body()
                 .text();
+    }
+
+    private String fetchNofluffHtml(String url) throws IOException {
+        NFJ_FETCH_LIMITER.acquire();
+        return Jsoup.connect(url)
+                .userAgent(BROWSER_UA)
+                .referrer("https://nofluffjobs.com/")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7")
+                .followRedirects(true)
+                .timeout(15_000)
+                .get()
+                .outerHtml();
     }
 
     private void handleSolid(String url, JobSource source) throws IOException {
@@ -328,7 +338,7 @@ public class JobUrlConsumeService {
 
     private long delayFor429(JobSource source) {
         if (source == JobSource.NOFLUFFJOBS) {
-            return 60_000L;
+            return 300_000L;
         }
         if (source == JobSource.THEPROTOCOL) {
             return 30_000L;
@@ -379,24 +389,13 @@ public class JobUrlConsumeService {
         return url.substring(idx + marker.length());
     }
 
-    private String fetchNofluffHtml(String url) throws IOException {
-        NFJ_FETCH_LIMITER.acquire();
-        return Jsoup.connect(url)
-                .userAgent(BROWSER_UA)
-                .referrer("https://nofluffjobs.com/")
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                .header("Accept-Language", "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7")
-                .followRedirects(true)
-                .timeout(15_000)
-                .get()
-                .outerHtml();
-    }
-
-    private void deactivateGoneOffer(JobSource source, String url) {
+    private void deactivateGoneOffer(JobSource source, String url, String externalIdOverride) {
         JobSource safeSource = (source != null) ? source : JobSource.JUSTJOIN;
 
         String normUrl = normalizeUrl(url);
-        String externalId = lastPath(normUrl);
+        String externalId = (externalIdOverride != null && !externalIdOverride.isBlank())
+                ? externalIdOverride.trim()
+                : lastPath(normUrl);
 
         var opt = offers.findBySourceAndExternalId(safeSource, externalId);
         if (opt.isEmpty()) {
@@ -442,5 +441,19 @@ public class JobUrlConsumeService {
         String msg = (cause != null ? cause.getMessage() : e.getMessage());
         if (msg == null) return false;
         return msg.toLowerCase().contains("ux_job_offer_source_external");
+    }
+
+    private static String normalizeNofluffExternalId(String externalId, String url) {
+        if (externalId != null && !externalId.isBlank()) {
+            return externalId.trim();
+        }
+        return lastPath(url);
+    }
+
+    private static String canonicalNofluffUrl(String url, String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return url;
+        }
+        return "https://nofluffjobs.com/pl/job/" + externalId;
     }
 }

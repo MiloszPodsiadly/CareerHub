@@ -15,7 +15,7 @@ public class TheProtocolJobPublisher {
     private static final String SOURCE_THEPROTOCOL = "THEPROTOCOL";
 
     public void publishUrl(String url) {
-        UrlMessage msg = new UrlMessage(url, SOURCE_THEPROTOCOL);
+        UrlMessage msg = new UrlMessage(url, SOURCE_THEPROTOCOL, null);
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),

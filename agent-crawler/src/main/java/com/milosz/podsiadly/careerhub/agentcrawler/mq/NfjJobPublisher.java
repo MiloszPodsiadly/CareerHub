@@ -15,11 +15,15 @@ public class NfjJobPublisher {
     private static final String SOURCE_NOFLUFF = "NOFLUFFJOBS";
 
     public void publishUrl(String url) {
-        publishUrl(url, SOURCE_NOFLUFF);
+        publishUrl(url, SOURCE_NOFLUFF, null);
     }
 
     public void publishUrl(String url, String source) {
-        UrlMessage msg = new UrlMessage(url, source);
+        publishUrl(url, source, null);
+    }
+
+    public void publishUrl(String url, String source, String externalId) {
+        UrlMessage msg = new UrlMessage(url, source, externalId);
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),
