@@ -4,5 +4,6 @@ import com.milosz.podsiadly.backend.job.domain.JobSource;
 
 public record UrlMessage(
         JobSource source,
-        String url
+        String url,
+        String externalId
 ) {}
