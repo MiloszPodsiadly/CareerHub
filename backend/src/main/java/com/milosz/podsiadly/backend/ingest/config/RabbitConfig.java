@@ -27,38 +27,143 @@ public class RabbitConfig {
     }
 
     @Bean
-    Queue urlsQueue(IngestMessagingProperties p) {
-        return QueueBuilder.durable(p.getQueue().getUrls()).build();
+    Queue justjoinUrlsQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getJustjoinUrls()).build();
     }
 
     @Bean
-    Binding urlsBinding(Queue urlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
-        return BindingBuilder.bind(urlsQueue).to(jobsExchange).with(p.getRouting().getUrls());
+    Binding justjoinUrlsBinding(Queue justjoinUrlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(justjoinUrlsQueue).to(jobsExchange).with(p.getRouting().getJustjoinUrls());
     }
 
     @Bean
-    Queue urlsRetryQueue(IngestMessagingProperties p) {
-        return QueueBuilder.durable(p.getQueue().getUrlsRetry())
+    Queue justjoinUrlsRetryQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getJustjoinUrlsRetry())
                 .withArguments(Map.of(
                         "x-dead-letter-exchange", p.getExchange(),
-                        "x-dead-letter-routing-key", p.getRouting().getUrls()
+                        "x-dead-letter-routing-key", p.getRouting().getJustjoinUrls()
                 ))
                 .build();
     }
 
     @Bean
-    Binding urlsRetryBinding(Queue urlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
-        return BindingBuilder.bind(urlsRetryQueue).to(jobsExchange).with(p.getRouting().getUrlsRetry());
+    Binding justjoinUrlsRetryBinding(Queue justjoinUrlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(justjoinUrlsRetryQueue).to(jobsExchange).with(p.getRouting().getJustjoinUrlsRetry());
     }
 
     @Bean
-    Queue urlsDlqQueue(IngestMessagingProperties p) {
-        return QueueBuilder.durable(p.getQueue().getUrlsDlq()).build();
+    Queue justjoinUrlsDlqQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getJustjoinUrlsDlq()).build();
     }
 
     @Bean
-    Binding urlsDlqBinding(Queue urlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
-        return BindingBuilder.bind(urlsDlqQueue).to(jobsExchange).with(p.getRouting().getUrlsDlq());
+    Binding justjoinUrlsDlqBinding(Queue justjoinUrlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(justjoinUrlsDlqQueue).to(jobsExchange).with(p.getRouting().getJustjoinUrlsDlq());
+    }
+
+    @Bean
+    Queue nfjUrlsQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getNfjUrls()).build();
+    }
+
+    @Bean
+    Binding nfjUrlsBinding(Queue nfjUrlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(nfjUrlsQueue).to(jobsExchange).with(p.getRouting().getNfjUrls());
+    }
+
+    @Bean
+    Queue nfjUrlsRetryQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getNfjUrlsRetry())
+                .withArguments(Map.of(
+                        "x-dead-letter-exchange", p.getExchange(),
+                        "x-dead-letter-routing-key", p.getRouting().getNfjUrls()
+                ))
+                .build();
+    }
+
+    @Bean
+    Binding nfjUrlsRetryBinding(Queue nfjUrlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(nfjUrlsRetryQueue).to(jobsExchange).with(p.getRouting().getNfjUrlsRetry());
+    }
+
+    @Bean
+    Queue nfjUrlsDlqQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getNfjUrlsDlq()).build();
+    }
+
+    @Bean
+    Binding nfjUrlsDlqBinding(Queue nfjUrlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(nfjUrlsDlqQueue).to(jobsExchange).with(p.getRouting().getNfjUrlsDlq());
+    }
+
+    @Bean
+    Queue solidUrlsQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getSolidUrls()).build();
+    }
+
+    @Bean
+    Binding solidUrlsBinding(Queue solidUrlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(solidUrlsQueue).to(jobsExchange).with(p.getRouting().getSolidUrls());
+    }
+
+    @Bean
+    Queue solidUrlsRetryQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getSolidUrlsRetry())
+                .withArguments(Map.of(
+                        "x-dead-letter-exchange", p.getExchange(),
+                        "x-dead-letter-routing-key", p.getRouting().getSolidUrls()
+                ))
+                .build();
+    }
+
+    @Bean
+    Binding solidUrlsRetryBinding(Queue solidUrlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(solidUrlsRetryQueue).to(jobsExchange).with(p.getRouting().getSolidUrlsRetry());
+    }
+
+    @Bean
+    Queue solidUrlsDlqQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getSolidUrlsDlq()).build();
+    }
+
+    @Bean
+    Binding solidUrlsDlqBinding(Queue solidUrlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(solidUrlsDlqQueue).to(jobsExchange).with(p.getRouting().getSolidUrlsDlq());
+    }
+
+    @Bean
+    Queue theProtocolUrlsQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getTheProtocolUrls()).build();
+    }
+
+    @Bean
+    Binding theProtocolUrlsBinding(Queue theProtocolUrlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(theProtocolUrlsQueue).to(jobsExchange).with(p.getRouting().getTheProtocolUrls());
+    }
+
+    @Bean
+    Queue theProtocolUrlsRetryQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getTheProtocolUrlsRetry())
+                .withArguments(Map.of(
+                        "x-dead-letter-exchange", p.getExchange(),
+                        "x-dead-letter-routing-key", p.getRouting().getTheProtocolUrls()
+                ))
+                .build();
+    }
+
+    @Bean
+    Binding theProtocolUrlsRetryBinding(Queue theProtocolUrlsRetryQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(theProtocolUrlsRetryQueue).to(jobsExchange).with(p.getRouting().getTheProtocolUrlsRetry());
+    }
+
+    @Bean
+    Queue theProtocolUrlsDlqQueue(IngestMessagingProperties p) {
+        return QueueBuilder.durable(p.getQueue().getTheProtocolUrlsDlq()).build();
+    }
+
+    @Bean
+    Binding theProtocolUrlsDlqBinding(Queue theProtocolUrlsDlqQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
+        return BindingBuilder.bind(theProtocolUrlsDlqQueue).to(jobsExchange).with(p.getRouting().getTheProtocolUrlsDlq());
     }
 
     @Bean

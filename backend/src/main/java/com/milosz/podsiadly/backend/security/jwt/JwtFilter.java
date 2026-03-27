@@ -99,6 +99,19 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
         String p = req.getRequestURI();
-        return p != null && p.startsWith("/api/auth/");
+        if (p == null) {
+            return false;
+        }
+        return switch (p) {
+            case "/api/auth/forgot-password",
+                 "/api/auth/reset-password",
+                 "/api/auth/register",
+                 "/api/auth/verify-email",
+                 "/api/auth/login",
+                 "/api/auth/refresh",
+                 "/api/auth/logout",
+                 "/api/auth/resend-verification" -> true;
+            default -> false;
+        };
     }
 }

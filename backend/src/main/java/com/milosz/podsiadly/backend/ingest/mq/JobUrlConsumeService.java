@@ -37,6 +37,7 @@ public class JobUrlConsumeService {
 
     private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(0.5d);
     private static final RateLimiter TP_FETCH_LIMITER  = RateLimiter.create(1.0d);
+    private static final RateLimiter SOLID_FETCH_LIMITER = RateLimiter.create(2.0d);
 
     private static final Pattern TP_OFFER_ID = Pattern.compile(
             "(?:,oferta,|%2Coferta%2C)([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
@@ -252,6 +253,7 @@ public class JobUrlConsumeService {
         String apiUrl = "https://solid.jobs/api/offers/" + apiPath;
 
         log.debug("[ingest] SOLID fetch apiUrl={} (externalId={})", apiUrl, externalId);
+        SOLID_FETCH_LIMITER.acquire();
 
         String json = Jsoup.connect(apiUrl)
                 .ignoreContentType(true)

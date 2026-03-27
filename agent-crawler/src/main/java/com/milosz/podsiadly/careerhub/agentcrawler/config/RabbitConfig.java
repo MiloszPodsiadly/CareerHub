@@ -29,18 +29,63 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Queue urlsQueue(IngestMessagingProperties props) {
-        return QueueBuilder.durable(props.getQueue().getUrls()).build();
+    public Queue justjoinUrlsQueue(IngestMessagingProperties props) {
+        return QueueBuilder.durable(props.getQueue().getJustjoinUrls()).build();
     }
 
     @Bean
-    public Binding urlsBinding(Queue urlsQueue,
-                               DirectExchange jobsExchange,
-                               IngestMessagingProperties props) {
+    public Binding justjoinUrlsBinding(Queue justjoinUrlsQueue,
+                                       DirectExchange jobsExchange,
+                                       IngestMessagingProperties props) {
         return BindingBuilder
-                .bind(urlsQueue)
+                .bind(justjoinUrlsQueue)
                 .to(jobsExchange)
-                .with(props.getRouting().getUrls());
+                .with(props.getRouting().getJustjoinUrls());
+    }
+
+    @Bean
+    public Queue nfjUrlsQueue(IngestMessagingProperties props) {
+        return QueueBuilder.durable(props.getQueue().getNfjUrls()).build();
+    }
+
+    @Bean
+    public Binding nfjUrlsBinding(Queue nfjUrlsQueue,
+                                  DirectExchange jobsExchange,
+                                  IngestMessagingProperties props) {
+        return BindingBuilder
+                .bind(nfjUrlsQueue)
+                .to(jobsExchange)
+                .with(props.getRouting().getNfjUrls());
+    }
+
+    @Bean
+    public Queue solidUrlsQueue(IngestMessagingProperties props) {
+        return QueueBuilder.durable(props.getQueue().getSolidUrls()).build();
+    }
+
+    @Bean
+    public Binding solidUrlsBinding(Queue solidUrlsQueue,
+                                    DirectExchange jobsExchange,
+                                    IngestMessagingProperties props) {
+        return BindingBuilder
+                .bind(solidUrlsQueue)
+                .to(jobsExchange)
+                .with(props.getRouting().getSolidUrls());
+    }
+
+    @Bean
+    public Queue theProtocolUrlsQueue(IngestMessagingProperties props) {
+        return QueueBuilder.durable(props.getQueue().getTheProtocolUrls()).build();
+    }
+
+    @Bean
+    public Binding theProtocolUrlsBinding(Queue theProtocolUrlsQueue,
+                                          DirectExchange jobsExchange,
+                                          IngestMessagingProperties props) {
+        return BindingBuilder
+                .bind(theProtocolUrlsQueue)
+                .to(jobsExchange)
+                .with(props.getRouting().getTheProtocolUrls());
     }
 
     @Bean

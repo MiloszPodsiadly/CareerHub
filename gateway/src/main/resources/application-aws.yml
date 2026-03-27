@@ -32,6 +32,8 @@ management:
         include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
   endpoint:
     health:
+      probes:
+        enabled: true
       show-details: "when_authorized"
 
 auth:

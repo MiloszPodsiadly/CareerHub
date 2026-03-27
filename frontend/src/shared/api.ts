@@ -13,6 +13,16 @@ type ResetPasswordPayload = { token: string; newPassword: string };
 
 const ACCESS_KEY = 'accessToken';
 const USER_KEY = 'ch.user';
+const PUBLIC_AUTH_PATHS = new Set([
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/register',
+    '/auth/verify-email',
+    '/auth/login',
+    '/auth/refresh',
+    '/auth/logout',
+    '/auth/resend-verification',
+]);
 
 function readSession<T>(key: string): T | null {
     const raw = sessionStorage.getItem(key);
@@ -77,10 +87,11 @@ function userFromToken(token: string | null): AuthUser {
 }
 
 const isAuthPath = (p: string) => p.startsWith('/auth/');
+const isPublicAuthPath = (p: string) => PUBLIC_AUTH_PATHS.has(p);
 
 function isPublicRequest(path: string, method: string): boolean {
     const m = method.toUpperCase();
-    if (isAuthPath(path)) return true;
+    if (isPublicAuthPath(path)) return true;
     if (m === 'POST' && path === '/salary/calculate') return true;
     if (m !== 'GET') return false;
     if (path.startsWith('/public/')) return true;
@@ -154,7 +165,7 @@ async function request<T = any>(path: string, opts: RequestInit = {}, retry = tr
     if (sentAuth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
     const res = await rawFetch(path, opts, headers);
-    if (res.status === 401 && retry && !isAuthPath(path) && sentAuth) {
+    if (res.status === 401 && retry && !isPublicAuthPath(path) && sentAuth) {
         try {
             await doRefresh();
             return request<T>(path, opts, false);

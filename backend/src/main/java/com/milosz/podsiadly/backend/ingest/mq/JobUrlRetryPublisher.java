@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.ingest.mq;
 
 import com.milosz.podsiadly.backend.ingest.config.IngestMessagingProperties;
+import com.milosz.podsiadly.backend.job.domain.JobSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -27,7 +28,7 @@ public class JobUrlRetryPublisher {
 
             rabbitTemplate.convertAndSend(
                     properties.getExchange(),
-                    properties.getRouting().getUrlsDlq(),
+                    dlqRoutingFor(msg),
                     msg,
                     message -> {
                         message.getMessageProperties().setHeader(RETRY_COUNT_HEADER, nextRetryCount);
@@ -48,9 +49,33 @@ public class JobUrlRetryPublisher {
 
         rabbitTemplate.convertAndSend(
                 properties.getExchange(),
-                properties.getRouting().getUrlsRetry(),
+                retryRoutingFor(msg),
                 msg,
                 mpp
         );
+    }
+
+    private String retryRoutingFor(UrlMessage msg) {
+        if (msg == null || msg.source() == null) {
+            return properties.getRouting().getJustjoinUrlsRetry();
+        }
+        return switch (msg.source()) {
+            case NOFLUFFJOBS -> properties.getRouting().getNfjUrlsRetry();
+            case SOLIDJOBS -> properties.getRouting().getSolidUrlsRetry();
+            case THEPROTOCOL -> properties.getRouting().getTheProtocolUrlsRetry();
+            default -> properties.getRouting().getJustjoinUrlsRetry();
+        };
+    }
+
+    private String dlqRoutingFor(UrlMessage msg) {
+        if (msg == null || msg.source() == null) {
+            return properties.getRouting().getJustjoinUrlsDlq();
+        }
+        return switch (msg.source()) {
+            case NOFLUFFJOBS -> properties.getRouting().getNfjUrlsDlq();
+            case SOLIDJOBS -> properties.getRouting().getSolidUrlsDlq();
+            case THEPROTOCOL -> properties.getRouting().getTheProtocolUrlsDlq();
+            default -> properties.getRouting().getJustjoinUrlsDlq();
+        };
     }
 }
