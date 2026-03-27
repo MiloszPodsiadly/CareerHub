@@ -61,7 +61,8 @@ class SecurityConfigTests extends GatewayApplicationTests {
     static Stream<Case> cases() {
         return Stream.of(
                 new Case("auth/** permitAll", HttpMethod.POST, "/api/auth/login", Auth.NONE, HttpStatus.OK, true),
-                new Case("auth/** permitAll (GET)", HttpMethod.GET, "/api/auth/me", Auth.NONE, HttpStatus.OK, true),
+                new Case("auth me requires auth", HttpMethod.GET, "/api/auth/me", Auth.NONE, HttpStatus.UNAUTHORIZED, false),
+                new Case("auth me user ok", HttpMethod.GET, "/api/auth/me", Auth.USER, HttpStatus.OK, true),
                 new Case("public GET permitAll", HttpMethod.GET, "/api/public/x", Auth.NONE, HttpStatus.OK, true),
                 new Case("events GET permitAll", HttpMethod.GET, "/api/events/123", Auth.NONE, HttpStatus.OK, true),
                 new Case("salary calculate POST permitAll", HttpMethod.POST, "/api/salary/calculate", Auth.NONE, HttpStatus.OK, true),

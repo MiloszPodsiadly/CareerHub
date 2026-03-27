@@ -148,6 +148,9 @@ public class TokenController {
 
     @GetMapping("/me")
     public MeDto me(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
         var p = profiles.findByUserId(user.getId()).orElse(null);
         return toMeDto(
                 user,

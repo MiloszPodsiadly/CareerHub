@@ -32,6 +32,8 @@ management:
         include: "health,info"
   endpoint:
     health:
+      probes:
+        enabled: true
       show-details: "when_authorized"
 
 auth:
