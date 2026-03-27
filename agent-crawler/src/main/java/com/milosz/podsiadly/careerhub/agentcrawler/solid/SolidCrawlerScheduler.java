@@ -1,5 +1,6 @@
 package com.milosz.podsiadly.careerhub.agentcrawler.solid;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.milosz.podsiadly.careerhub.agentcrawler.mq.SolidJobPublisher;
 import com.milosz.podsiadly.careerhub.agentcrawler.solid.api.SolidApiClient;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 public class SolidCrawlerScheduler {
+
+    private static final RateLimiter PUBLISH_LIMITER = RateLimiter.create(2.0d);
 
     private final SolidApiClient solidApiClient;
     private final SolidJobPublisher publisher;
@@ -37,6 +40,7 @@ public class SolidCrawlerScheduler {
 
             int count = 0;
             for (String url : urls) {
+                PUBLISH_LIMITER.acquire();
                 publisher.publishUrl(url);
                 count++;
             }

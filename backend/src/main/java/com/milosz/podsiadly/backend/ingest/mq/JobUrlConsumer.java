@@ -15,15 +15,53 @@ public class JobUrlConsumer {
     private final JobUrlRetryPublisher retryPublisher;
 
     @RabbitListener(
-            id = "jobUrlConsumer",
-            queues = "#{ingestMessagingProperties.queue.urls}",
+            id = "justjoinJobUrlConsumer",
+            queues = "#{ingestMessagingProperties.queue.justjoinUrls}",
             containerFactory = "rabbitListenerContainerFactory",
             autoStartup = "false"
     )
-    public void onMessage(UrlMessage msg, Message message) throws Exception {
+    public void onJustjoinMessage(UrlMessage msg, Message message) throws Exception {
+        handle("justjoin-url", msg, message);
+    }
+
+    @RabbitListener(
+            id = "nfjJobUrlConsumer",
+            queues = "#{ingestMessagingProperties.queue.nfjUrls}",
+            containerFactory = "rabbitListenerContainerFactory",
+            autoStartup = "false"
+    )
+    public void onNfjMessage(UrlMessage msg, Message message) throws Exception {
+        handle("nfj-url", msg, message);
+    }
+
+    @RabbitListener(
+            id = "solidJobUrlConsumer",
+            queues = "#{ingestMessagingProperties.queue.solidUrls}",
+            containerFactory = "rabbitListenerContainerFactory",
+            autoStartup = "false"
+    )
+    public void onSolidMessage(UrlMessage msg, Message message) throws Exception {
+        handle("solid-url", msg, message);
+    }
+
+    @RabbitListener(
+            id = "theProtocolJobUrlConsumer",
+            queues = "#{ingestMessagingProperties.queue.theProtocolUrls}",
+            containerFactory = "rabbitListenerContainerFactory",
+            autoStartup = "false"
+    )
+    public void onTheProtocolMessage(UrlMessage msg, Message message) throws Exception {
+        handle("theprotocol-url", msg, message);
+    }
+
+    private void handle(String listenerName, UrlMessage msg, Message message) throws Exception {
+        log.debug("[ingest] listener={} source={} url={} thread={}",
+                listenerName, msg.source(), msg.url(), Thread.currentThread().getName());
         try {
             consumeService.consume(msg);
         } catch (DelayedRetryException e) {
+            log.debug("[ingest] listener={} delayed-retry source={} url={} delayMs={}",
+                    listenerName, msg.source(), msg.url(), e.getDelayMs());
             retryPublisher.publishDelayedRetry(msg, e.getDelayMs(), currentRetryCount(message));
             throw e;
         }

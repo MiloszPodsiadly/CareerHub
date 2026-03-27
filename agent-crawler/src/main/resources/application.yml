@@ -26,21 +26,21 @@ management:
 agent:
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
-    initial-delay-ms: 1200000
+    initial-delay-ms: 60000
     interval-ms: 108000000
 
   solid:
     sitemap-url: "https://solid.jobs/sitemap.xml"
-    initial-delay-ms: 5000
+    initial-delay-ms: 60000
     interval-ms: 108000000
 
   theprotocol:
     sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
-    initial-delay-ms: 2400000
+    initial-delay-ms: 60000
     interval-ms: 108000000
 
   pracuj:
-    initial-delay-ms: 3000000
+    initial-delay-ms: 60000
     interval-ms: 108000000
 
   playwright:
@@ -50,14 +50,32 @@ jobs:
   ingest:
     exchange: ingest.jobs
     routing:
-      urls: job-url
-      urlsRetry: job-url.retry
-      urlsDlq: job-url.dlq
+      justjoinUrls: job-url.justjoin
+      justjoinUrlsRetry: job-url.justjoin.retry
+      justjoinUrlsDlq: job-url.justjoin.dlq
+      nfjUrls: job-url.nfj
+      nfjUrlsRetry: job-url.nfj.retry
+      nfjUrlsDlq: job-url.nfj.dlq
+      solidUrls: job-url.solid
+      solidUrlsRetry: job-url.solid.retry
+      solidUrlsDlq: job-url.solid.dlq
+      theProtocolUrls: job-url.theprotocol
+      theProtocolUrlsRetry: job-url.theprotocol.retry
+      theProtocolUrlsDlq: job-url.theprotocol.dlq
       externalOffers: external-offer
     queue:
-      urls: ingest.jobs.url
-      urlsRetry: ingest.jobs.url.retry
-      urlsDlq: ingest.jobs.url.dlq
+      justjoinUrls: ingest.jobs.url.justjoin
+      justjoinUrlsRetry: ingest.jobs.url.justjoin.retry
+      justjoinUrlsDlq: ingest.jobs.url.justjoin.dlq
+      nfjUrls: ingest.jobs.url.nfj
+      nfjUrlsRetry: ingest.jobs.url.nfj.retry
+      nfjUrlsDlq: ingest.jobs.url.nfj.dlq
+      solidUrls: ingest.jobs.url.solid
+      solidUrlsRetry: ingest.jobs.url.solid.retry
+      solidUrlsDlq: ingest.jobs.url.solid.dlq
+      theProtocolUrls: ingest.jobs.url.theprotocol
+      theProtocolUrlsRetry: ingest.jobs.url.theprotocol.retry
+      theProtocolUrlsDlq: ingest.jobs.url.theprotocol.dlq
       externalOffers: ingest.jobs.external-offers
 
 eureka:

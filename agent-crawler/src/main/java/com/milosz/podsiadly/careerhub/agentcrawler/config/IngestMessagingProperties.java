@@ -17,17 +17,35 @@ public class IngestMessagingProperties {
 
     @Getter @Setter
     public static class Routing {
-        private String urls;
-        private String urlsRetry;
-        private String urlsDlq;
+        private String justjoinUrls;
+        private String justjoinUrlsRetry;
+        private String justjoinUrlsDlq;
+        private String nfjUrls;
+        private String nfjUrlsRetry;
+        private String nfjUrlsDlq;
+        private String solidUrls;
+        private String solidUrlsRetry;
+        private String solidUrlsDlq;
+        private String theProtocolUrls;
+        private String theProtocolUrlsRetry;
+        private String theProtocolUrlsDlq;
         private String externalOffers;
     }
 
     @Getter @Setter
     public static class QueueNames {
-        private String urls;
-        private String urlsRetry;
-        private String urlsDlq;
+        private String justjoinUrls;
+        private String justjoinUrlsRetry;
+        private String justjoinUrlsDlq;
+        private String nfjUrls;
+        private String nfjUrlsRetry;
+        private String nfjUrlsDlq;
+        private String solidUrls;
+        private String solidUrlsRetry;
+        private String solidUrlsDlq;
+        private String theProtocolUrls;
+        private String theProtocolUrlsRetry;
+        private String theProtocolUrlsDlq;
         private String externalOffers;
     }
 }
