@@ -18,10 +18,10 @@ public class OfferRetentionScheduler {
 
     private final OfferArchiveService archiveService;
 
-    @Value("${jobs.retention.inactive-age:PT30M}")
+    @Value("${jobs.retention.inactive-age:PT1H}")
     private Duration inactiveAge;
 
-    @Scheduled(cron = "${jobs.retention.cron:0 */10 * * * *}")
+    @Scheduled(cron = "${jobs.retention.cron:0 0 * * * *}")
     public void sweep() {
         archiveService.archiveInactiveOlderThan(inactiveAge, ArchiveReason.RETENTION);
     }

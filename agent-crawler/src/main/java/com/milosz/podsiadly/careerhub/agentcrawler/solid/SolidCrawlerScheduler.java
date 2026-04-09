@@ -18,8 +18,8 @@ public class SolidCrawlerScheduler {
     private final SolidJobPublisher publisher;
 
     @Scheduled(
-            initialDelayString = "${agent.solid.initial-delay-ms:280000}",
-            fixedDelayString   = "${agent.solid.interval-ms:43200000}"
+            initialDelayString = "${agent.solid.initial-delay-ms:15000}",
+            fixedDelayString   = "${agent.solid.interval-ms:86400000}"
     )
     public void runPeriodic() {
         log.info("[agent-solid] periodic crawl triggered");

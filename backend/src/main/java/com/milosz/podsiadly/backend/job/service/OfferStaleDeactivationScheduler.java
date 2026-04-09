@@ -18,13 +18,13 @@ public class OfferStaleDeactivationScheduler {
 
     private final JobOfferRepository offers;
 
-    @Value("${jobs.stale.default-cutoff:PT48H}")
+    @Value("${jobs.stale.default-cutoff:PT96H}")
     private Duration defaultStaleCutoff;
 
-    @Value("${jobs.stale.nfj-cutoff:PT72H}")
+    @Value("${jobs.stale.nfj-cutoff:PT96H}")
     private Duration nfjStaleCutoff;
 
-    @Scheduled(cron = "${jobs.stale.cron:0 */10 * * * *}")
+    @Scheduled(cron = "${jobs.stale.cron:0 0 * * * *}")
     @Transactional
     public void deactivateStale() {
         deactivateFor(JobSource.JUSTJOIN, defaultStaleCutoff);

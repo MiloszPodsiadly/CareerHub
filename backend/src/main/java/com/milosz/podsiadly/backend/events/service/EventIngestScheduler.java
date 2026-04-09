@@ -14,15 +14,15 @@ public class EventIngestScheduler {
 
     private final EventIngestService svc;
 
-    @Scheduled(initialDelayString = "PT3M", fixedDelay = 86_400_000_000L)
+    @Scheduled(initialDelayString = "PT3M", fixedDelayString = "PT24H")
     public void runOnceAfterStartup() {
         log.info("[events.ingest] startup run");
         svc.runAll();
     }
 
-    @Scheduled(initialDelayString = "PT12H", fixedDelayString = "PT12H")
-    public void runEvery12Hours() {
-        log.info("[events.ingest] scheduled 12h run");
+    @Scheduled(initialDelayString = "PT24H", fixedDelayString = "PT24H")
+    public void runEvery24Hours() {
+        log.info("[events.ingest] scheduled 24h run");
         svc.runAll();
     }
 }

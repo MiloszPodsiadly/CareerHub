@@ -1,6 +1,9 @@
 package com.milosz.podsiadly.careerhub.agentcrawler.pracuj;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ParsedExternalOffer;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.mq.ExternalOfferMessageMapper;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser.PracujParser;
 import com.milosz.podsiadly.careerhub.agentcrawler.mq.ExternalOfferMessage;
 import com.milosz.podsiadly.careerhub.agentcrawler.mq.ExternalOfferPublisher;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +26,8 @@ public class PracujCrawlerScheduler {
     private final PracujParser parser;
     private final ExternalOfferPublisher publisher;
 
-    private static final RateLimiter LISTING_LIMITER = RateLimiter.create(1.0d);
-    private static final RateLimiter DETAILS_LIMITER = RateLimiter.create(0.5d);
+    private static final RateLimiter LISTING_LIMITER = RateLimiter.create(1.5d);
+    private static final RateLimiter DETAILS_LIMITER = RateLimiter.create(2.0d);
 
     private static final List<String> ITS = List.of(
             "backend","frontend","fullstack","mobile","architecture","devops",
@@ -38,8 +40,8 @@ public class PracujCrawlerScheduler {
     private static final int MAX_PAGES_PER_ITS = 80;
 
     @Scheduled(
-            initialDelayString = "${agent.pracuj.initial-delay-ms:240000}",
-            fixedDelayString   = "${agent.pracuj.interval-ms:43200000}"
+            initialDelayString = "${agent.pracuj.initial-delay-ms:15000}",
+            fixedDelayString   = "${agent.pracuj.interval-ms:86400000}"
     )
     public void runPeriodic() {
         log.info("[agent-pracuj] periodic crawl triggered");
@@ -94,33 +96,9 @@ public class PracujCrawlerScheduler {
                     try {
                         String html = detailsClient.fetchOfferHtml(url);
 
-                        ExternalOfferMessage parsed = parser.parseToMessage(url, html);
-                        String externalId = nonBlank(offerIdFromUrl, parsed.externalId());
-                        String detailsUrl = nonBlank(parsed.url(), url);
-                        String applyUrl   = nonBlank(parsed.applyUrl(), detailsUrl);
-                        Boolean active = parsed.active() != null ? parsed.active() : true;
-
-                        ExternalOfferMessage msg = new ExternalOfferMessage(
-                                parsed.source(),
-                                externalId,
-                                detailsUrl,
-                                nonBlank(parsed.title(), ""),
-                                nonBlank(parsed.description(), ""),
-                                nonBlank(parsed.companyName(), ""),
-                                nonBlank(parsed.cityName(), ""),
-                                parsed.remote() != null ? parsed.remote() : false,
-                                nonBlank(parsed.level(), ""),
-                                nonBlank(parsed.mainContract(), ""),
-                                parsed.contracts() != null ? parsed.contracts() : Set.of(),
-                                parsed.salaryMin(),
-                                parsed.salaryMax(),
-                                nonBlank(parsed.currency(), ""),
-                                nonBlank(parsed.salaryPeriod(), "MONTH"),
-                                applyUrl,
-                                parsed.techTags() != null ? parsed.techTags() : List.of(),
-                                parsed.publishedAt() != null ? parsed.publishedAt() : Instant.now(),
-                                active
-                        );
+                        ParsedExternalOffer parsed = parser.parse(url, html)
+                                .withExternalId(nonBlank(offerIdFromUrl, null));
+                        ExternalOfferMessage msg = ExternalOfferMessageMapper.fromParsedOffer(parsed);
 
                         publisher.publish(msg);
 
