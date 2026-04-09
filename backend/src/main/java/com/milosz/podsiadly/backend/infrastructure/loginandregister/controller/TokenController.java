@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,6 +42,7 @@ public class TokenController {
     private final JwtProperties props;
     private final AuthCookieProperties cookieProperties;
     private final AuthRateLimiter authRateLimiter;
+    private final PasswordEncoder passwordEncoder;
     private final ProfileRepository profiles;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
@@ -93,6 +95,14 @@ public class TokenController {
                                           HttpServletRequest servletRequest,
                                           HttpServletResponse resp) {
         authRateLimiter.checkLogin(clientKey(servletRequest), req.email());
+
+        users.findByEmail(req.email())
+                .filter(user -> passwordEncoder.matches(req.password(), user.getPassword()))
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(user -> {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
+                });
+
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.email(), req.password())
         );

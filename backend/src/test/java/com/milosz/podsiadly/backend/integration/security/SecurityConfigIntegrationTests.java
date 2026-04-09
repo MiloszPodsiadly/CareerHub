@@ -81,7 +81,7 @@ class SecurityConfigIntegrationTests extends BackendIntegrationTestBase {
                 new Case("public jobs list", HttpMethod.GET, "/api/jobs", AuthMode.NONE, HttpStatus.OK),
                 new Case("jobs mine rejected without auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.NONE, HttpStatus.FORBIDDEN),
                 new Case("jobs mine accepts bearer auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.BEARER_USER, HttpStatus.OK),
-                new Case("jobs mine accepts access cookie", HttpMethod.GET, "/api/jobs/mine", AuthMode.COOKIE_USER, HttpStatus.OK),
+                new Case("jobs mine rejects removed access cookie auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.COOKIE_USER, HttpStatus.FORBIDDEN),
                 new Case("admin path rejects regular user", HttpMethod.GET, "/api/admin/probe", AuthMode.BEARER_USER, HttpStatus.FORBIDDEN),
                 new Case("admin path passes security for admin", HttpMethod.GET, "/api/admin/probe", AuthMode.BEARER_ADMIN, HttpStatus.NOT_FOUND)
         );
