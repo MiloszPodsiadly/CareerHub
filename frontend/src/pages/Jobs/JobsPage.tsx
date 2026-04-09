@@ -283,10 +283,10 @@ function platformRouteFromUrl(url: string | null | undefined, numericId: string 
     }
 
     if (url && /[?&]id=platform-/i.test(url)) {
-        return `/jobexaclyoffer?id=${encodeURIComponent(String(numericId))}`;
+        return `/job-exactly-offer?id=${encodeURIComponent(String(numericId))}`;
     }
 
-    if (url && url.startsWith('/jobexaclyoffer')) {
+    if (url && url.startsWith('/job-exactly-offer')) {
         return url;
     }
 
@@ -294,8 +294,8 @@ function platformRouteFromUrl(url: string | null | undefined, numericId: string 
         if (!url) return null;
         const u = new URL(url, location.origin);
         const path = u.pathname.replace(/\/+$/, '');
-        if (path === '/jobexaclyoffer') {
-            return `/jobexaclyoffer?id=${encodeURIComponent(String(numericId))}`;
+        if (path === '/job-exactly-offer') {
+            return `/job-exactly-offer?id=${encodeURIComponent(String(numericId))}`;
         }
     } catch {}
 

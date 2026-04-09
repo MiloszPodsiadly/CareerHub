@@ -50,7 +50,7 @@ function mapJobFavorite(item: any): FavJob {
     const title = j?.title ?? j?.jobTitle ?? '';
     const company = j?.companyName ?? j?.company ?? '';
     const city = j?.cityName ?? j?.city ?? '';
-    const url = j?.url ?? j?.applyUrl ?? (id ? `/jobexaclyoffer?id=${encodeURIComponent(id)}` : '#');
+    const url = j?.url ?? j?.applyUrl ?? (id ? `/job-exactly-offer?id=${encodeURIComponent(id)}` : '#');
 
     const salary = (() => {
         const min = j?.salaryMin ?? j?.salary?.min ?? null;

@@ -191,7 +191,7 @@ export default function MyOffersPage() {
                 {!loading &&
                     !error &&
                     items.map((offer) => {
-                        const previewUrl = `/jobexaclyoffer?id=${encodeURIComponent(String(offer.id))}`;
+                        const previewUrl = `/job-exactly-offer?id=${encodeURIComponent(String(offer.id))}`;
                         const date = offer.publishedAt ? String(offer.publishedAt).slice(0, 10) : '';
                         return (
                             <article key={String(offer.id)} className={styles.offer} data-id={offer.id}>

@@ -15,18 +15,23 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class JwtService {
+
+    private static final long CLOCK_SKEW_SECONDS = 30; // 30–60s typowo w prod
+
     private final JwtProperties props;
 
-    private byte[] key() { return props.getSecret().getBytes(StandardCharsets.UTF_8); }
+    private byte[] key() {
+        return props.getSecret().getBytes(StandardCharsets.UTF_8);
+    }
 
-    public String issueAccess(String userId, String username, List<String> roles) {
+    public String issueAccess(String userId, String email, List<String> roles) {
         Instant now = Instant.now();
         return Jwts.builder()
-                .setSubject(userId)
+                .setSubject(email)
                 .setIssuer(props.getIssuer())
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plus(props.getAccessMinutes(), ChronoUnit.MINUTES))) // ⬅︎ 60 min
-                .addClaims(Map.of("username", username, "roles", roles, "type", "access"))
+                .setExpiration(Date.from(now.plus(props.getAccessMinutes(), ChronoUnit.MINUTES)))
+                .addClaims(Map.of("uid", userId, "roles", roles, "type", "access"))
                 .signWith(Keys.hmacShaKeyFor(key()), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -47,6 +52,7 @@ public class JwtService {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(key()))
                 .requireIssuer(props.getIssuer())
+                .setAllowedClockSkewSeconds(CLOCK_SKEW_SECONDS)
                 .build()
                 .parseClaimsJws(token);
     }

@@ -32,33 +32,14 @@ management:
         include: "health,info"
   endpoint:
     health:
+      probes:
+        enabled: true
       show-details: "when_authorized"
 
 auth:
   jwt:
     secret: ${JWT_SECRET}
     issuer: ${JWT_ISSUER:careerhub-backend}
-
-  public-paths:
-    - /api/auth/**
-    - /api/public/**
-    - /api/events
-    - /api/events/**
-    - /api/jobs
-    - /api/jobs/*
-    - /api/ingest/**
-    - /api/ingest
-    - /api/salary
-    - /api/salary/**
-    - /api/profile
-    - /api/profile/**
-    - /api/favorites
-    - /api/favorites/**
-    - /api/job-drafts
-    - /api/job-drafts/**
-    - /api/applications
-    - /api/applications/**
-    - /actuator/**
 
 logging:
   level:

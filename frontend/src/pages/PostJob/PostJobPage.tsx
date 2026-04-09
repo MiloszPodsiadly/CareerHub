@@ -379,7 +379,7 @@ export default function PostJobPage() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const created = await res.json();
             setMessage('Job published!');
-            navigate(`/jobexaclyoffer?id=${created.id}`);
+            navigate(`/job-exactly-offer?id=${created.id}`);
         } catch (err) {
             console.error(err);
             setMessage('Publishing failed. Please verify the data and try again.');

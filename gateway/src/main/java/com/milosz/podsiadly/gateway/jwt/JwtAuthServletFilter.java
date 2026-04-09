@@ -4,28 +4,35 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@EnableConfigurationProperties({GwJwtProperties.class, PublicPathsProperties.class})
+@EnableConfigurationProperties(GwJwtProperties.class)
 public class JwtAuthServletFilter implements Filter {
 
     private final GwJwtProperties jwtProps;
-    private final PublicPathsProperties publicPaths;
-    private final AntPathMatcher matcher = new AntPathMatcher();
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -34,43 +41,62 @@ public class JwtAuthServletFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
-        String path = req.getRequestURI();
-        boolean isPublic = publicPaths.getPublicPaths().stream().anyMatch(p -> matcher.match(p, path));
-        if (isPublic) {
+        String token = resolveToken(req);
+
+        if (token == null) {
             chain.doFilter(req, res);
             return;
         }
 
-        String token = resolveToken(req);
-        if (token == null) {
-            unauthorized(res, "Missing token");
-            return;
-        }
-
-        Claims claims;
         try {
-            claims = Jwts.parserBuilder()
+            Claims claims = Jwts.parserBuilder()
                     .setSigningKey(Keys.hmacShaKeyFor(jwtProps.getSecret().getBytes(StandardCharsets.UTF_8)))
                     .requireIssuer(jwtProps.getIssuer())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+
+            List<GrantedAuthority> authorities = extractAuthorities(claims);
+
+            String principal = claims.getSubject();
+
+            var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            try {
+                chain.doFilter(new JwtRequestWrapper(req, token), res);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+
         } catch (JwtException e) {
+            SecurityContextHolder.clearContext();
             unauthorized(res, "Invalid or expired token");
-            return;
+        }
+    }
+
+    private List<GrantedAuthority> extractAuthorities(Claims claims) {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+
+        Object rolesObj = claims.get("roles");
+        if (rolesObj instanceof List<?> list) {
+            for (Object r : list) {
+                if (r instanceof String role && !role.isBlank()) {
+                    authorities.add(new SimpleGrantedAuthority(role));
+                }
+            }
         }
 
-        chain.doFilter(new JwtRequestWrapper(req, token, claims), res);
+        return authorities;
     }
 
     private String resolveToken(HttpServletRequest req) {
         String hdr = req.getHeader(HttpHeaders.AUTHORIZATION);
-        if (hdr != null && hdr.startsWith("Bearer ")) return hdr.substring(7);
-        if (req.getCookies() != null) {
-            return Arrays.stream(req.getCookies())
-                    .filter(c -> "ACCESS".equals(c.getName()))
-                    .map(Cookie::getValue)
-                    .findFirst().orElse(null);
+        if (hdr != null && hdr.startsWith("Bearer ")) {
+            String token = hdr.substring(7).trim();
+            return token.isEmpty() ? null : token;
         }
         return null;
     }

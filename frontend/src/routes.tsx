@@ -27,10 +27,7 @@ export const router = createBrowserRouter([
             { index: true, element: <LandingPage /> },
             { path: 'jobs', element: <JobsPage /> },
             { path: 'events', element: <EventsPage /> },
-            {
-                path: 'salary-calculator',
-                element: <SalaryCalculatorPage />,
-            },
+            { path: 'salary-calculator', element: <SalaryCalculatorPage /> },
             { path: 'auth/login', element: <LoginPage /> },
             { path: 'auth/register', element: <RegisterPage /> },
             { path: 'auth/forgot', element: <ForgotPasswordPage /> },
@@ -68,7 +65,7 @@ export const router = createBrowserRouter([
                 ),
             },
             {
-                path: 'jobexaclyoffer',
+                path: 'job-exactly-offer',
                 element: <JobExactlyOfferPage />,
             },
             {
@@ -79,8 +76,10 @@ export const router = createBrowserRouter([
                     </RequireAuth>
                 ),
             },
+
             { path: 'auth/verify', element: <VerifyEmailPage /> },
             { path: 'auth/resend-verification', element: <ResendVerificationPage /> },
+
             { path: '*', element: <Navigate to="/" replace /> },
         ],
     },

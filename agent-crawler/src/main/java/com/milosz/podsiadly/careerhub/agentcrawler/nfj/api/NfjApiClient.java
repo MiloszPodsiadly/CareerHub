@@ -15,7 +15,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -37,11 +39,15 @@ public class NfjApiClient {
     private final RestTemplate restTemplate;
 
     public Set<String> fetchAllJobUrls(String categorySlug) {
-        return fetchAllJobUrls(categorySlug, new LinkedHashSet<>());
+        return new LinkedHashSet<>(fetchAllJobRefs(categorySlug, new LinkedHashSet<>()).values());
     }
 
     public Set<String> fetchAllJobUrls(String categorySlug, Set<String> seenIdsThisRun) {
-        Set<String> urls = new LinkedHashSet<>();
+        return new LinkedHashSet<>(fetchAllJobRefs(categorySlug, seenIdsThisRun).values());
+    }
+
+    public Map<String, String> fetchAllJobRefs(String categorySlug, Set<String> seenIdsThisRun) {
+        Map<String, String> refs = new LinkedHashMap<>();
 
         int pageTo = 0;
         int totalPages = 1;
@@ -71,11 +77,11 @@ public class NfjApiClient {
                 }
 
                 String abs = "https://nofluffjobs.com/pl/job/" + url;
-                urls.add(abs);
+                refs.put(id, abs);
             });
 
             log.info("[nfj-api] page={} collected so far={} (category={})",
-                    pageTo, urls.size(), categorySlug);
+                    pageTo, refs.size(), categorySlug);
 
             if (response.getTotalPages() > 0) {
                 totalPages = response.getTotalPages();
@@ -83,8 +89,8 @@ public class NfjApiClient {
             pageTo++;
         }
 
-        log.info("[nfj-api] DONE: total unique urls={} (category={})", urls.size(), categorySlug);
-        return urls;
+        log.info("[nfj-api] DONE: total unique urls={} (category={})", refs.size(), categorySlug);
+        return refs;
     }
 
     private NfjSearchResponse fetchPage(String categorySlug, int pageTo, int pageSize) {
