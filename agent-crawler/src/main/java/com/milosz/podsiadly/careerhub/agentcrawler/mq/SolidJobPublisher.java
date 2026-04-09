@@ -19,7 +19,7 @@ public class SolidJobPublisher {
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),
-                props.getRouting().getUrls(),
+                props.urlsRouting(SOURCE_SOLID),
                 msg
         );
     }

@@ -19,7 +19,7 @@ public class TheProtocolJobPublisher {
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),
-                props.getRouting().getUrls(),
+                props.urlsRouting(SOURCE_THEPROTOCOL),
                 msg
         );
     }

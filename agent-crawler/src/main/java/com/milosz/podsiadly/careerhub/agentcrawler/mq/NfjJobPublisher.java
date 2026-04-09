@@ -23,7 +23,7 @@ public class NfjJobPublisher {
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),
-                props.getRouting().getUrls(),
+                props.urlsRouting(props.resolveExternalOfferSource(source)),
                 msg
         );
     }

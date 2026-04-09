@@ -1,7 +1,10 @@
 package com.milosz.podsiadly.backend.ingest.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
@@ -15,6 +18,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ErrorHandler;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Configuration
 @EnableRabbit
 public class RabbitConfig {
@@ -25,18 +31,10 @@ public class RabbitConfig {
     }
 
     @Bean
-    Queue urlsQueue(IngestMessagingProperties p) {
-        return QueueBuilder.durable(p.getQueue().getUrls()).build();
-    }
-
-    @Bean
-    Binding urlsBinding(Queue urlsQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
-        return BindingBuilder.bind(urlsQueue).to(jobsExchange).with(p.getRouting().getUrls());
-    }
-
-    @Bean
-    MessageConverter rabbitJsonConverter() {
-        return new Jackson2JsonMessageConverter();
+    MessageConverter rabbitJsonConverter(ObjectMapper objectMapper) {
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
+        converter.setCreateMessageIds(true);
+        return converter;
     }
 
     @Bean
@@ -61,16 +59,65 @@ public class RabbitConfig {
     }
 
     @Bean
-    Queue externalOffersQueue(IngestMessagingProperties p) {
-        return QueueBuilder.durable(p.getQueue().getExternalOffers()).build();
+    SimpleRabbitListenerContainerFactory externalOffersRabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            MessageConverter rabbitJsonConverter,
+            SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            ErrorHandler amqpErrorHandler,
+            IngestMessagingProperties props
+    ) {
+        var f = new SimpleRabbitListenerContainerFactory();
+        configurer.configure(f, connectionFactory);
+        f.setMessageConverter(rabbitJsonConverter);
+        f.setDefaultRequeueRejected(false);
+        f.setAutoStartup(true);
+        f.setErrorHandler(amqpErrorHandler);
+        f.setConcurrentConsumers(props.getExternalOffersConsumer().getConcurrency());
+        f.setMaxConcurrentConsumers(props.getExternalOffersConsumer().getMaxConcurrency());
+        f.setPrefetchCount(props.getExternalOffersConsumer().getPrefetch());
+        return f;
     }
 
     @Bean
-    Binding externalOffersBinding(Queue externalOffersQueue, DirectExchange jobsExchange, IngestMessagingProperties p) {
-        return BindingBuilder
-                .bind(externalOffersQueue)
-                .to(jobsExchange)
-                .with(p.getRouting().getExternalOffers());
+    String[] externalOfferPrimaryQueues(IngestMessagingProperties p) {
+        return p.externalOfferPrimaryQueues();
     }
 
+    @Bean
+    Declarables externalOfferTopology(DirectExchange jobsExchange, IngestMessagingProperties p) {
+        List<Declarable> declarables = new ArrayList<>();
+
+        for (String source : p.externalOfferSources()) {
+            Queue primaryQueue = QueueBuilder.durable(p.externalOffersQueue(source)).build();
+            Queue retry1Queue = QueueBuilder.durable(p.externalOffersRetry1Queue(source))
+                    .withArgument("x-message-ttl", p.getRetry().getAfter1().toMillis())
+                    .withArgument("x-dead-letter-exchange", p.getExchange())
+                    .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
+                    .build();
+            Queue retry5Queue = QueueBuilder.durable(p.externalOffersRetry5Queue(source))
+                    .withArgument("x-message-ttl", p.getRetry().getAfter5().toMillis())
+                    .withArgument("x-dead-letter-exchange", p.getExchange())
+                    .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
+                    .build();
+            Queue retry30Queue = QueueBuilder.durable(p.externalOffersRetry30Queue(source))
+                    .withArgument("x-message-ttl", p.getRetry().getAfter30().toMillis())
+                    .withArgument("x-dead-letter-exchange", p.getExchange())
+                    .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
+                    .build();
+            Queue dlqQueue = QueueBuilder.durable(p.externalOffersDlqQueue(source)).build();
+
+            declarables.add(primaryQueue);
+            declarables.add(retry1Queue);
+            declarables.add(retry5Queue);
+            declarables.add(retry30Queue);
+            declarables.add(dlqQueue);
+            declarables.add(BindingBuilder.bind(primaryQueue).to(jobsExchange).with(p.externalOffersRouting(source)));
+            declarables.add(BindingBuilder.bind(retry1Queue).to(jobsExchange).with(p.externalOffersRetry1Routing(source)));
+            declarables.add(BindingBuilder.bind(retry5Queue).to(jobsExchange).with(p.externalOffersRetry5Routing(source)));
+            declarables.add(BindingBuilder.bind(retry30Queue).to(jobsExchange).with(p.externalOffersRetry30Routing(source)));
+            declarables.add(BindingBuilder.bind(dlqQueue).to(jobsExchange).with(p.externalOffersDlqRouting(source)));
+        }
+
+        return new Declarables(declarables);
+    }
 }

@@ -5,11 +5,25 @@ spring:
   application:
     name: agent-crawler
 
+  task:
+    scheduling:
+      pool:
+        size: 4
+      thread-name-prefix: agent-scheduler-
+
   rabbitmq:
     host: rabbitmq
     port: 5672
     username: ${RABBITMQ_DEFAULT_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
+    listener:
+      type: simple
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 10
+        acknowledge-mode: auto
+        default-requeue-rejected: false
     template:
       mandatory: true
 
@@ -24,24 +38,29 @@ management:
 
 
 agent:
+  justjoin:
+    sitemap-url: "https://justjoin.it/sitemaps/active-jobs/part0.xml"
+    initial-delay-ms: 15000
+    interval-ms: 86400000
+
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
-    initial-delay-ms: 250000
-    interval-ms: 43200000
+    initial-delay-ms: 15000
+    interval-ms: 86400000
 
   solid:
     sitemap-url: "https://solid.jobs/sitemap.xml"
-    initial-delay-ms: 1180000
-    interval-ms: 43200000
+    initial-delay-ms: 15000
+    interval-ms: 86400000
 
   theprotocol:
     sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
-    initial-delay-ms: 240000
-    interval-ms: 43200000
+    initial-delay-ms: 15000
+    interval-ms: 86400000
 
   pracuj:
-    initial-delay-ms: 300000
-    interval-ms: 43200000
+    initial-delay-ms: 15000
+    interval-ms: 86400000
 
   playwright:
     headless: true
@@ -49,12 +68,58 @@ agent:
 jobs:
   ingest:
     exchange: ingest.jobs
+    url-consumer:
+      justjoin:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 2
+        prefetch: 20
+      nofluffjobs:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 2
+        prefetch: 5
+      solidjobs:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 2
+        prefetch: 5
+      theprotocol:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 2
+        prefetch: 10
+      pracuj:
+        enabled: false
+        concurrency: 1
+        max-concurrency: 2
+        prefetch: 5
     routing:
       urls: job-url
+      urlsRetry1: job-url.retry.1m
+      urlsRetry5: job-url.retry.5m
+      urlsRetry30: job-url.retry.30m
+      urlsDlq: job-url.dlq
       externalOffers: external-offer
+      externalOffersRetry1: external-offer.retry.1m
+      externalOffersRetry5: external-offer.retry.5m
+      externalOffersRetry30: external-offer.retry.30m
+      externalOffersDlq: external-offer.dlq
     queue:
       urls: ingest.jobs.url
+      urlsRetry1: ingest.jobs.url.retry.1m
+      urlsRetry5: ingest.jobs.url.retry.5m
+      urlsRetry30: ingest.jobs.url.retry.30m
+      urlsDlq: ingest.jobs.url.dlq
       externalOffers: ingest.jobs.external-offers
+      externalOffersRetry1: ingest.jobs.external-offers.retry.1m
+      externalOffersRetry5: ingest.jobs.external-offers.retry.5m
+      externalOffersRetry30: ingest.jobs.external-offers.retry.30m
+      externalOffersDlq: ingest.jobs.external-offers.dlq
+    retry:
+      after1: PT1M
+      after5: PT5M
+      after30: PT30M
 
 eureka:
   client:
@@ -66,6 +131,10 @@ eureka:
     preferIpAddress: true
     leaseRenewalIntervalInSeconds: 30
     leaseExpirationDurationInSeconds: 90
+
+ingest:
+  logging:
+    quiet: true
 
 logging:
   level:
