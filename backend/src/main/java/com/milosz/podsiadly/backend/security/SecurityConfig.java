@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Slf4j
 @Configuration
@@ -37,14 +38,21 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
-                        "default-src 'self'; " +
-                                "img-src 'self' data: blob:; " +
-                                "script-src 'self'; " +
-                                "style-src 'self' 'unsafe-inline'; " +
-                                "connect-src 'self'; " +
-                                "font-src 'self' data:;"
-                )))
+                .headers(h -> h
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "base-uri 'self'; " +
+                                        "object-src 'none'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "img-src 'self' data: blob:; " +
+                                        "script-src 'self'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "connect-src 'self'; " +
+                                        "font-src 'self' data:;"
+                        ))
+                        .frameOptions(frame -> frame.deny())
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                )
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
@@ -52,8 +60,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/salary/calculate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/salary/report/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ingest/url").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ingest/sitemap").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/favorites/*/*/status").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/jobs").permitAll()
@@ -75,7 +81,7 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        log.info("✅ SecurityConfig initialized (JWT filter active)");
+        log.info("SecurityConfig initialized (JWT filter active)");
         return http.build();
     }
 

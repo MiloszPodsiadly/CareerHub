@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -52,9 +51,6 @@ public class JwtFilter extends OncePerRequestFilter {
     private String resolve(HttpServletRequest req) {
         String h = req.getHeader(HttpHeaders.AUTHORIZATION);
         if (h != null && h.startsWith("Bearer ")) return h.substring(7);
-        if (req.getCookies()!=null)
-            return Arrays.stream(req.getCookies()).filter(c -> "ACCESS".equals(c.getName()))
-                    .map(Cookie::getValue).findFirst().orElse(null);
         return null;
     }
     @Override
@@ -70,13 +66,14 @@ public class JwtFilter extends OncePerRequestFilter {
             return true;
         }
 
-        if (uri.startsWith("/api/applications")) {
-            return false;
-        }
-
-        if (uri.equals("/api/ingest") || uri.startsWith("/api/ingest/")) {
+        if (uri.startsWith("/api/events/") && "GET".equalsIgnoreCase(method)) {
             return true;
         }
+
+        if (uri.matches("^/api/favorites/[^/]+/[^/]+/status/?$") && "GET".equalsIgnoreCase(method)) {
+            return true;
+        }
+
         if (uri.equals("/api/salary/calculate") && "POST".equalsIgnoreCase(method)) return true;
         if (uri.startsWith("/api/salary/report/") && "GET".equalsIgnoreCase(method)) return true;
         if (uri.startsWith("/api/jobs")) {

@@ -5,6 +5,7 @@ import com.milosz.podsiadly.backend.job.domain.ContractType;
 import com.milosz.podsiadly.backend.job.domain.JobLevel;
 import com.milosz.podsiadly.backend.job.domain.JobSource;
 import com.milosz.podsiadly.backend.job.dto.*;
+import jakarta.validation.Valid;
 import com.milosz.podsiadly.backend.job.service.JobOfferCommandService;
 import com.milosz.podsiadly.backend.job.service.JobOfferService;
 import lombok.RequiredArgsConstructor;
@@ -199,7 +200,7 @@ public class JobOfferController {
     @PostMapping
     public JobOfferDetailDto create(
             @AuthenticationPrincipal User user,
-            @RequestBody JobOfferCreateRequest req
+            @Valid @RequestBody JobOfferCreateRequest req
     ) {
         if (user == null) throw new IllegalStateException("Must be authenticated to publish a job.");
         return commands.create(user, req, platformBaseUrl);
@@ -209,7 +210,7 @@ public class JobOfferController {
     public JobOfferDetailDto update(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
-            @RequestBody JobOfferUpdateRequest req
+            @Valid @RequestBody JobOfferUpdateRequest req
     ) {
         if (user == null) throw new IllegalStateException("Unauthorized.");
         return commands.updateOwned(user, id, req);

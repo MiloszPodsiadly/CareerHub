@@ -3,10 +3,15 @@ package com.milosz.podsiadly.backend.infrastructure.loginandregister.controller;
 import com.milosz.podsiadly.backend.domain.loginandregister.*;
 import com.milosz.podsiadly.backend.domain.loginandregister.dto.*;
 import com.milosz.podsiadly.backend.domain.profile.ProfileRepository;
+import com.milosz.podsiadly.backend.security.AuthCookieProperties;
+import com.milosz.podsiadly.backend.security.AuthRateLimiter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -34,17 +39,30 @@ public class TokenController {
     private final LoginRepository users;
     private final UserService userService;
     private final JwtProperties props;
+    private final AuthCookieProperties cookieProperties;
+    private final AuthRateLimiter authRateLimiter;
     private final ProfileRepository profiles;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
 
-    public record LoginReq(String email, String password) {}
+    public record LoginReq(
+            @NotBlank(message = "Email is required")
+            @Email(message = "Email must be valid")
+            String email,
+            @NotBlank(message = "Password is required")
+            String password
+    ) {}
     public record TokenRes(String accessToken) {}
 
-    public record VerifyEmailRequest(String token) {}
+    public record VerifyEmailRequest(
+            @NotBlank(message = "Token is required")
+            String token
+    ) {}
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req,
+                                               HttpServletRequest servletRequest) {
+        authRateLimiter.checkForgotPassword(clientKey(servletRequest), req.email());
         passwordResetService.sendResetLink(req);
         return ResponseEntity.ok().build();
     }
@@ -65,13 +83,16 @@ public class TokenController {
     }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<Void> verifyEmail(@RequestBody VerifyEmailRequest req) {
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
         emailVerificationService.verify(req.token());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenRes> login(@RequestBody LoginReq req, HttpServletResponse resp) {
+    public ResponseEntity<TokenRes> login(@Valid @RequestBody LoginReq req,
+                                          HttpServletRequest servletRequest,
+                                          HttpServletResponse resp) {
+        authRateLimiter.checkLogin(clientKey(servletRequest), req.email());
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.email(), req.password())
         );
@@ -94,7 +115,9 @@ public class TokenController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenRes> refresh(@CookieValue("REFRESH") String refreshToken) {
+    public ResponseEntity<TokenRes> refresh(HttpServletRequest servletRequest) {
+        authRateLimiter.checkRefresh(clientKey(servletRequest));
+        String refreshToken = resolveRefreshCookie(servletRequest);
         var claims = jwt.parse(refreshToken).getBody();
         if (!"refresh".equals(claims.get("type"))) throw new BadCredentialsException("Invalid refresh token");
 
@@ -111,9 +134,13 @@ public class TokenController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse resp) {
-        ResponseCookie del = ResponseCookie.from("REFRESH","")
-                .httpOnly(true).secure(false).sameSite("Lax")
-                .path("/api/auth").maxAge(0).build();
+        ResponseCookie del = ResponseCookie.from(cookieProperties.getRefreshName(), "")
+                .httpOnly(true)
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
+                .path(cookieProperties.getRefreshPath())
+                .maxAge(0)
+                .build();
         resp.addHeader(HttpHeaders.SET_COOKIE, del.toString());
         return ResponseEntity.noContent().build();
     }
@@ -137,27 +164,63 @@ public class TokenController {
     }
 
     private ResponseCookie refreshCookie(String value) {
-        return ResponseCookie.from("REFRESH", value)
+        return ResponseCookie.from(cookieProperties.getRefreshName(), value)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/api/auth")
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
+                .path(cookieProperties.getRefreshPath())
                 .maxAge(Duration.ofDays(props.getRefreshDays()))
                 .build();
     }
 
-    public record ResendVerifyReq(String email) {}
+    public record ResendVerifyReq(
+            @NotBlank(message = "Email is required")
+            @Email(message = "Email must be valid")
+            String email
+    ) {}
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerifyReq req) {
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerifyReq req,
+                                                   HttpServletRequest servletRequest) {
+        authRateLimiter.checkResendVerification(clientKey(servletRequest), req.email());
         emailVerificationService.resend(req.email(), users);
         return ResponseEntity.ok().build();
     }
 
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<?> onAuthFailure(AuthenticationException ex) {
+    public ResponseEntity<?> onAuthFailure(AuthenticationException ex, HttpServletRequest request) {
+        org.slf4j.LoggerFactory.getLogger(TokenController.class)
+                .warn("[auth] authentication failed path={} client={} err={}",
+                        request.getRequestURI(), clientKey(request), ex.getClass().getSimpleName());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Incorrect username or password"));
+    }
+
+    private static String clientKey(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            return (comma >= 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    private String resolveRefreshCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            throw new BadCredentialsException("Missing refresh token");
+        }
+
+        for (var cookie : request.getCookies()) {
+            if (cookieProperties.getRefreshName().equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        throw new BadCredentialsException("Missing refresh token");
     }
 }
