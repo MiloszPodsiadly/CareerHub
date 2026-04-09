@@ -32,6 +32,11 @@ public class ExternalJobOfferIngestService {
 
         Optional<JobOffer> existingOpt = offers.findBySourceAndExternalId(source, externalId);
 
+        if (Boolean.FALSE.equals(data.active()) && existingOpt.isEmpty()) {
+            log.debug("[ingest] inactive offer missing in DB, skip create source={} externalId={}", source, externalId);
+            return null;
+        }
+
         JobOffer offer = existingOpt.orElseGet(() -> JobOffer.builder()
                 .source(source)
                 .externalId(externalId)

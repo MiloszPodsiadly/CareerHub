@@ -2,11 +2,9 @@ package com.milosz.podsiadly.careerhub.agentcrawler.mq;
 
 import com.milosz.podsiadly.careerhub.agentcrawler.config.IngestMessagingProperties;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TheProtocolJobPublisher {
@@ -18,13 +16,10 @@ public class TheProtocolJobPublisher {
 
     public void publishUrl(String url) {
         UrlMessage msg = new UrlMessage(url, SOURCE_THEPROTOCOL, null);
-        String routingKey = props.getRouting().getTheProtocolUrls();
-
-        log.debug("[mq] theprotocol publish source={} routingKey={} url={}", SOURCE_THEPROTOCOL, routingKey, url);
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),
-                routingKey,
+                props.urlsRouting(SOURCE_THEPROTOCOL),
                 msg
         );
     }

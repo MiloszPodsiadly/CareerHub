@@ -6,6 +6,7 @@ import com.milosz.podsiadly.backend.domain.myapplication.ApplicationService;
 import com.milosz.podsiadly.backend.domain.myapplication.ApplicationStatus;
 import com.milosz.podsiadly.backend.domain.myapplication.JobApplicationRepository;
 import com.milosz.podsiadly.backend.domain.myapplication.dto.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -51,7 +52,7 @@ public class ApplicationController {
 
     @PostMapping
     public ResponseEntity<ApplicationDetailDto> apply(Authentication auth,
-                                                      @RequestBody ApplicationCreateRequest req) {
+                                                      @Valid @RequestBody ApplicationCreateRequest req) {
         log.debug("POST /api/applications offerId={} authPrincipal={}",
                 req.offerId(), auth != null ? auth.getName() : null);
 
@@ -78,7 +79,7 @@ public class ApplicationController {
     @PatchMapping("/{id}/status")
     public ApplicationDetailDto setStatus(Authentication auth,
                                           @PathVariable Long id,
-                                          @RequestBody StatusUpdateRequest req) {
+                                          @Valid @RequestBody StatusUpdateRequest req) {
         var st = ApplicationStatus.valueOf(req.status());
         return service.updateStatus(id, requireUserId(auth), st);
     }

@@ -7,9 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -46,8 +44,8 @@ public class NfjCrawlerScheduler {
     };
 
     @Scheduled(
-            initialDelayString = "${agent.nfj.initial-delay-ms:1200000}",
-            fixedDelayString   = "${agent.nfj.interval-ms:108000000}"
+            initialDelayString = "${agent.nfj.initial-delay-ms:15000}",
+            fixedDelayString   = "${agent.nfj.interval-ms:86400000}"
     )
     public void runPeriodic() {
         log.info("[agent-nfj] periodic crawl triggered");
@@ -56,25 +54,25 @@ public class NfjCrawlerScheduler {
 
     private void runOnce() {
         try {
-            Map<String, String> allRefs = new LinkedHashMap<>();
+            Set<String> allUrls = new LinkedHashSet<>();
 
             Set<String> seenIdsThisRun = new LinkedHashSet<>();
 
             for (String slug : NFJ_CATEGORY_SLUGS) {
                 log.info("[agent-nfj] crawling category slug={} (NFJ /pl/{})", slug, slug);
 
-                Map<String, String> slice = apiClient.fetchAllJobRefs(slug, seenIdsThisRun);
+                Set<String> slice = apiClient.fetchAllJobUrls(slug, seenIdsThisRun);
 
                 log.info("[agent-nfj] slug={} got {} urls (after id-dedupe, before merge)", slug, slice.size());
 
-                allRefs.putAll(slice);
+                allUrls.addAll(slice);
             }
 
-            log.info("[agent-nfj] NFJ merged unique urls across all slugs={}", allRefs.size());
+            log.info("[agent-nfj] NFJ merged unique urls across all slugs={}", allUrls.size());
 
             int sentThisRun = 0;
-            for (Map.Entry<String, String> entry : allRefs.entrySet()) {
-                publisher.publishUrl(entry.getValue(), "NOFLUFFJOBS", entry.getKey());
+            for (String url : allUrls) {
+                publisher.publishUrl(url);
                 sentThisRun++;
             }
 

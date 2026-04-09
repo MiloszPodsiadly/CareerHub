@@ -5,11 +5,25 @@ spring:
   application:
     name: agent-crawler
 
+  task:
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: agent-scheduler-
+
   rabbitmq:
     host: rabbitmq
     port: 5672
     username: ${RABBITMQ_DEFAULT_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
+    listener:
+      type: simple
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 10
+        acknowledge-mode: auto
+        default-requeue-rejected: false
     template:
       mandatory: true
 
@@ -23,24 +37,29 @@ management:
       show-details: "when_authorized"
 
 agent:
+  justjoin:
+    sitemap-url: "https://justjoin.it/sitemaps/active-jobs/part0.xml"
+    initial-delay-ms: 15000
+    interval-ms: 86400000
+
   nfj:
     start-url: "https://nofluffjobs.com/pl/it?device=mobile"
-    initial-delay-ms: 60000
-    interval-ms: 108000000
+    initial-delay-ms: 30000
+    interval-ms: 86400000
 
   solid:
     sitemap-url: "https://solid.jobs/sitemap.xml"
-    initial-delay-ms: 60000
-    interval-ms: 108000000
+    initial-delay-ms: 30000
+    interval-ms: 86400000
 
   theprotocol:
     sitemap-url: "https://static.theprotocol.it/sitemaps/CurrentOffers/SiteMapJobOffers1.xml"
-    initial-delay-ms: 60000
-    interval-ms: 108000000
+    initial-delay-ms: 30000
+    interval-ms: 86400000
 
   pracuj:
-    initial-delay-ms: 60000
-    interval-ms: 108000000
+    initial-delay-ms: 30000
+    interval-ms: 86400000
 
   playwright:
     headless: true
@@ -48,34 +67,58 @@ agent:
 jobs:
   ingest:
     exchange: ingest.jobs
+    url-consumer:
+      justjoin:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 10
+      nofluffjobs:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 3
+      solidjobs:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 3
+      theprotocol:
+        enabled: true
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 5
+      pracuj:
+        enabled: false
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 3
     routing:
-      justjoinUrls: job-url.justjoin
-      justjoinUrlsRetry: job-url.justjoin.retry
-      justjoinUrlsDlq: job-url.justjoin.dlq
-      nfjUrls: job-url.nfj
-      nfjUrlsRetry: job-url.nfj.retry
-      nfjUrlsDlq: job-url.nfj.dlq
-      solidUrls: job-url.solid
-      solidUrlsRetry: job-url.solid.retry
-      solidUrlsDlq: job-url.solid.dlq
-      theProtocolUrls: job-url.theprotocol
-      theProtocolUrlsRetry: job-url.theprotocol.retry
-      theProtocolUrlsDlq: job-url.theprotocol.dlq
+      urls: job-url
+      urlsRetry1: job-url.retry.1m
+      urlsRetry5: job-url.retry.5m
+      urlsRetry30: job-url.retry.30m
+      urlsDlq: job-url.dlq
       externalOffers: external-offer
+      externalOffersRetry1: external-offer.retry.1m
+      externalOffersRetry5: external-offer.retry.5m
+      externalOffersRetry30: external-offer.retry.30m
+      externalOffersDlq: external-offer.dlq
     queue:
-      justjoinUrls: ingest.jobs.url.justjoin
-      justjoinUrlsRetry: ingest.jobs.url.justjoin.retry
-      justjoinUrlsDlq: ingest.jobs.url.justjoin.dlq
-      nfjUrls: ingest.jobs.url.nfj
-      nfjUrlsRetry: ingest.jobs.url.nfj.retry
-      nfjUrlsDlq: ingest.jobs.url.nfj.dlq
-      solidUrls: ingest.jobs.url.solid
-      solidUrlsRetry: ingest.jobs.url.solid.retry
-      solidUrlsDlq: ingest.jobs.url.solid.dlq
-      theProtocolUrls: ingest.jobs.url.theprotocol
-      theProtocolUrlsRetry: ingest.jobs.url.theprotocol.retry
-      theProtocolUrlsDlq: ingest.jobs.url.theprotocol.dlq
+      urls: ingest.jobs.url
+      urlsRetry1: ingest.jobs.url.retry.1m
+      urlsRetry5: ingest.jobs.url.retry.5m
+      urlsRetry30: ingest.jobs.url.retry.30m
+      urlsDlq: ingest.jobs.url.dlq
       externalOffers: ingest.jobs.external-offers
+      externalOffersRetry1: ingest.jobs.external-offers.retry.1m
+      externalOffersRetry5: ingest.jobs.external-offers.retry.5m
+      externalOffersRetry30: ingest.jobs.external-offers.retry.30m
+      externalOffersDlq: ingest.jobs.external-offers.dlq
+    retry:
+      after1: PT1M
+      after5: PT5M
+      after30: PT30M
 
 eureka:
   client:
@@ -87,6 +130,10 @@ eureka:
     preferIpAddress: true
     leaseRenewalIntervalInSeconds: 30
     leaseExpirationDurationInSeconds: 90
+
+ingest:
+  logging:
+    quiet: true
 
 logging:
   level:

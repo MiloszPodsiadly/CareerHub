@@ -3,20 +3,25 @@ package com.milosz.podsiadly.backend.infrastructure.loginandregister.controller;
 import com.milosz.podsiadly.backend.domain.loginandregister.*;
 import com.milosz.podsiadly.backend.domain.loginandregister.dto.*;
 import com.milosz.podsiadly.backend.domain.profile.ProfileRepository;
-import com.milosz.podsiadly.backend.security.cookie.AuthCookieProperties;
+import com.milosz.podsiadly.backend.security.AuthCookieProperties;
+import com.milosz.podsiadly.backend.security.AuthRateLimiter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
@@ -29,27 +34,37 @@ import static com.milosz.podsiadly.backend.domain.loginandregister.LoginMapper.t
 @RequiredArgsConstructor
 public class TokenController {
 
-    private static final String CLAIM_TYPE = "type";
-    private static final String TYPE_REFRESH = "refresh";
-
     private final AuthenticationManager authManager;
     private final JwtService jwt;
     private final LoginUserDetailsService usersByUsername;
     private final LoginRepository users;
     private final UserService userService;
     private final JwtProperties props;
+    private final AuthCookieProperties cookieProperties;
+    private final AuthRateLimiter authRateLimiter;
+    private final PasswordEncoder passwordEncoder;
     private final ProfileRepository profiles;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
-    private final AuthCookieProperties cookieProps;
 
-    public record LoginReq(String email, String password) {}
+    public record LoginReq(
+            @NotBlank(message = "Email is required")
+            @Email(message = "Email must be valid")
+            String email,
+            @NotBlank(message = "Password is required")
+            String password
+    ) {}
     public record TokenRes(String accessToken) {}
-    public record VerifyEmailRequest(String token) {}
-    public record ResendVerifyReq(String email) {}
+
+    public record VerifyEmailRequest(
+            @NotBlank(message = "Token is required")
+            String token
+    ) {}
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req,
+                                               HttpServletRequest servletRequest) {
+        authRateLimiter.checkForgotPassword(clientKey(servletRequest), req.email());
         passwordResetService.sendResetLink(req);
         return ResponseEntity.ok().build();
     }
@@ -64,108 +79,93 @@ public class TokenController {
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterUserDto dto) {
         UserDto created = userService.register(dto);
         User u = usersByUsername.loadUserByUsername(created.email());
+
         emailVerificationService.sendVerificationLink(u);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<Void> verifyEmail(@RequestBody VerifyEmailRequest req) {
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
         emailVerificationService.verify(req.token());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenRes> login(@RequestBody LoginReq req, HttpServletResponse resp) {
-        String email = req.email() == null ? "" : req.email().trim().toLowerCase();
-        String password = req.password() == null ? "" : req.password();
+    public ResponseEntity<TokenRes> login(@Valid @RequestBody LoginReq req,
+                                          HttpServletRequest servletRequest,
+                                          HttpServletResponse resp) {
+        authRateLimiter.checkLogin(clientKey(servletRequest), req.email());
 
-        authManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+        users.findByEmail(req.email())
+                .filter(user -> passwordEncoder.matches(req.password(), user.getPassword()))
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(user -> {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
+                });
 
-        User u = usersByUsername.loadUserByUsername(email);
+        authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.email(), req.password())
+        );
+
+        User u = usersByUsername.loadUserByUsername(req.email());
 
         if (!u.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
         }
 
-        String access = jwt.issueAccess(
+        String access  = jwt.issueAccess(
                 u.getId(),
                 u.getUsername(),
                 u.getRoles().stream().map(Role::getName).toList()
         );
-
         String refresh = jwt.issueRefresh(u.getId());
-        resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(refresh).toString());
 
+        resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(refresh).toString());
         return ResponseEntity.ok(new TokenRes(access));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenRes> refresh(
-            @CookieValue(value = "REFRESH", required = false) String refreshToken,
-            HttpServletResponse resp
-    ) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing refresh token");
-        }
-
+    public ResponseEntity<TokenRes> refresh(HttpServletRequest servletRequest) {
+        authRateLimiter.checkRefresh(clientKey(servletRequest));
+        String refreshToken = resolveRefreshCookie(servletRequest);
         var claims = jwt.parse(refreshToken).getBody();
+        if (!"refresh".equals(claims.get("type"))) throw new BadCredentialsException("Invalid refresh token");
 
-        Object type = claims.get(CLAIM_TYPE);
-        if (!(type instanceof String t) || !TYPE_REFRESH.equals(t)) {
-            throw new BadCredentialsException("Invalid refresh token");
-        }
-
-        String userId = claims.getSubject();
-        if (userId == null || userId.isBlank()) {
-            throw new BadCredentialsException("Invalid refresh token");
-        }
-
-        User u = users.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+        var userId = claims.getSubject();
+        User u = users.findById(userId).orElseThrow();
 
         if (!u.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "E-mail not verified");
         }
 
-        String access = jwt.issueAccess(
-                u.getId(),
-                u.getUsername(),
-                u.getRoles().stream().map(Role::getName).toList()
-        );
-
-        // ✅ PRO: refresh rotation (polecam)
-        String newRefresh = jwt.issueRefresh(u.getId());
-        resp.addHeader(HttpHeaders.SET_COOKIE, refreshCookie(newRefresh).toString());
-
+        String access = jwt.issueAccess(u.getId(), u.getUsername(), u.getRoles().stream().map(Role::getName).toList());
         return ResponseEntity.ok(new TokenRes(access));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse resp) {
-        resp.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie().toString());
+        ResponseCookie del = ResponseCookie.from(cookieProperties.getRefreshName(), "")
+                .httpOnly(true)
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
+                .path(cookieProperties.getRefreshPath())
+                .maxAge(0)
+                .build();
+        resp.addHeader(HttpHeaders.SET_COOKIE, del.toString());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")
     public MeDto me(@AuthenticationPrincipal User user) {
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
         var p = profiles.findByUserId(user.getId()).orElse(null);
         return toMeDto(
                 user,
-                p != null ? p.getName() : null,
-                p != null ? p.getEmail() : null,
+                p != null ? p.getName()      : null,
+                p != null ? p.getEmail()     : null,
                 p != null ? p.getAvatarUrl() : null,
-                p != null ? p.getAbout() : null,
-                p != null ? p.getDob() : null
+                p != null ? p.getAbout()      : null,
+                p != null ? p.getDob()       : null
         );
-    }
-
-    @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerifyReq req) {
-        emailVerificationService.resend(req.email(), users);
-        return ResponseEntity.ok().build();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -173,29 +173,64 @@ public class TokenController {
         return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<?> onAuthFailure(AuthenticationException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Incorrect username or password"));
-    }
-
     private ResponseCookie refreshCookie(String value) {
-        return ResponseCookie.from(cookieProps.getRefreshName(), value)
+        return ResponseCookie.from(cookieProperties.getRefreshName(), value)
                 .httpOnly(true)
-                .secure(cookieProps.isSecure())
-                .sameSite(cookieProps.getSameSite())
-                .path(cookieProps.getRefreshPath())
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
+                .path(cookieProperties.getRefreshPath())
                 .maxAge(Duration.ofDays(props.getRefreshDays()))
                 .build();
     }
 
-    private ResponseCookie deleteRefreshCookie() {
-        return ResponseCookie.from(cookieProps.getRefreshName(), "")
-                .httpOnly(true)
-                .secure(cookieProps.isSecure())
-                .sameSite(cookieProps.getSameSite())
-                .path(cookieProps.getRefreshPath())
-                .maxAge(Duration.ZERO)
-                .build();
+    public record ResendVerifyReq(
+            @NotBlank(message = "Email is required")
+            @Email(message = "Email must be valid")
+            String email
+    ) {}
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerifyReq req,
+                                                   HttpServletRequest servletRequest) {
+        authRateLimiter.checkResendVerification(clientKey(servletRequest), req.email());
+        emailVerificationService.resend(req.email(), users);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<?> onAuthFailure(AuthenticationException ex, HttpServletRequest request) {
+        org.slf4j.LoggerFactory.getLogger(TokenController.class)
+                .warn("[auth] authentication failed path={} client={} err={}",
+                        request.getRequestURI(), clientKey(request), ex.getClass().getSimpleName());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Incorrect username or password"));
+    }
+
+    private static String clientKey(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            return (comma >= 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    private String resolveRefreshCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            throw new BadCredentialsException("Missing refresh token");
+        }
+
+        for (var cookie : request.getCookies()) {
+            if (cookieProperties.getRefreshName().equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        throw new BadCredentialsException("Missing refresh token");
     }
 }

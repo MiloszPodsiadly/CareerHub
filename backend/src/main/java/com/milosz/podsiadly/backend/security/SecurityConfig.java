@@ -1,6 +1,5 @@
 package com.milosz.podsiadly.backend.security;
 
-import com.milosz.podsiadly.backend.security.cookie.AuthCookieProperties;
 import com.milosz.podsiadly.backend.security.jwt.JwtFilter;
 import com.milosz.podsiadly.backend.security.jwt.JwtProperties;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,13 +16,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({JwtProperties.class, AuthCookieProperties.class})
+@EnableConfigurationProperties(JwtProperties.class)
 @EnableMethodSecurity
 public class SecurityConfig {
 
@@ -40,19 +38,24 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .headers(h -> h
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "base-uri 'self'; " +
+                                        "object-src 'none'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "img-src 'self' data: blob:; " +
+                                        "script-src 'self'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "connect-src 'self'; " +
+                                        "font-src 'self' data:;"
+                        ))
+                        .frameOptions(frame -> frame.deny())
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                )
                 .authorizeHttpRequests(reg -> reg
-                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                        .requestMatchers(
-                                "/api/auth/forgot-password",
-                                "/api/auth/reset-password",
-                                "/api/auth/register",
-                                "/api/auth/verify-email",
-                                "/api/auth/login",
-                                "/api/auth/refresh",
-                                "/api/auth/logout",
-                                "/api/auth/resend-verification"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/salary/calculate").permitAll()
@@ -71,14 +74,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/applications").authenticated()
                         .requestMatchers("/api/applications/**").authenticated()
                         .requestMatchers("/api/job-drafts/**").authenticated()
-                        .requestMatchers("/api/profile", "/api/profile/**").authenticated()
+                        .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/api/favorites/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/ingest/url", "/api/ingest/sitemap").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        log.info("✅ SecurityConfig initialized (JWT filter active)");
+        log.info("SecurityConfig initialized (JWT filter active)");
         return http.build();
     }
 

@@ -1,13 +1,20 @@
 server:
-  port: 8081
   error:
-    include-message: NEVER
-    include-binding-errors: NEVER
+    include-message: ALWAYS
+    include-binding-errors: ALWAYS
     include-stacktrace: NEVER
+  forward-headers-strategy: framework
+  port: 8081
 
 spring:
   application:
     name: backend
+
+  task:
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: backend-scheduler-
 
   datasource:
     url: jdbc:postgresql://postgres:5432/careerhub
@@ -25,8 +32,7 @@ spring:
 
   app:
     platform:
-      base-url: ${PLATFORM_BASE_URL:https://careerhub-it.com}
-
+      base-url: https://careerhub-it.com
   rabbitmq:
     host: rabbitmq
     port: 5672
@@ -37,7 +43,7 @@ spring:
       simple:
         concurrency: 1
         max-concurrency: 1
-        prefetch: 1
+        prefetch: 10
         acknowledge-mode: auto
         default-requeue-rejected: false
     template:
@@ -57,8 +63,6 @@ management:
         include: "health,info"
   endpoint:
     health:
-      probes:
-        enabled: true
       show-details: "when_authorized"
 
 auth:
@@ -67,45 +71,55 @@ auth:
     issuer: ${JWT_ISSUER:careerhub-backend}
     access-minutes: ${JWT_ACCESS_MINUTES:60}
     refresh-days: ${JWT_REFRESH_DAYS:7}
-
   cookie:
     refresh-name: REFRESH
     refresh-path: /api/auth/refresh
-    same-site: Lax
     secure: true
+    same-site: Lax
+  rate-limit:
+    login:
+      window: PT1M
+      max-attempts: 10
+    refresh:
+      window: PT1M
+      max-attempts: 20
+    forgot-password:
+      window: PT15M
+      max-attempts: 5
+    resend-verification:
+      window: PT15M
+      max-attempts: 5
 
 jobs:
   ingest:
     exchange: ingest.jobs
+    external-offers-consumer:
+      concurrency: 2
+      max-concurrency: 2
+      prefetch: 50
     routing:
-      justjoinUrls: job-url.justjoin
-      justjoinUrlsRetry: job-url.justjoin.retry
-      justjoinUrlsDlq: job-url.justjoin.dlq
-      nfjUrls: job-url.nfj
-      nfjUrlsRetry: job-url.nfj.retry
-      nfjUrlsDlq: job-url.nfj.dlq
-      solidUrls: job-url.solid
-      solidUrlsRetry: job-url.solid.retry
-      solidUrlsDlq: job-url.solid.dlq
-      theProtocolUrls: job-url.theprotocol
-      theProtocolUrlsRetry: job-url.theprotocol.retry
-      theProtocolUrlsDlq: job-url.theprotocol.dlq
       externalOffers: external-offer
+      externalOffersRetry1: external-offer.retry.1m
+      externalOffersRetry5: external-offer.retry.5m
+      externalOffersRetry30: external-offer.retry.30m
+      externalOffersDlq: external-offer.dlq
     queue:
-      justjoinUrls: ingest.jobs.url.justjoin
-      justjoinUrlsRetry: ingest.jobs.url.justjoin.retry
-      justjoinUrlsDlq: ingest.jobs.url.justjoin.dlq
-      nfjUrls: ingest.jobs.url.nfj
-      nfjUrlsRetry: ingest.jobs.url.nfj.retry
-      nfjUrlsDlq: ingest.jobs.url.nfj.dlq
-      solidUrls: ingest.jobs.url.solid
-      solidUrlsRetry: ingest.jobs.url.solid.retry
-      solidUrlsDlq: ingest.jobs.url.solid.dlq
-      theProtocolUrls: ingest.jobs.url.theprotocol
-      theProtocolUrlsRetry: ingest.jobs.url.theprotocol.retry
-      theProtocolUrlsDlq: ingest.jobs.url.theprotocol.dlq
       externalOffers: ingest.jobs.external-offers
-    source-default: JUSTJOIN
+      externalOffersRetry1: ingest.jobs.external-offers.retry.1m
+      externalOffersRetry5: ingest.jobs.external-offers.retry.5m
+      externalOffersRetry30: ingest.jobs.external-offers.retry.30m
+      externalOffersDlq: ingest.jobs.external-offers.dlq
+    retry:
+      after1: PT1M
+      after5: PT5M
+      after30: PT30M
+  stale:
+    default-cutoff: PT96H
+    nfj-cutoff: PT96H
+    cron: "0 0 * * * *"
+  retention:
+    inactive-age: PT1H
+    cron: "0 0 * * * *"
 
 events:
   meetup:
@@ -114,21 +128,9 @@ events:
       - pykonik
       - wrocnet
 
-ingest:
-  scheduler:
-    enabled: true
-    initial-delay: PT1M
-    fixed-delay: PT30H
-    sources:
-      - source: JUSTJOIN
-        sitemap: https://justjoin.it/sitemaps/active-jobs/part0.xml
-
 logging:
   level:
     root: INFO
-    com.milosz.podsiadly.backend.ingest.mq: DEBUG
-    com.milosz.podsiadly.backend.ingest.parser: DEBUG
-    com.milosz.podsiadly.backend.ingest.config: DEBUG
     org.springframework.amqp: INFO
 
 app:
@@ -157,9 +159,11 @@ app:
     listener:
       prefetch: 5
       concurrency: 1
+
     aws:
       region: ${AWS_REGION:us-east-1}
       from: ${SES_FROM}
+
     rate-limit:
       verification:
         min-interval: PT1M

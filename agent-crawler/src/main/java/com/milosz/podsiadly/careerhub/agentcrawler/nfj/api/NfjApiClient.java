@@ -29,7 +29,7 @@ public class NfjApiClient {
     private static final String SEARCH_PATH = "/api/search/posting";
     private static final int DEFAULT_PAGE_SIZE = 20;
 
-    private static final RateLimiter SEARCH_RATE_LIMITER = RateLimiter.create(0.5d);
+    private static final RateLimiter SEARCH_RATE_LIMITER = RateLimiter.create(1.5d);
 
     private static final int MAX_ATTEMPTS = 3;
     private static final long INITIAL_BACKOFF_MS = 2_000L;

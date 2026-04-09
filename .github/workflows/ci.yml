@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   backend-tests:
-    name: Backend tests (Testcontainers)
+    name: Backend tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,28 @@ jobs:
           cache: gradle
 
       - name: Run backend tests
-        run: ./gradlew :backend:test
+        run: ./gradlew :backend:test -Djunit.jupiter.excludeTags=integration
+
+  backend-integration-tests:
+    name: Backend integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Docker available (required by Testcontainers)
+        run: docker version
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Run backend integration tests
+        run: ./gradlew :backend:test -Djunit.jupiter.includeTags=integration
 
   gateway-tests:
     name: Gateway tests
@@ -87,7 +108,28 @@ jobs:
           cache: gradle
 
       - name: Run agent-crawler tests
-        run: ./gradlew :agent-crawler:test
+        run: ./gradlew :agent-crawler:test -Djunit.jupiter.excludeTags=integration
+
+  agent-crawler-integration-tests:
+    name: Agent Crawler integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Docker available (required by Testcontainers)
+        run: docker version
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Run agent-crawler integration tests
+        run: ./gradlew :agent-crawler:test -Djunit.jupiter.includeTags=integration
 
   frontend:
     name: Frontend (lint + build)

@@ -1,6 +1,5 @@
 package com.milosz.podsiadly.careerhub.agentcrawler.solid;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.milosz.podsiadly.careerhub.agentcrawler.mq.SolidJobPublisher;
 import com.milosz.podsiadly.careerhub.agentcrawler.solid.api.SolidApiClient;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +14,12 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class SolidCrawlerScheduler {
 
-    private static final RateLimiter PUBLISH_LIMITER = RateLimiter.create(2.0d);
-
     private final SolidApiClient solidApiClient;
     private final SolidJobPublisher publisher;
 
     @Scheduled(
-            initialDelayString = "${agent.solid.initial-delay-ms:1800000}",
-            fixedDelayString   = "${agent.solid.interval-ms:108000000}"
+            initialDelayString = "${agent.solid.initial-delay-ms:15000}",
+            fixedDelayString   = "${agent.solid.interval-ms:86400000}"
     )
     public void runPeriodic() {
         log.info("[agent-solid] periodic crawl triggered");
@@ -40,7 +37,6 @@ public class SolidCrawlerScheduler {
 
             int count = 0;
             for (String url : urls) {
-                PUBLISH_LIMITER.acquire();
                 publisher.publishUrl(url);
                 count++;
             }

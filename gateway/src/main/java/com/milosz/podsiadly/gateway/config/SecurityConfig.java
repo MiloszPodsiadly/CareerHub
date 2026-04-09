@@ -55,7 +55,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/job-drafts/**").authenticated()
                         .requestMatchers("/api/profile", "/api/profile/**").authenticated()
                         .requestMatchers("/api/favorites/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/ingest/url", "/api/ingest/sitemap").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

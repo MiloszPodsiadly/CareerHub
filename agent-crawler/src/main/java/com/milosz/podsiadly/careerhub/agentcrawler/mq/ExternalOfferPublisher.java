@@ -22,7 +22,8 @@ public class ExternalOfferPublisher {
 
     public void publish(ExternalOfferMessage msg) {
         String exchange = props.getExchange();
-        String routingKey = props.getRouting().getExternalOffers();
+        String source = props.resolveExternalOfferSource(msg.source());
+        String routingKey = props.externalOffersRouting(source);
 
         if (routingKey == null || routingKey.isBlank()) {
             throw new IllegalStateException("jobs.ingest.routing.externalOffers is empty");
@@ -44,6 +45,6 @@ public class ExternalOfferPublisher {
         rabbitTemplate.convertAndSend(exchange, routingKey, msg, mpp);
 
         log.info("[mq] externalOffer published source={} externalId={} routingKey={} corrId={}",
-                msg.source(), msg.externalId(), routingKey, correlationId);
+                source, msg.externalId(), routingKey, correlationId);
     }
 }

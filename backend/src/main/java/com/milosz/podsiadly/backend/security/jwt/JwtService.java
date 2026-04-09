@@ -27,11 +27,11 @@ public class JwtService {
     public String issueAccess(String userId, String email, List<String> roles) {
         Instant now = Instant.now();
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(userId)
                 .setIssuer(props.getIssuer())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plus(props.getAccessMinutes(), ChronoUnit.MINUTES)))
-                .addClaims(Map.of("uid", userId, "roles", roles, "type", "access"))
+                .addClaims(Map.of("username", email, "roles", roles, "type", "access"))
                 .signWith(Keys.hmacShaKeyFor(key()), SignatureAlgorithm.HS256)
                 .compact();
     }

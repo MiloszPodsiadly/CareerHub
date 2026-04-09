@@ -5,6 +5,7 @@ import com.milosz.podsiadly.backend.job.dto.JobDraftDto;
 import com.milosz.podsiadly.backend.job.dto.JobOfferDetailDto;
 import com.milosz.podsiadly.backend.job.dto.JobDraftUpsertRequest;
 import com.milosz.podsiadly.backend.job.service.JobDraftService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +34,7 @@ public class JobDraftController {
     @PatchMapping("/{id}")
     public JobDraftDto upsert(@AuthenticationPrincipal User user,
                               @PathVariable Long id,
-                              @RequestBody JobDraftUpsertRequest req) {
+                              @Valid @RequestBody JobDraftUpsertRequest req) {
         if (user == null) throw new IllegalStateException("Unauthorized");
         return drafts.upsert(user, id, req);
     }

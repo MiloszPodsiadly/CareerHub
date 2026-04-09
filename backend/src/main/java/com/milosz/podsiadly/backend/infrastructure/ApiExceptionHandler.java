@@ -1,12 +1,17 @@
 package com.milosz.podsiadly.backend.infrastructure;
 
 import jakarta.persistence.PersistenceException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
+import org.springframework.validation.BindException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -21,8 +26,46 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            BindException.class,
+            ConstraintViolationException.class,
+            MethodArgumentTypeMismatchException.class
+    })
+    public ResponseEntity<ApiError> handleValidation(Exception ex) {
+        String message;
+
+        if (ex instanceof MethodArgumentNotValidException manv) {
+            message = manv.getBindingResult().getFieldErrors().stream()
+                    .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                    .distinct()
+                    .collect(Collectors.joining("; "));
+        } else if (ex instanceof BindException be) {
+            message = be.getBindingResult().getFieldErrors().stream()
+                    .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                    .distinct()
+                    .collect(Collectors.joining("; "));
+        } else if (ex instanceof ConstraintViolationException cve) {
+            message = cve.getConstraintViolations().stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .distinct()
+                    .collect(Collectors.joining("; "));
+        } else if (ex instanceof MethodArgumentTypeMismatchException matme) {
+            message = matme.getName() + ": invalid value";
+        } else {
+            message = "Validation failed";
+        }
+
+        if (message == null || message.isBlank()) {
+            message = "Validation failed";
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiError(message));
+    }
+
+    @ExceptionHandler({
             DataIntegrityViolationException.class,
-            ConstraintViolationException.class
+            org.hibernate.exception.ConstraintViolationException.class
     })
     public ResponseEntity<ApiError> handleConflict(RuntimeException ex) {
         log.debug("Conflict mapped to 409", ex);

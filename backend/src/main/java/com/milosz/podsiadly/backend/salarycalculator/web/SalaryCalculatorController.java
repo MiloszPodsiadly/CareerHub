@@ -5,6 +5,7 @@ import com.milosz.podsiadly.backend.salarycalculator.dto.SalaryResponse;
 import com.milosz.podsiadly.backend.salarycalculator.repository.SalaryReportEntityMapper;
 import com.milosz.podsiadly.backend.salarycalculator.service.SalaryCalculatorService;
 import com.milosz.podsiadly.backend.salarycalculator.service.SalaryReportService;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class SalaryCalculatorController {
 
     @PostMapping("/calculate")
     public SalaryResponse calculate(
-            @RequestBody SalaryRequest request,
+            @Valid @RequestBody SalaryRequest request,
             @RequestParam(name = "persist", defaultValue = "false") boolean persist,
             @RequestParam(name = "ttlSeconds", required = false) Long ttlSeconds
     ) {

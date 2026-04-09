@@ -36,8 +36,8 @@ public class TheProtocolCrawlerScheduler {
     private String contactEmail;
 
     @Scheduled(
-            initialDelayString = "${agent.theprotocol.initial-delay-ms:2400000}",
-            fixedDelayString   = "${agent.theprotocol.interval-ms:108000000}"
+            initialDelayString = "${agent.theprotocol.initial-delay-ms:15000}",
+            fixedDelayString   = "${agent.theprotocol.interval-ms:86400000}"
     )
     public void run() {
         Counters c = new Counters();
