@@ -1,0 +1,20 @@
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+spring:
+  task:
+    scheduling:
+      enabled: false
+
+jobs:
+  ingest:
+    exchange: ingest.jobs.test
+    routing:
+      urls: job-url.test
+      externalOffers: external-offer.test
+    queue:
+      urls: ingest.jobs.url.test
+      externalOffers: ingest.jobs.external-offers.test

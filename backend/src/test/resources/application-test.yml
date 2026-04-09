@@ -1,0 +1,29 @@
+spring:
+  task:
+    scheduling:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+auth:
+  jwt:
+    secret: 1234567890123456789012345678901234567890123456789012345678901234
+    issuer: careerhub-backend-test
+    access-minutes: 60
+    refresh-days: 7
+
+app:
+  frontend:
+    url: http://frontend.test
+  platform:
+    base-url: http://frontend.test
+  mailer:
+    enabled: false
+
+ingest:
+  scheduler:
+    enabled: false
