@@ -1,11 +1,11 @@
-package com.milosz.podsiadly.backend.ingest.parser;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.milosz.podsiadly.backend.job.domain.ContractType;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
-import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.ContractType;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.dto.JobOfferSkillDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -222,7 +222,7 @@ public class TheProtocolParser {
         out.techStack = out.techTags.stream()
                 .map(s -> new JobOfferSkillDto(
                         s, null, null,
-                        com.milosz.podsiadly.backend.job.domain.SkillSource.STACK
+                        com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SkillSource.STACK
                 ))
                 .toList();
 

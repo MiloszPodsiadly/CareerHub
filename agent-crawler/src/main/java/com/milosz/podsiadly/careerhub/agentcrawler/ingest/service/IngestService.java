@@ -1,8 +1,9 @@
-package com.milosz.podsiadly.backend.ingest.service;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.service;
 
-import com.milosz.podsiadly.backend.job.domain.JobSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -24,21 +25,13 @@ public class IngestService {
     public long ingestSitemap(String sitemapUrl, JobSource source) throws Exception {
         return switch (source) {
             case JUSTJOIN -> ingestXmlSitemapRecursiveWithCounter(sitemapUrl, source);
-
-            case NOFLUFFJOBS -> {
-                log.info("[ingest] NFJ sitemap ingest is handled by agent-crawler – backend returns 0 (url={})", sitemapUrl);
+            case NOFLUFFJOBS, SOLIDJOBS, THEPROTOCOL, PRACUJ -> {
+                log.info("[ingest] {} sitemap ingest is handled by a dedicated agent scheduler, skip url={}",
+                        source, sitemapUrl);
                 yield 0L;
             }
-
-            case SOLIDJOBS -> {
-                log.info("[ingest] SolidJobs sitemap ingest is handled by agent-crawler – backend returns 0 (url={})", sitemapUrl);
-                yield 0L;
-            }
-
-            default -> ingestXmlSitemapRecursiveWithCounter(sitemapUrl, source);
         };
     }
-
 
     private long ingestXmlSitemapRecursiveWithCounter(String url, JobSource source) throws Exception {
         AtomicLong counter = new AtomicLong(0);
@@ -48,15 +41,23 @@ public class IngestService {
         return total;
     }
 
-
     private void ingestXmlSitemapRecursive(String url, JobSource source, AtomicLong counter) throws Exception {
         log.debug("[ingest] fetching sitemap url={} source={}", url, source);
 
-        Document doc = Jsoup.connect(url)
-                .userAgent(BROWSER_UA)
-                .ignoreContentType(true)
-                .timeout(15_000)
-                .get();
+        Document doc;
+        try {
+            doc = Jsoup.connect(url)
+                    .userAgent(BROWSER_UA)
+                    .ignoreContentType(true)
+                    .timeout(15_000)
+                    .get();
+        } catch (HttpStatusException ex) {
+            if (source == JobSource.JUSTJOIN && ex.getStatusCode() == 403) {
+                log.warn("[ingest] JUSTJOIN sitemap blocked with HTTP 403, skip url={}", url);
+                return;
+            }
+            throw ex;
+        }
 
         if (!doc.select("sitemapindex").isEmpty()) {
             for (Element loc : doc.select("sitemap > loc")) {

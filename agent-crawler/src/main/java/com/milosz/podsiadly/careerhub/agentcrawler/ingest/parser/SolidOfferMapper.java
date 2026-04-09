@@ -1,11 +1,11 @@
-package com.milosz.podsiadly.backend.ingest.parser;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
-import com.milosz.podsiadly.backend.job.domain.ContractType;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
-import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
-import com.milosz.podsiadly.backend.job.service.SalaryNormalizer;
-import com.milosz.podsiadly.backend.job.service.ingest.ExternalJobOfferData;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ExternalJobOfferData;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.ContractType;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.dto.JobOfferSkillDto;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.service.SalaryNormalizer;
 
 import java.time.Instant;
 import java.util.*;
@@ -145,13 +145,24 @@ public final class SolidOfferMapper {
             baseRaw = baseRaw.replaceAll("[^0-9.]", "");
             if (baseRaw.isBlank()) return null;
             double base = Double.parseDouble(baseRaw);
-            return (int) Math.round(base * 1000d);
+            long value = Math.round(base * 1000d);
+            return safeInt(value);
         }
 
         t = t.replaceAll("[^0-9]", "");
         if (t.isBlank()) return null;
 
-        return Integer.parseInt(t);
+        try {
+            return Integer.parseInt(t);
+        } catch (NumberFormatException ex) {
+            return safeInt(Long.parseLong(t));
+        }
+    }
+
+    private static Integer safeInt(long value) {
+        if (value > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        if (value < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return (int) value;
     }
 
     private static SalaryPeriod detectSalaryPeriod(String salaryText) {

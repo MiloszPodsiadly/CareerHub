@@ -1,16 +1,15 @@
-package com.milosz.podsiadly.backend.ingest.dto;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.model;
 
-import com.milosz.podsiadly.backend.job.domain.ContractType;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
-import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.ContractType;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.dto.JobOfferSkillDto;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-public record NofluffJobDto(
-        String externalId,
+public record ExternalJobOfferData(
         String title,
         String description,
         String companyName,
@@ -29,5 +28,5 @@ public record NofluffJobDto(
         List<JobOfferSkillDto> techStack,
         Instant publishedAt,
         Boolean active
-) {}
-
+) {
+}

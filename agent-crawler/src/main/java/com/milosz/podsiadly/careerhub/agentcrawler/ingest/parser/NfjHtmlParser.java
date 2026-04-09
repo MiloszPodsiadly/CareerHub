@@ -1,4 +1,4 @@
-package com.milosz.podsiadly.backend.ingest.parser;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Component;

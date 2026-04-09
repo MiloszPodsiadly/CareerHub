@@ -1,10 +1,10 @@
-package com.milosz.podsiadly.backend.ingest.parser;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

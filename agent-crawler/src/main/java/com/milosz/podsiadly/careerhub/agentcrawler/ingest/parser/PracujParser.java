@@ -1,8 +1,13 @@
-package com.milosz.podsiadly.careerhub.agentcrawler.pracuj;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.milosz.podsiadly.careerhub.agentcrawler.mq.ExternalOfferMessage;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ExternalJobOfferData;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ParsedExternalOffer;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.ContractType;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -18,7 +23,7 @@ public class PracujParser {
     private static final Pattern NEXT_DATA =
             Pattern.compile("<script id=\"__NEXT_DATA__\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL);
 
-    public ExternalOfferMessage parseToMessage(String detailsUrl, String html) throws Exception {
+    public ParsedExternalOffer parse(String detailsUrl, String html) throws Exception {
         JsonNode offer = extractJobOfferNode(html);
         JsonNode attr = offer.path("attributes");
 
@@ -46,7 +51,7 @@ public class PracujParser {
 
         boolean remote = isRemote(attr);
 
-        String level = normalizeLevel(firstNonBlank(
+        JobLevel level = normalizeLevel(firstNonBlank(
                 attr.at("/employment/positionLevels/0/name").asText(""),
                 attr.at("/employment/positionLevels/0/code").asText(""),
                 ""
@@ -71,26 +76,29 @@ public class PracujParser {
 
         List<String> techTags = extractTechTags(offer);
 
-        return new ExternalOfferMessage(
-                "PRACUJ",
+        return new ParsedExternalOffer(
+                JobSource.PRACUJ,
                 externalId,
-                url,
-                title,
-                description,
-                companyName,
-                cityName,
-                remote,
-                blankToNull(level),
-                blankToNull(contractInfo.mainContract),
-                contractInfo.contracts,
-                contractInfo.salaryMin,
-                contractInfo.salaryMax,
-                blankToNull(contractInfo.currency),
-                blankToNull(contractInfo.salaryPeriod),
-                applyUrl,
-                techTags,
-                publishedAt,
-                active
+                new ExternalJobOfferData(
+                        title,
+                        description,
+                        companyName,
+                        cityName,
+                        remote,
+                        level,
+                        contractInfo.mainContract,
+                        contractInfo.contracts,
+                        contractInfo.salaryMin,
+                        contractInfo.salaryMax,
+                        blankToNull(contractInfo.currency),
+                        contractInfo.salaryPeriod,
+                        url,
+                        applyUrl,
+                        techTags,
+                        List.of(),
+                        publishedAt,
+                        active
+                )
         );
     }
 
@@ -270,13 +278,13 @@ public class PracujParser {
      */
     private ContractInfo extractContractsAndSalary(JsonNode attr) {
         JsonNode arr = attr.at("/employment/typesOfContracts");
-        LinkedHashSet<String> contracts = new LinkedHashSet<>();
+        LinkedHashSet<ContractType> contracts = new LinkedHashSet<>();
 
-        String mainContract = "";
+        ContractType mainContract = null;
         Integer min = null;
         Integer max = null;
         String currency = "";
-        String salaryPeriod = "MONTH";
+        SalaryPeriod salaryPeriod = SalaryPeriod.MONTH;
 
         if (arr.isArray()) {
             for (JsonNode c : arr) {
@@ -287,10 +295,10 @@ public class PracujParser {
                         c.path("code").asText(""),
                         ""
                 );
-                String ct = normalizeContract(ctRaw);
-                if (!ct.isBlank()) {
+                ContractType ct = normalizeContract(ctRaw);
+                if (ct != null) {
                     contracts.add(ct);
-                    if (mainContract.isBlank()) mainContract = ct;
+                    if (mainContract == null) mainContract = ct;
                 }
 
                 JsonNode sal = c.path("salary");
@@ -329,43 +337,41 @@ public class PracujParser {
     // Normalizers + small utils
     // ------------------------------------------------------------
 
-    private static String normalizeLevel(String raw) {
-        if (raw == null) return "";
+    private static JobLevel normalizeLevel(String raw) {
+        if (raw == null) return null;
         String r = raw.trim().toLowerCase(Locale.ROOT);
-        if (r.isBlank()) return "";
+        if (r.isBlank()) return null;
 
-        if (r.contains("jun")) return "JUNIOR";
-        if (r.contains("mid")) return "MID";
-        if (r.contains("regular")) return "MID";
-        if (r.contains("sen")) return "SENIOR";
-        if (r.contains("lead")) return "LEAD";
-        if (r.contains("manag")) return "MANAGER";
-        if (r.contains("senior")) return "SENIOR";
+        if (r.contains("intern") || r.contains("praktyk") || r.contains("trainee")) return JobLevel.INTERNSHIP;
+        if (r.contains("jun")) return JobLevel.JUNIOR;
+        if (r.contains("mid") || r.contains("regular")) return JobLevel.MID;
+        if (r.contains("sen")) return JobLevel.SENIOR;
+        if (r.contains("lead") || r.contains("manag")) return JobLevel.LEAD;
 
-        return raw.trim().toUpperCase(Locale.ROOT);
+        return null;
     }
 
-    private static String normalizeContract(String raw) {
-        if (raw == null) return "";
+    private static ContractType normalizeContract(String raw) {
+        if (raw == null) return null;
         String r = raw.trim().toLowerCase(Locale.ROOT);
-        if (r.isBlank()) return "";
+        if (r.isBlank()) return null;
 
-        if (r.contains("b2b")) return "B2B";
-        if (r.contains("employment contract") || r.contains("umowa o prac") || r.contains("uop")) return "UOP";
-        if (r.contains("zlec")) return "UZ";
-        if (r.contains("dzie")) return "UD";
+        if (r.contains("b2b")) return ContractType.B2B;
+        if (r.contains("employment contract") || r.contains("umowa o prac") || r.contains("uop")) return ContractType.UOP;
+        if (r.contains("zlec")) return ContractType.UZ;
+        if (r.contains("dzie")) return ContractType.UOD;
 
-        return raw.trim().toUpperCase(Locale.ROOT);
+        return null;
     }
 
-    private static String normalizeSalaryPeriod(String raw) {
-        if (raw == null) return "MONTH";
+    private static SalaryPeriod normalizeSalaryPeriod(String raw) {
+        if (raw == null) return SalaryPeriod.MONTH;
         String r = raw.trim().toLowerCase(Locale.ROOT);
-        if (r.isBlank()) return "MONTH";
+        if (r.isBlank()) return SalaryPeriod.MONTH;
 
-        if (r.contains("hour") || r.contains("godz")) return "HOUR";
-        if (r.contains("year") || r.contains("rok")) return "YEAR";
-        return "MONTH";
+        if (r.contains("hour") || r.contains("godz")) return SalaryPeriod.HOUR;
+        if (r.contains("year") || r.contains("rok")) return SalaryPeriod.YEAR;
+        return SalaryPeriod.MONTH;
     }
 
     private static Instant parseInstantSafe(String... candidates) {
@@ -396,8 +402,8 @@ public class PracujParser {
             Integer salaryMin,
             Integer salaryMax,
             String currency,
-            String salaryPeriod,
-            String mainContract,
-            Set<String> contracts
+            SalaryPeriod salaryPeriod,
+            ContractType mainContract,
+            Set<ContractType> contracts
     ) {}
 }

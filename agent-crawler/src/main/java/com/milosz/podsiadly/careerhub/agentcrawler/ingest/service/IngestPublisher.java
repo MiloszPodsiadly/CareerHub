@@ -1,8 +1,8 @@
-package com.milosz.podsiadly.backend.ingest.service;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.service;
 
-import com.milosz.podsiadly.backend.ingest.config.IngestMessagingProperties;
-import com.milosz.podsiadly.backend.ingest.mq.UrlMessage;
-import com.milosz.podsiadly.backend.job.domain.JobSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.config.IngestMessagingProperties;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.mq.UrlMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -17,8 +17,8 @@ public class IngestPublisher {
     public void publishUrl(String url, JobSource source) {
         rabbit.convertAndSend(
                 p.getExchange(),
-                p.getRouting().getUrls(),
-                new UrlMessage(source, url)
+                p.urlsRouting(source.name()),
+                new UrlMessage(url, source.name())
         );
     }
 }

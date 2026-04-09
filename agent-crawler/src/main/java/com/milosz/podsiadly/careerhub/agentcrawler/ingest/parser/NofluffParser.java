@@ -1,13 +1,15 @@
-package com.milosz.podsiadly.backend.ingest.parser;
+package com.milosz.podsiadly.careerhub.agentcrawler.ingest.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.milosz.podsiadly.backend.ingest.dto.NofluffJobDto;
-import com.milosz.podsiadly.backend.job.domain.ContractType;
-import com.milosz.podsiadly.backend.job.domain.JobLevel;
-import com.milosz.podsiadly.backend.job.domain.SalaryPeriod;
-import com.milosz.podsiadly.backend.job.domain.SkillSource;
-import com.milosz.podsiadly.backend.job.dto.JobOfferSkillDto;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ExternalJobOfferData;
+import com.milosz.podsiadly.careerhub.agentcrawler.ingest.model.ParsedExternalOffer;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.ContractType;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobLevel;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SalaryPeriod;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.SkillSource;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.dto.JobOfferSkillDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,7 @@ public class NofluffParser {
 
     private final ObjectMapper om;
 
-    public NofluffJobDto parseFromApiJson(String externalId, String json, String originalUrl) {
+    public ParsedExternalOffer parseFromApiJson(String externalId, String json, String originalUrl) {
         try {
             JsonNode root = om.readTree(json);
             JsonNode job = resolveJobNode(root, externalId);
@@ -64,26 +66,29 @@ public class NofluffParser {
             String detailsUrl = originalUrl;
             String applyUrl = originalUrl;
 
-            return new NofluffJobDto(
+            return new ParsedExternalOffer(
+                    JobSource.NOFLUFFJOBS,
                     externalId,
-                    title,
-                    description,
-                    companyName,
-                    cityName,
-                    remote,
-                    level,
-                    mainContract,
-                    contracts,
-                    salaryMin,
-                    salaryMax,
-                    currency,
-                    salaryPeriod,
-                    detailsUrl,
-                    applyUrl,
-                    techTags,
-                    skills.stack,
-                    publishedAt,
-                    true
+                    new ExternalJobOfferData(
+                            title,
+                            description,
+                            companyName,
+                            cityName,
+                            remote,
+                            level,
+                            mainContract,
+                            contracts,
+                            salaryMin,
+                            salaryMax,
+                            currency,
+                            salaryPeriod,
+                            detailsUrl,
+                            applyUrl,
+                            techTags,
+                            skills.stack,
+                            publishedAt,
+                            Boolean.TRUE
+                    )
             );
         } catch (Exception e) {
             throw new IllegalStateException("NFJ JSON parse error for " + externalId, e);
