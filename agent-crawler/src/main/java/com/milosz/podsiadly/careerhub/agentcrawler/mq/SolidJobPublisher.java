@@ -15,7 +15,7 @@ public class SolidJobPublisher {
     private static final String SOURCE_SOLID = "SOLIDJOBS";
 
     public void publishUrl(String url) {
-        UrlMessage msg = new UrlMessage(url, SOURCE_SOLID);
+        UrlMessage msg = new UrlMessage(url, SOURCE_SOLID, null);
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),

@@ -19,7 +19,7 @@ public class NfjJobPublisher {
     }
 
     public void publishUrl(String url, String source) {
-        UrlMessage msg = new UrlMessage(url, source);
+        UrlMessage msg = new UrlMessage(url, source, null);
 
         rabbitTemplate.convertAndSend(
                 props.getExchange(),

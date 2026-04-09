@@ -18,7 +18,7 @@ public class IngestPublisher {
         rabbit.convertAndSend(
                 p.getExchange(),
                 p.urlsRouting(source.name()),
-                new UrlMessage(url, source.name())
+                new UrlMessage(url, source.name(), null)
         );
     }
 }
