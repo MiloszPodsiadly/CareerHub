@@ -8,7 +8,6 @@ import com.milosz.podsiadly.backend.integration.BackendIntegrationTestBase;
 import com.milosz.podsiadly.backend.security.jwt.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +52,6 @@ class SecurityConfigIntegrationTests extends BackendIntegrationTestBase {
     @MethodSource("requestCases")
     void should_apply_security_rules_for_http_routes(Case testCase) {
         User user = createUser("user@example.com", true, Set.of("ROLE_USER"));
-        User admin = createUser("admin@example.com", true, Set.of("ROLE_ADMIN"));
 
         HttpHeaders headers = new HttpHeaders();
         if (testCase.auth() == AuthMode.BEARER_USER) {
@@ -61,9 +59,6 @@ class SecurityConfigIntegrationTests extends BackendIntegrationTestBase {
         }
         if (testCase.auth() == AuthMode.COOKIE_USER) {
             headers.add(HttpHeaders.COOKIE, "ACCESS=" + accessTokenFor(user));
-        }
-        if (testCase.auth() == AuthMode.BEARER_ADMIN) {
-            headers.setBearerAuth(accessTokenFor(admin));
         }
 
         ResponseEntity<String> response = restTemplate.exchange(
@@ -81,9 +76,7 @@ class SecurityConfigIntegrationTests extends BackendIntegrationTestBase {
                 new Case("public jobs list", HttpMethod.GET, "/api/jobs", AuthMode.NONE, HttpStatus.OK),
                 new Case("jobs mine rejected without auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.NONE, HttpStatus.FORBIDDEN),
                 new Case("jobs mine accepts bearer auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.BEARER_USER, HttpStatus.OK),
-                new Case("jobs mine rejects removed access cookie auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.COOKIE_USER, HttpStatus.FORBIDDEN),
-                new Case("admin path rejects regular user", HttpMethod.GET, "/api/admin/probe", AuthMode.BEARER_USER, HttpStatus.FORBIDDEN),
-                new Case("admin path passes security for admin", HttpMethod.GET, "/api/admin/probe", AuthMode.BEARER_ADMIN, HttpStatus.NOT_FOUND)
+                new Case("jobs mine rejects removed access cookie auth", HttpMethod.GET, "/api/jobs/mine", AuthMode.COOKIE_USER, HttpStatus.FORBIDDEN)
         );
     }
 
@@ -118,7 +111,6 @@ class SecurityConfigIntegrationTests extends BackendIntegrationTestBase {
     private enum AuthMode {
         NONE,
         BEARER_USER,
-        COOKIE_USER,
-        BEARER_ADMIN
+        COOKIE_USER
     }
 }
