@@ -17,12 +17,6 @@ public class JobUrlRetryPublisher {
     private final RabbitTemplate rabbit;
     private final IngestMessagingProperties props;
 
-    public void retry(UrlMessage msg, int attempt, Exception ex, String messageId) {
-        String source = props.resolveExternalOfferSource(msg.source());
-        String routing = routingForAttempt(source, attempt);
-        publish(msg, routing, attempt + 1, ex, messageId);
-    }
-
     public void dlq(UrlMessage msg, Exception ex, String messageId, int attempt) {
         String source = props.resolveExternalOfferSource(msg.source());
         publish(msg, props.urlsDlqRouting(source), attempt, ex, messageId);
@@ -54,9 +48,39 @@ public class JobUrlRetryPublisher {
     }
 
     private String routingForAttempt(String source, int attempt) {
+        if (attempt < 0) {
+            return props.urlsDlqRouting(source);
+        }
         if (attempt == 0) return props.urlsRetry1Routing(source);
         if (attempt == 1) return props.urlsRetry5Routing(source);
         if (attempt == 2) return props.urlsRetry30Routing(source);
         return props.urlsDlqRouting(source);
+    }
+
+    public void retryWithPolicy(UrlMessage msg, int attempt, Exception ex, String messageId) {
+        String source = props.resolveExternalOfferSource(msg.source());
+        String routing = routingForException(source, attempt, ex);
+        int nextAttempt = nextAttemptForException(attempt, ex);
+        publish(msg, routing, nextAttempt, ex, messageId);
+    }
+
+    private String routingForException(String source, int attempt, Exception ex) {
+        if (ex instanceof NfjRateLimitException) {
+            if (attempt <= 0) return props.urlsRetry5Routing(source);
+            if (attempt == 1) return props.urlsRetry30Routing(source);
+            return props.urlsDlqRouting(source);
+        }
+
+        return routingForAttempt(source, attempt);
+    }
+
+    private int nextAttemptForException(int attempt, Exception ex) {
+        if (ex instanceof NfjRateLimitException) {
+            if (attempt <= 0) return 2;
+            if (attempt == 1) return 3;
+            return attempt;
+        }
+
+        return attempt + 1;
     }
 }

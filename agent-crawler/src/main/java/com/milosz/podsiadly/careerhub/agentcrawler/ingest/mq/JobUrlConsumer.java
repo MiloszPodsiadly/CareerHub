@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.careerhub.agentcrawler.ingest.mq;
 
 import com.milosz.podsiadly.careerhub.agentcrawler.mq.UrlMessage;
+import com.milosz.podsiadly.careerhub.agentcrawler.job.domain.JobSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -68,15 +69,50 @@ public class JobUrlConsumer {
     private void onMessage(UrlMessage msg, Message message) throws Exception {
         String messageId = resolveMessageId(message);
         int attempt = getAttempt(message);
+        JobSource source = resolveSource(msg);
 
         try {
             consumeService.consume(msg);
         } catch (ImmediateRequeueAmqpException ex) {
-            retryPublisher.retry(msg, attempt, ex, messageId);
+            logRetry(source, msg, messageId, attempt, ex, true);
+            retryPublisher.retryWithPolicy(msg, attempt, ex, messageId);
         } catch (AmqpRejectAndDontRequeueException ex) {
+            logRetry(source, msg, messageId, attempt, ex, false);
             retryPublisher.dlq(msg, ex, messageId, attempt);
         } catch (Exception ex) {
-            retryPublisher.retry(msg, attempt, ex, messageId);
+            logRetry(source, msg, messageId, attempt, ex, true);
+            retryPublisher.retryWithPolicy(msg, attempt, ex, messageId);
+        }
+    }
+
+    private void logRetry(JobSource source, UrlMessage msg, String messageId, int attempt, Exception ex, boolean willRetry) {
+        if (source != JobSource.NOFLUFFJOBS) {
+            return;
+        }
+
+        String action = willRetry ? "retry" : "dlq";
+        String errorMessage = ex.getMessage();
+        if (errorMessage != null && errorMessage.length() > 300) {
+            errorMessage = errorMessage.substring(0, 300);
+        }
+
+        log.warn("[job-url] NFJ {} messageId={} attempt={} error={} message={} url={}",
+                action,
+                messageId,
+                attempt,
+                ex.getClass().getSimpleName(),
+                errorMessage,
+                msg != null ? msg.url() : null);
+    }
+
+    private static JobSource resolveSource(UrlMessage msg) {
+        if (msg == null || msg.source() == null || msg.source().isBlank()) {
+            return JobSource.JUSTJOIN;
+        }
+        try {
+            return JobSource.valueOf(msg.source().trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return JobSource.JUSTJOIN;
         }
     }
 
