@@ -1,8 +1,8 @@
 package com.milosz.podsiadly.backend.domain.loginandregister.mail;
 
 import com.milosz.podsiadly.backend.domain.loginandregister.EmailVerificationTokenRepository;
-import com.milosz.podsiadly.backend.domain.loginandregister.mail.MailService;
 import com.milosz.podsiadly.backend.domain.loginandregister.PasswordResetTokenRepository;
+import com.milosz.podsiadly.backend.domain.loginandregister.TokenHashing;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -65,25 +65,25 @@ public class MailConsumer {
     }
 
     private void handleVerify(MailSendCommand cmd) {
-        var tokenOpt = verificationTokens.findByToken(cmd.token());
+        var tokenOpt = verificationTokens.findByToken(TokenHashing.sha256(cmd.token()));
         if (tokenOpt.isEmpty()) return;
 
         var token = tokenOpt.get();
         if (token.isUsed() || token.getExpiresAt().isBefore(LocalDateTime.now())) return;
         if (token.getUser().isEmailVerified()) return;
 
-        String link = frontendUrl + "/auth/verify?token=" + token.getToken();
+        String link = frontendUrl + "/auth/verify?token=" + cmd.token();
         mailService.sendEmailVerification(token.getUser().getEmail(), link);
     }
 
     private void handleReset(MailSendCommand cmd) {
-        var tokenOpt = resetTokens.findByToken(cmd.token());
+        var tokenOpt = resetTokens.findByToken(TokenHashing.sha256(cmd.token()));
         if (tokenOpt.isEmpty()) return;
 
         var token = tokenOpt.get();
         if (token.isUsed() || token.getExpiresAt().isBefore(LocalDateTime.now())) return;
 
-        String link = frontendUrl + "/auth/reset-password?token=" + token.getToken();
+        String link = frontendUrl + "/auth/reset-password?token=" + cmd.token();
         mailService.sendPasswordResetEmail(token.getUser().getEmail(), link);
     }
 

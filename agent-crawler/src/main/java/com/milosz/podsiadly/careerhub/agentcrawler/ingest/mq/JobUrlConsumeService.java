@@ -107,6 +107,11 @@ public class JobUrlConsumeService {
             return;
         }
 
+        if (source == JobSource.NOFLUFFJOBS && sc == 429) {
+            logRequeue("[ingest] NFJ rate limited HTTP {} for {}, long backoff", sc, url);
+            throw new NfjRateLimitException("NFJ rate limit HTTP " + sc + " for " + url);
+        }
+
         if (sc == 408 || sc == 425 || sc == 429 || (sc >= 500 && sc < 600)) {
             logRequeue("[ingest] transient HTTP {} for {} (source={}), requeue", sc, url, source);
             throw new ImmediateRequeueAmqpException("HTTP " + sc + " for " + url);
@@ -129,7 +134,7 @@ public class JobUrlConsumeService {
 
     private void handleNofluff(String url) throws IOException {
         String externalId = lastPath(url);
-        String html = fetchNofluffHtml(url);
+        String html = fetchNofluffHtml(url, externalId);
 
         if (nfjHtmlParser.isExpired(html)) {
             publishInactive(JobSource.NOFLUFFJOBS, externalId, normalizeUrl(url));
@@ -142,7 +147,7 @@ public class JobUrlConsumeService {
             return;
         }
 
-        String json = fetchNofluffJson(externalId);
+        String json = fetchNofluffJson(externalId, url);
         ParsedExternalOffer parsedOffer = nofluffParser.parseFromApiJson(externalId, json, url);
         externalOfferPublisher.publish(ExternalOfferMessageMapper.fromParsedOffer(parsedOffer));
         logOk("[ingest] NFJ publish OK: {}", url);
@@ -255,26 +260,54 @@ public class JobUrlConsumeService {
                 .outerHtml();
     }
 
-    private String fetchNofluffHtml(String url) throws IOException {
+    private String fetchNofluffHtml(String url, String externalId) throws IOException {
         NFJ_FETCH_LIMITER.acquire();
-        return fetchHtml(url, "https://nofluffjobs.com/");
+        long startedAt = System.currentTimeMillis();
+        try {
+            String html = fetchHtml(url, "https://nofluffjobs.com/");
+            log.debug("[ingest] NFJ html fetch OK externalId={} tookMs={} url={}",
+                    externalId, System.currentTimeMillis() - startedAt, url);
+            return html;
+        } catch (HttpStatusException ex) {
+            log.warn("[ingest] NFJ html fetch HTTP {} externalId={} tookMs={} url={}",
+                    ex.getStatusCode(), externalId, System.currentTimeMillis() - startedAt, url);
+            throw ex;
+        } catch (IOException ex) {
+            log.warn("[ingest] NFJ html fetch I/O error externalId={} tookMs={} url={} error={}",
+                    externalId, System.currentTimeMillis() - startedAt, url, ex.toString());
+            throw ex;
+        }
     }
 
-    private String fetchNofluffJson(String externalId) throws IOException {
+    private String fetchNofluffJson(String externalId, String url) throws IOException {
         String apiUrl = "https://nofluffjobs.com/api/posting/" + externalId
                 + "?salaryCurrency=PLN&salaryPeriod=month&region=pl&language=pl-PL";
 
         NFJ_FETCH_LIMITER.acquire();
 
-        return Jsoup.connect(apiUrl)
-                .userAgent(BROWSER_UA)
-                .referrer("https://nofluffjobs.com/")
-                .ignoreContentType(true)
-                .header("Accept", "application/json")
-                .timeout(15_000)
-                .get()
-                .body()
-                .text();
+        long startedAt = System.currentTimeMillis();
+        try {
+            String json = Jsoup.connect(apiUrl)
+                    .userAgent(BROWSER_UA)
+                    .referrer("https://nofluffjobs.com/")
+                    .ignoreContentType(true)
+                    .header("Accept", "application/json")
+                    .timeout(15_000)
+                    .get()
+                    .body()
+                    .text();
+            log.debug("[ingest] NFJ json fetch OK externalId={} tookMs={} url={}",
+                    externalId, System.currentTimeMillis() - startedAt, url);
+            return json;
+        } catch (HttpStatusException ex) {
+            log.warn("[ingest] NFJ json fetch HTTP {} externalId={} tookMs={} url={}",
+                    ex.getStatusCode(), externalId, System.currentTimeMillis() - startedAt, url);
+            throw ex;
+        } catch (IOException ex) {
+            log.warn("[ingest] NFJ json fetch I/O error externalId={} tookMs={} url={} error={}",
+                    externalId, System.currentTimeMillis() - startedAt, url, ex.toString());
+            throw ex;
+        }
     }
 
     private void handleInterruptedIo(String url) {

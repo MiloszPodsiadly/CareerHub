@@ -42,4 +42,16 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
         )
     """)
     Optional<JobApplication> findAccessible(@Param("appId") Long appId, @Param("userId") String userId);
+
+    @Query("""
+      select a from JobApplication a
+      left join a.offer o
+      left join com.milosz.podsiadly.backend.job.domain.JobOfferOwner ow on ow.jobOffer = o
+      where a.id = :appId
+        and (
+             (o is not null and ow.user.id = :ownerId)
+             or (o is null and a.offerOwnerIdSnapshot = :ownerId)
+        )
+    """)
+    Optional<JobApplication> findManageableByOwner(@Param("appId") Long appId, @Param("ownerId") String ownerId);
 }

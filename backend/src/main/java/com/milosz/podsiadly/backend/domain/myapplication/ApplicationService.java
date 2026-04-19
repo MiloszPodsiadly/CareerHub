@@ -124,7 +124,7 @@ public class ApplicationService {
 
     @Transactional
     public ApplicationDetailDto updateStatus(Long id, String userId, ApplicationStatus newStatus) {
-        var a = apps.findAccessible(id, userId)
+        var a = apps.findManageableByOwner(id, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found or forbidden."));
         a.setStatus(newStatus);
         return toDetailDto(a);

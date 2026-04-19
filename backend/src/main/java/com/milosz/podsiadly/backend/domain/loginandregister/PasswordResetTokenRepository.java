@@ -1,6 +1,7 @@
 package com.milosz.podsiadly.backend.domain.loginandregister;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,4 +20,14 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     Optional<PasswordResetToken> findTopByUserIdOrderByCreatedAtDesc(String userId);
 
     long countByUserIdAndCreatedAtAfter(String userId, LocalDateTime after);
+
+    @Modifying
+    @Query("""
+    update PasswordResetToken t
+       set t.used = true
+     where t.user.id = :userId
+       and t.used = false
+       and t.expiresAt > :now
+""")
+    int invalidateAllActiveForUser(@Param("userId") String userId, @Param("now") LocalDateTime now);
 }

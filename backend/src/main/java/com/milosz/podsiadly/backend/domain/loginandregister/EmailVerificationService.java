@@ -30,9 +30,10 @@ public class EmailVerificationService {
         if (user.isEmailVerified()) return;
 
         String tokenValue = generateToken();
+        String tokenHash = TokenHashing.sha256(tokenValue);
 
         EmailVerificationToken token = EmailVerificationToken.builder()
-                .token(tokenValue)
+                .token(tokenHash)
                 .user(user)
                 .expiresAt(LocalDateTime.now().plusHours(expHours))
                 .used(false)
@@ -50,7 +51,7 @@ public class EmailVerificationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
         }
 
-        EmailVerificationToken token = tokens.findByToken(tokenValue)
+        EmailVerificationToken token = tokens.findByToken(TokenHashing.sha256(tokenValue))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token"));
 
         if (token.isUsed() || token.getExpiresAt().isBefore(LocalDateTime.now())) {
