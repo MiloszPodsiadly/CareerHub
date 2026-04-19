@@ -48,10 +48,13 @@ public class PasswordResetService {
             return;
         }
 
+        tokens.invalidateAllActiveForUser(user.getId(), LocalDateTime.now());
+
         String tokenValue = generateToken();
+        String tokenHash = TokenHashing.sha256(tokenValue);
 
         PasswordResetToken token = PasswordResetToken.builder()
-                .token(tokenValue)
+                .token(tokenHash)
                 .user(user)
                 .expiresAt(LocalDateTime.now().plusHours(tokenExpHours))
                 .used(false)
@@ -72,7 +75,7 @@ public class PasswordResetService {
             throw new ResponseStatusException(BAD_REQUEST, "Password is required");
         }
 
-        PasswordResetToken token = tokens.findByToken(req.token())
+        PasswordResetToken token = tokens.findByToken(TokenHashing.sha256(req.token()))
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Invalid reset token"));
 
         if (token.isUsed() || token.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -83,6 +86,7 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(req.newPassword()));
 
         token.setUsed(true);
+        tokens.invalidateAllActiveForUser(user.getId(), LocalDateTime.now());
     }
 
     private String generateToken() {
