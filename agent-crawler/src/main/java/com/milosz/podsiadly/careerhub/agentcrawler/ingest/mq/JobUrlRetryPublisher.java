@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 
 @Slf4j
@@ -26,6 +28,7 @@ public class JobUrlRetryPublisher {
         String effectiveMessageId = messageId != null && !messageId.isBlank()
                 ? messageId
                 : UUID.randomUUID().toString();
+        Long delayMs = delayForRouting(routing);
 
         rabbit.convertAndSend(props.getExchange(), routing, msg, message -> {
             var p = message.getMessageProperties();
@@ -40,11 +43,15 @@ public class JobUrlRetryPublisher {
             if (msgText != null) {
                 p.setHeader("x-error-message", msgText);
             }
+            if (delayMs != null) {
+                p.setExpiration(Long.toString(delayMs));
+                p.setHeader("x-delay-ms", delayMs);
+            }
             return message;
         });
 
-        log.warn("[job-url] routed messageId={} source={} url={} routing={} attempt={}",
-                effectiveMessageId, msg.source(), msg.url(), routing, nextAttempt);
+        log.warn("[job-url] routed messageId={} source={} url={} routing={} attempt={} delayMs={}",
+                effectiveMessageId, msg.source(), msg.url(), routing, nextAttempt, delayMs);
     }
 
     private String routingForAttempt(String source, int attempt) {
@@ -82,5 +89,41 @@ public class JobUrlRetryPublisher {
         }
 
         return attempt + 1;
+    }
+
+    private Long delayForRouting(String routing) {
+        Duration baseDelay = baseDelayForRouting(routing);
+        if (baseDelay == null) {
+            return null;
+        }
+        return jitteredDelayMs(baseDelay);
+    }
+
+    private Duration baseDelayForRouting(String routing) {
+        if (routing == null) {
+            return null;
+        }
+        if (routing.startsWith(props.getRouting().getUrlsRetry1())) {
+            return props.getRetry().getAfter1();
+        }
+        if (routing.startsWith(props.getRouting().getUrlsRetry5())) {
+            return props.getRetry().getAfter5();
+        }
+        if (routing.startsWith(props.getRouting().getUrlsRetry30())) {
+            return props.getRetry().getAfter30();
+        }
+        return null;
+    }
+
+    private long jitteredDelayMs(Duration baseDelay) {
+        long baseMs = Math.max(1_000L, baseDelay.toMillis());
+        double jitterFactor = Math.max(0.0d, Math.min(props.getRetry().getJitterFactor(), 0.95d));
+        if (jitterFactor == 0.0d) {
+            return baseMs;
+        }
+
+        long minMs = Math.max(1_000L, (long) Math.floor(baseMs * (1.0d - jitterFactor)));
+        long maxMs = Math.max(minMs, (long) Math.ceil(baseMs * (1.0d + jitterFactor)));
+        return ThreadLocalRandom.current().nextLong(minMs, maxMs + 1);
     }
 }

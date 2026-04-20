@@ -56,6 +56,7 @@ public class IngestMessagingProperties {
         private java.time.Duration after1 = java.time.Duration.ofMinutes(1);
         private java.time.Duration after5 = java.time.Duration.ofMinutes(5);
         private java.time.Duration after30 = java.time.Duration.ofMinutes(30);
+        private double jitterFactor = 0.20d;
     }
 
     @Getter @Setter
