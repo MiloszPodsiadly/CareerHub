@@ -67,6 +67,11 @@ agent:
 
 jobs:
   ingest:
+    nfj:
+      detail-fetch-rate-per-second: 0.25
+      cooldown-after-429: PT20M
+      max-url-backlog-before-skip: 5000
+      max-external-offers-backlog-before-skip: 5000
     exchange: ingest.jobs
     url-consumer:
       justjoin:
@@ -120,6 +125,7 @@ jobs:
       after1: PT1M
       after5: PT5M
       after30: PT30M
+      jitterFactor: 0.20
 
 eureka:
   client:

@@ -46,17 +46,14 @@ public class RabbitConfig {
         for (String source : props.externalOfferSources()) {
             Queue primaryQueue = QueueBuilder.durable(props.urlsQueue(source)).build();
             Queue retry1Queue = QueueBuilder.durable(props.urlsRetry1Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter1().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.urlsRouting(source))
                     .build();
             Queue retry5Queue = QueueBuilder.durable(props.urlsRetry5Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter5().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.urlsRouting(source))
                     .build();
             Queue retry30Queue = QueueBuilder.durable(props.urlsRetry30Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter30().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.urlsRouting(source))
                     .build();
@@ -204,17 +201,14 @@ public class RabbitConfig {
         for (String source : props.externalOfferSources()) {
             Queue primaryQueue = QueueBuilder.durable(props.externalOffersQueue(source)).build();
             Queue retry1Queue = QueueBuilder.durable(props.externalOffersRetry1Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter1().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.externalOffersRouting(source))
                     .build();
             Queue retry5Queue = QueueBuilder.durable(props.externalOffersRetry5Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter5().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.externalOffersRouting(source))
                     .build();
             Queue retry30Queue = QueueBuilder.durable(props.externalOffersRetry30Queue(source))
-                    .withArgument("x-message-ttl", props.getRetry().getAfter30().toMillis())
                     .withArgument("x-dead-letter-exchange", props.getExchange())
                     .withArgument("x-dead-letter-routing-key", props.externalOffersRouting(source))
                     .build();

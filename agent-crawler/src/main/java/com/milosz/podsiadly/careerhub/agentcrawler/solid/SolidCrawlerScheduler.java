@@ -31,7 +31,7 @@ public class SolidCrawlerScheduler {
             Set<String> urls = solidApiClient.fetchOfferUrlsFromSitemap();
 
             if (urls.isEmpty()) {
-                log.warn("[agent-solid] sitemap returned NO urls");
+                log.warn("[agent-solid] sitemap fetch produced no offer urls; upstream may be unavailable or blocking requests");
                 return;
             }
 

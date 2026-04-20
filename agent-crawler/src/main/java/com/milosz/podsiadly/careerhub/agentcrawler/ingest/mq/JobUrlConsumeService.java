@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,12 +41,13 @@ public class JobUrlConsumeService {
                     "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
 
     private static final RateLimiter JJ_FETCH_LIMITER = RateLimiter.create(2.0d);
-    private static final RateLimiter NFJ_FETCH_LIMITER = RateLimiter.create(0.5d);
     private static final RateLimiter TP_FETCH_LIMITER = RateLimiter.create(1.0d);
     private static final RateLimiter SOLID_FETCH_LIMITER = RateLimiter.create(2.0d);
     private static final Pattern TP_OFFER_ID = Pattern.compile(
             "(?:,oferta,|%2Coferta%2C)([0-9a-fA-F\\-]{36})"
     );
+    private final RateLimiter nfjFetchLimiter = RateLimiter.create(0.25d);
+    private final AtomicLong nfjSuspendedUntilEpochMs = new AtomicLong(0L);
 
     private final JustJoinParser justJoinParser;
     private final NofluffParser nofluffParser;
@@ -55,6 +58,12 @@ public class JobUrlConsumeService {
 
     @Value("${ingest.logging.quiet:true}")
     private boolean quietLogging;
+
+    @Value("${jobs.ingest.nfj.detail-fetch-rate-per-second:0.25}")
+    private double nfjDetailFetchRatePerSecond;
+
+    @Value("${jobs.ingest.nfj.cooldown-after-429:PT15M}")
+    private Duration nfjCooldownAfter429;
 
     public void consume(UrlMessage msg) throws Exception {
         final String url = msg.url();
@@ -108,6 +117,7 @@ public class JobUrlConsumeService {
         }
 
         if (source == JobSource.NOFLUFFJOBS && sc == 429) {
+            activateNfjCooldown(url);
             logRequeue("[ingest] NFJ rate limited HTTP {} for {}, long backoff", sc, url);
             throw new NfjRateLimitException("NFJ rate limit HTTP " + sc + " for " + url);
         }
@@ -134,6 +144,7 @@ public class JobUrlConsumeService {
 
     private void handleNofluff(String url) throws IOException {
         String externalId = lastPath(url);
+        ensureNfjNotSuspended(url);
         String html = fetchNofluffHtml(url, externalId);
 
         if (nfjHtmlParser.isExpired(html)) {
@@ -147,6 +158,7 @@ public class JobUrlConsumeService {
             return;
         }
 
+        ensureNfjNotSuspended(url);
         String json = fetchNofluffJson(externalId, url);
         ParsedExternalOffer parsedOffer = nofluffParser.parseFromApiJson(externalId, json, url);
         externalOfferPublisher.publish(ExternalOfferMessageMapper.fromParsedOffer(parsedOffer));
@@ -261,7 +273,8 @@ public class JobUrlConsumeService {
     }
 
     private String fetchNofluffHtml(String url, String externalId) throws IOException {
-        NFJ_FETCH_LIMITER.acquire();
+        nfjFetchLimiter.setRate(nfjDetailFetchRatePerSecond);
+        nfjFetchLimiter.acquire();
         long startedAt = System.currentTimeMillis();
         try {
             String html = fetchHtml(url, "https://nofluffjobs.com/");
@@ -283,7 +296,8 @@ public class JobUrlConsumeService {
         String apiUrl = "https://nofluffjobs.com/api/posting/" + externalId
                 + "?salaryCurrency=PLN&salaryPeriod=month&region=pl&language=pl-PL";
 
-        NFJ_FETCH_LIMITER.acquire();
+        nfjFetchLimiter.setRate(nfjDetailFetchRatePerSecond);
+        nfjFetchLimiter.acquire();
 
         long startedAt = System.currentTimeMillis();
         try {
@@ -318,6 +332,29 @@ public class JobUrlConsumeService {
     private void handleIoException(IOException e, String url) {
         logRequeue("[ingest] I/O error for {}, requeue: {}", url, e.toString());
         throw new ImmediateRequeueAmqpException("I/O error for " + url);
+    }
+
+    private void ensureNfjNotSuspended(String url) {
+        long suspendedUntil = nfjSuspendedUntilEpochMs.get();
+        long now = System.currentTimeMillis();
+        if (suspendedUntil <= now) {
+            return;
+        }
+
+        long remainingMs = suspendedUntil - now;
+        logRequeue("[ingest] NFJ cooldown active remainingMs={} for {}", remainingMs, url);
+        throw new NfjRateLimitException("NFJ cooldown active for " + remainingMs + "ms for " + url);
+    }
+
+    private void activateNfjCooldown(String url) {
+        long cooldownMs = Math.max(1_000L, nfjCooldownAfter429.toMillis());
+        long newSuspendedUntil = System.currentTimeMillis() + cooldownMs;
+        long effectiveSuspendedUntil = nfjSuspendedUntilEpochMs.updateAndGet(current ->
+                Math.max(current, newSuspendedUntil));
+        log.warn("[ingest] NFJ cooldown activated untilEpochMs={} durationMs={} url={}",
+                effectiveSuspendedUntil,
+                cooldownMs,
+                url);
     }
 
     private String externalIdFor(JobSource source, String url) {
