@@ -114,6 +114,7 @@ jobs:
       after1: PT1M
       after5: PT5M
       after30: PT30M
+      jitterFactor: 0.20
   stale:
     default-cutoff: PT96H
     nfj-cutoff: PT96H
