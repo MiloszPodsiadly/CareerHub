@@ -5,13 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -20,6 +23,13 @@ import org.w3c.dom.NodeList;
 @Component
 @RequiredArgsConstructor
 public class SolidApiClient {
+
+    private static final String BROWSER_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                    "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36";
+    private static final int MAX_SITEMAP_ATTEMPTS = 4;
+    private static final long INITIAL_BACKOFF_MS = 2_000L;
+    private static final long MAX_BACKOFF_MS = 20_000L;
 
     private final RestTemplate restTemplate;
 
@@ -36,25 +46,84 @@ public class SolidApiClient {
     public Set<String> fetchOfferUrlsFromSitemap(String sitemapUrl) {
         log.info("[solid-api] fetching sitemap from {}", sitemapUrl);
 
-        try {
-            ResponseEntity<String> response =
-                    restTemplate.getForEntity(sitemapUrl, String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(
+                MediaType.APPLICATION_XML,
+                MediaType.TEXT_XML,
+                MediaType.TEXT_HTML,
+                MediaType.ALL
+        ));
+        headers.setAcceptLanguageAsLocales(List.of(java.util.Locale.forLanguageTag("pl-PL"), java.util.Locale.ENGLISH));
+        headers.set("User-Agent", BROWSER_UA);
+        headers.set("Referer", baseUrl + "/");
+        headers.set("Cache-Control", "no-cache");
+        headers.set("Pragma", "no-cache");
 
-            log.info("[solid-api] sitemap status={} contentType={}",
-                    response.getStatusCode(), response.getHeaders().getContentType());
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        long backoffMs = INITIAL_BACKOFF_MS;
 
-            String body = response.getBody();
-            if (body == null || body.isBlank()) {
-                log.warn("[solid-api] sitemap body is null/blank");
-                return Set.of();
+        for (int attempt = 1; attempt <= MAX_SITEMAP_ATTEMPTS; attempt++) {
+            long startedAt = System.currentTimeMillis();
+            try {
+                ResponseEntity<String> response = restTemplate.exchange(
+                        sitemapUrl,
+                        HttpMethod.GET,
+                        entity,
+                        String.class
+                );
+
+                log.info("[solid-api] sitemap attempt={}/{} status={} contentType={} tookMs={}",
+                        attempt,
+                        MAX_SITEMAP_ATTEMPTS,
+                        response.getStatusCode(),
+                        response.getHeaders().getContentType(),
+                        System.currentTimeMillis() - startedAt);
+
+                String body = response.getBody();
+                if (body == null || body.isBlank()) {
+                    log.warn("[solid-api] sitemap body is null/blank attempt={}/{}", attempt, MAX_SITEMAP_ATTEMPTS);
+                    return Set.of();
+                }
+
+                return extractOfferUrls(body);
+            } catch (HttpStatusCodeException ex) {
+                int status = ex.getStatusCode().value();
+                String bodySnippet = abbreviateBody(ex.getResponseBodyAsString());
+                boolean retryable = status == 429 || status == 503 || status >= 500;
+
+                log.warn("[solid-api] sitemap HTTP {} attempt={}/{} tookMs={} retryable={} body={}",
+                        status,
+                        attempt,
+                        MAX_SITEMAP_ATTEMPTS,
+                        System.currentTimeMillis() - startedAt,
+                        retryable,
+                        bodySnippet);
+
+                if (!retryable || attempt == MAX_SITEMAP_ATTEMPTS) {
+                    log.warn("[solid-api] sitemap fetch exhausted after status={} attempts={}", status, attempt, ex);
+                    return Set.of();
+                }
+
+                sleepWithJitter(backoffMs);
+                backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
+            } catch (Exception e) {
+                log.warn("[solid-api] sitemap fetch failed attempt={}/{} tookMs={} error={}",
+                        attempt,
+                        MAX_SITEMAP_ATTEMPTS,
+                        System.currentTimeMillis() - startedAt,
+                        e.toString(),
+                        e);
+
+                if (attempt == MAX_SITEMAP_ATTEMPTS) {
+                    return Set.of();
+                }
+
+                sleepWithJitter(backoffMs);
+                backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
             }
-
-            return extractOfferUrls(body);
-
-        } catch (Exception e) {
-            log.warn("[solid-api] failed to fetch sitemap: {}", e.toString(), e);
-            return Set.of();
         }
+
+        return Set.of();
     }
 
     public String fetchOfferJsonByOfferUrl(String offerUrl) {
@@ -146,5 +215,30 @@ public class SolidApiClient {
         }
 
         return urls;
+    }
+
+    private static void sleepWithJitter(long baseMs) {
+        long jitter = ThreadLocalRandom.current().nextLong(250L, 1250L);
+        long sleepMs = Math.max(250L, baseMs + jitter);
+        try {
+            Thread.sleep(sleepMs);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static String abbreviateBody(String body) {
+        if (body == null) {
+            return null;
+        }
+        String normalized = body
+                .replace("\r", " ")
+                .replace("\n", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (normalized.length() <= 240) {
+            return normalized;
+        }
+        return normalized.substring(0, 240);
     }
 }
