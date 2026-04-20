@@ -90,17 +90,14 @@ public class RabbitConfig {
         for (String source : p.externalOfferSources()) {
             Queue primaryQueue = QueueBuilder.durable(p.externalOffersQueue(source)).build();
             Queue retry1Queue = QueueBuilder.durable(p.externalOffersRetry1Queue(source))
-                    .withArgument("x-message-ttl", p.getRetry().getAfter1().toMillis())
                     .withArgument("x-dead-letter-exchange", p.getExchange())
                     .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
                     .build();
             Queue retry5Queue = QueueBuilder.durable(p.externalOffersRetry5Queue(source))
-                    .withArgument("x-message-ttl", p.getRetry().getAfter5().toMillis())
                     .withArgument("x-dead-letter-exchange", p.getExchange())
                     .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
                     .build();
             Queue retry30Queue = QueueBuilder.durable(p.externalOffersRetry30Queue(source))
-                    .withArgument("x-message-ttl", p.getRetry().getAfter30().toMillis())
                     .withArgument("x-dead-letter-exchange", p.getExchange())
                     .withArgument("x-dead-letter-routing-key", p.externalOffersRouting(source))
                     .build();
